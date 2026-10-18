@@ -51,3 +51,9 @@
 .wave--dots { display: grid; }
 .wave--dots .wave__canvas { grid-area: 1 / 1; }
 .wave--dots .wave__caption { grid-area: 2 / 1; }
+
+/* soft edges on all four sides: nothing is ever cut by the canvas border */
+.wave--dots .wave__canvas {
+  -webkit-mask-image: radial-gradient(ellipse 72% 64% at 50% 50%, #000 52%, transparent 100%);
+  mask-image: radial-gradient(ellipse 72% 64% at 50% 50%, #000 52%, transparent 100%);
+}

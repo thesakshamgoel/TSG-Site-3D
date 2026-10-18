@@ -66,16 +66,23 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   const metaO = useTransform([open, after], ([o, a]) => Math.min(1, Math.max(0, (o - 0.72) / 0.28)) * (1 - Math.min(1, a * 3)))
   const metaY = useTransform(open, [0.72, 1], [40, 0])
 
-  // play only while this slide is the open one
+  // play only while this slide is the open one, and only once the visitor
+  // has rested on it: building the YouTube player mid-scroll stalled frames
+  const wantRef = useRef(false)
+  const timerRef = useRef(null)
   const decide = () => {
     // desktop only: phones get the poster (YouTube forces its own controls
     // over mobile embeds, and a silent background stream costs their data)
     const on = !reduced && wide && open.get() > 0.96 && after.get() < 0.6
-    if (on !== live) {
-      setLive(on)
-      if (!on) setShown(false)
+    wantRef.current = on
+    clearTimeout(timerRef.current)
+    if (!on) {
+      if (live) { setLive(false); setShown(false) }
+      return
     }
+    if (!live) timerRef.current = setTimeout(() => { if (wantRef.current) setLive(true) }, 500)
   }
+  useEffect(() => () => clearTimeout(timerRef.current), [])
   useMotionValueEvent(open, 'change', decide)
   useMotionValueEvent(after, 'change', decide)
 

@@ -165,10 +165,9 @@
 }
 
 /* slow push-in while a film holds the screen */
-.hl__poster {
-  animation: hl-kb 16s ease-in-out infinite alternate;
-  transform-origin: 50% 45%;
-}
+/* (the slow push-in was removed: a constant animation under the scroll
+   animation cost smoothness) */
+.hl__poster { transform-origin: 50% 45%; }
 @keyframes hl-kb {
   from { transform: scale(1); }
   to { transform: scale(1.08); }

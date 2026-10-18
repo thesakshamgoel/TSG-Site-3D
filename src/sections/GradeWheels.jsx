@@ -33,8 +33,9 @@ const TILT = 0.12 // slat lean, as a fraction of the width across the full heigh
 const OPEN_SHARE = 0.8 // width an opened slat takes
 // the section has two scroll phases: first every frame grades, then the
 // slats open one after another from left to right
-const GRADE_END = 0.48
-const OPEN_START = 0.52
+const GRADE_END = 0.42
+// a longer, eased hand-off from the finished grade to the first open still
+const OPEN_START = 0.6
 const REDUCED = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const FINE = typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches
 
@@ -181,8 +182,8 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   const [hasGL, setHasGL] = useState(false)
   const [focus, setFocus] = useState(-1)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // 30% slower scroll while inside, so each frame gets more time (no locking)
-  useScrollDamp(ref, 0.7)
+  // half-speed scroll while inside, so the grade and each frame get time (no locking)
+  useScrollDamp(ref, 0.5)
 
   // ── GL setup + atlases ──
   useEffect(() => {
@@ -291,7 +292,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       // phase 2: scroll scrubs an "open position" across the slats; a click
       // jumps to a slat and holds it until the visitor scrolls on
       if (S.click >= 0 && Math.abs(S.p - S.clickP) > 0.035) { S.click = -1; S.dirty = true }
-      const opening = clamp01((S.p - GRADE_END) / (OPEN_START - GRADE_END)) // ramps the first slat open
+      const opening = smooth((S.p - GRADE_END) / (OPEN_START - GRADE_END)) // eases the first slat open
       const op = clamp01((S.p - OPEN_START) / (0.97 - OPEN_START)) * (n - 1)
       const f = S.click >= 0 ? S.click : opening > 0.5 ? Math.round(op) : -1
       S.focus = f

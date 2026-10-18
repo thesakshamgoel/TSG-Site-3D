@@ -9,8 +9,8 @@ import './Waveform.css'
  * variant "bars"   a stereo timeline track: mirrored channels, the part
  *                  already played lit gold, a running timecode
  * variant "scope"  an oscilloscope: three sound layers weaving together
- * variant "dots"   a dot-matrix waveform in titanium and gold that
- *                  assembles from scattered dots as it scrolls in
+ * variant "dots"   a random dot cloud that assembles into a waveform in
+ *                  titanium and gold as it scrolls in
  */
 // deterministic pseudo-audio: phrases of energy with a little grain
 function level(i) {
@@ -43,19 +43,42 @@ export default function Waveform({ variant = 'bars', label = '' }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       if (variant === 'dots') {
         const small = window.matchMedia('(max-width: 720px)').matches
-        const S = small ? 8 : 9
-        const cols = Math.floor(W / S), rows = Math.floor(H / S)
-        const faint = gridRef.current
-        faint.width = Math.max(1, Math.round(W * dpr))
-        faint.height = Math.max(1, Math.round(H * dpr))
-        const f = faint.getContext('2d')
+        // seeded random so the cloud is the same on every visit
+        let seed = 7
+        const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
+        // resting dust: sparse random specks, drawn once on their own layer
+        const dust = gridRef.current
+        dust.width = Math.max(1, Math.round(W * dpr))
+        dust.height = Math.max(1, Math.round(H * dpr))
+        const f = dust.getContext('2d')
         f.setTransform(dpr, 0, 0, dpr, 0, 0)
-        f.fillStyle = 'rgba(200, 192, 180, 0.13)'
-        for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if ((c + r) % 2 === 0) f.fillRect((c + 0.5) * S - 0.6, (r + 0.5) * S - 0.6, 1.2, 1.2)
-        // fixed scatter offsets so the assembly is the same every visit
-        const scatter = new Float32Array(cols * rows * 2)
-        for (let i = 0; i < scatter.length; i++) scatter[i] = Math.sin(i * 12.9898 + 4.1) * 43758.5453 % 1
-        grid.current = { S, cols, rows, faint, scatter, dot: small ? 2 : 2.4 }
+        const specks = Math.round((W * H) / 1400)
+        for (let i = 0; i < specks; i++) {
+          f.fillStyle = `rgba(210, 200, 186, ${(0.05 + rnd() * 0.12).toFixed(3)})`
+          const d = 0.6 + rnd() * 1.1
+          f.fillRect(rnd() * W, rnd() * H, d, d)
+        }
+        // the waveform cloud: each dot has a random place inside the wave's
+        // envelope, its own size, brightness and drift, and a random start
+        // to fly in from (kept inside the canvas so nothing is clipped)
+        const N = small ? 1500 : 3400
+        const BUCKETS = 8
+        const pts = []
+        for (let i = 0; i < N; i++) {
+          const u = rnd()
+          pts.push({
+            u,
+            v: (rnd() * 2 - 1) * (0.35 + 0.65 * Math.sqrt(rnd())),
+            size: (small ? 0.9 : 1) * (0.8 + Math.pow(rnd(), 2) * 2.2),
+            alpha: 0.35 + rnd() * 0.65,
+            ph: rnd() * 6.283,
+            sx: (0.08 + rnd() * 0.84) * W,
+            sy: (0.12 + rnd() * 0.76) * H,
+            b: Math.min(BUCKETS - 1, Math.floor(u * BUCKETS)),
+          })
+        }
+        pts.sort((a, b) => a.b - b.b) // draw colour bucket by bucket
+        grid.current = { pts, BUCKETS }
       }
     }
     size()
@@ -71,44 +94,40 @@ export default function Waveform({ variant = 'bars', label = '' }) {
       ctx.clearRect(0, 0, W, H)
       const mid = H / 2
       if (variant === 'dots') {
-        // a dot-matrix waveform: a faint grid is always there (never a blank
-        // start); as the divider scrolls in, scattered dots fly home and
-        // assemble a mirrored waveform in brushed titanium fading to gold,
-        // with a light sheen sliding across
+        // a random dot cloud that forms a mirrored waveform: dust is always
+        // there (never a blank start); as the divider scrolls in the dots
+        // fly from random places into the wave, centre first, then shimmer.
+        // Brushed titanium on the left warms to gold on the right, and a
+        // light sheen slides across.
         const time = reduced ? 0 : (now - t0) / 1000
         const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x) }
-        const assemble = reduced ? 1 : sm((pass - 0.06) / 0.34)
+        const assemble = reduced ? 1 : sm((pass - 0.04) / 0.4)
         const G = grid.current
         if (!G) return
-        const { S, cols, rows, scatter } = G
         const sheenX = (((time * 0.12 + pass * 0.8) % 1.5) - 0.25) * W
-        const boost = 1 + 0.35 * loud
-        for (let c = 0; c < cols; c++) {
-          const x = (c + 0.5) * S
-          const u = c / (cols - 1) - 0.5
-          const env = Math.exp(-Math.pow(u * 1.7, 2))
-          const osc = 0.5 + 0.5 * Math.sin(u * 13 + time * 1.4) * Math.sin(u * 4.6 - time * 0.8)
-          const ampC = (H / 2) * 0.88 * env * (0.25 + 0.75 * osc) * boost
-          // titanium (cool grey) at the left, warming to gold at the right
-          const k = sm((c / (cols - 1)) * 1.3 - 0.15)
-          const R = Math.round(158 + (233 - 158) * k)
-          const Gc = Math.round(156 + (184 - 156) * k)
-          const B = Math.round(152 + (114 - 152) * k)
-          ctx.fillStyle = `rgb(${R},${Gc},${B})`
-          for (let r2 = 0; r2 < rows; r2++) {
-            const y = (r2 + 0.5) * S
-            const dy = Math.abs(y - mid)
-            if (dy > ampC) continue
-            const idx = c * rows + r2
-            const off = 1 - assemble
-            const px = x + scatter[idx * 2] * off * W * 0.35
-            const py = y + scatter[idx * 2 + 1] * off * H * 0.9
-            const edge = 1 - (dy / Math.max(ampC, 1)) * 0.55
-            const shine = Math.exp(-Math.pow((x - sheenX - (y - mid) * 0.5) / 70, 2))
-            ctx.globalAlpha = Math.min(1, (0.35 + 0.65 * edge + shine * 0.6) * (0.25 + 0.75 * assemble))
-            const d = (G.dot + shine * 1.2) * (0.7 + 0.3 * edge)
-            ctx.fillRect(px - d / 2, py - d / 2, d, d)
+        const boost = 1 + 0.3 * loud
+        let bucket = -1
+        for (const q of G.pts) {
+          if (q.b !== bucket) {
+            bucket = q.b
+            const k = sm((bucket / (G.BUCKETS - 1)) * 1.3 - 0.15)
+            ctx.fillStyle = `rgb(${Math.round(160 + 73 * k)},${Math.round(157 + 27 * k)},${Math.round(152 - 38 * k)})`
           }
+          const u = q.u - 0.5
+          const env = Math.exp(-Math.pow(u * 1.7, 2))
+          const osc = 0.5 + 0.5 * Math.sin(u * 13 + time * 1.3) * Math.sin(u * 4.6 - time * 0.75)
+          const amp = (H / 2) * 0.8 * env * (0.25 + 0.75 * osc) * boost
+          const tx = q.u * W + Math.sin(time * 0.7 + q.ph) * 2.2
+          const ty = mid + q.v * amp + Math.cos(time * 0.9 + q.ph) * 1.6
+          // centre first: each dot starts its flight a little later the
+          // further it sits from the middle
+          const k = sm(assemble * 1.5 - Math.abs(u) * 0.8)
+          const x = q.sx + (tx - q.sx) * k
+          const y = q.sy + (ty - q.sy) * k
+          const shine = Math.exp(-Math.pow((x - sheenX - (y - mid) * 0.5) / 70, 2))
+          ctx.globalAlpha = Math.min(1, q.alpha * (0.3 + 0.7 * k) + shine * 0.5)
+          const d = q.size + shine * 1.1
+          ctx.fillRect(x - d / 2, y - d / 2, d, d)
         }
         ctx.globalAlpha = 1
         return
