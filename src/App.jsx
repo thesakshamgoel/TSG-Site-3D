@@ -11,7 +11,6 @@ import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ToastViewport from './components/Toast'
 import ScreenGuard from './components/ScreenGuard'
-import Watermark from './components/Watermark'
 import FilmHUD from './components/FilmHUD'
 import InstaFeed from './components/InstaFeed'
 import ScrollProgress from './components/ScrollProgress'
@@ -166,7 +165,6 @@ export default function App() {
       <Cursor />
       <ToastViewport />
       <ScreenGuard />
-      {loaded && <Watermark />}
       {loaded && <FilmHUD />}
       {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
