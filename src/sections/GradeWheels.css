@@ -2,7 +2,8 @@
   --seam: #090807;
   position: relative;
   z-index: 3;
-  height: 480vh;
+  /* two phases: grade, then open each frame in turn */
+  height: 680vh;
 }
 .gw__stage {
   position: sticky;
@@ -233,7 +234,7 @@
 }
 
 /* ── six slats ───────────────────────────────────────────────────────────── */
-@media (hover: hover) and (pointer: fine) { .gw__frame { cursor: zoom-in; } }
+.gw__frame { cursor: pointer; }
 /* fallback without WebGL: six skewed slats of the stills, crossfading */
 .gw__fallback {
   display: flex;
@@ -318,3 +319,12 @@
     font-size: 1.15rem;
   }
 }
+
+/* press-and-hold hint in the panel */
+.gw__hint {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+.gw__frame { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.gw__frame:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }

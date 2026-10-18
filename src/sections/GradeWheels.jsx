@@ -30,7 +30,10 @@ const MAX = 6
 const WAVE = 0.035 // grade delay between neighbouring slats, in scroll progress
 const TILT = 0.12 // slat lean, as a fraction of the width across the full height
 const OPEN_SHARE = 0.8 // width an opened slat takes
-const TOUR_MS = 2600 // each slat's turn during the auto tour
+// the section has two scroll phases: first every frame grades, then the
+// slats open one after another from left to right
+const GRADE_END = 0.48
+const OPEN_START = 0.52
 const REDUCED = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const FINE = typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches
 
@@ -68,6 +71,8 @@ uniform float uImg, uTilt, uHold, uFocus;
 uniform vec4 uE0, uE1;               // slat edges 0..6
 uniform vec3 uLift[6], uGamma[6], uGain[6];
 uniform vec3 uCSM[6];                // contrast, saturation, mix per slat
+uniform vec2 uZB[6];                 // zoom, brightness per slat (shot-change motion)
+uniform vec2 uHoldAt;                // where the press-and-hold raw wipe starts
 float edge(int k) {
   if (k == 0) return uE0.x; if (k == 1) return uE0.y; if (k == 2) return uE0.z; if (k == 3) return uE0.w;
   if (k == 4) return uE1.x; if (k == 5) return uE1.y; return uE1.z;
@@ -77,18 +82,21 @@ void main() {
   float idx = 0.0, e0 = 0.0, e1 = 1.0;
   vec3 lift = vec3(0.0), gam = vec3(1.0), gain = vec3(1.0);
   float con = 1.0, sat = 1.0, mx = 0.0;
+  vec2 zb = vec2(1.0);
   for (int k = 0; k < 6; k++) {
     float a = edge(k), b = edge(k + 1);
     if (xs >= a && xs < b) {
       idx = float(k); e0 = a; e1 = b;
       lift = uLift[k]; gam = uGamma[k]; gain = uGain[k];
       vec3 csm = uCSM[k]; con = csm.x; sat = csm.y; mx = csm.z;
+      zb = uZB[k];
     }
   }
   // each scene is cover-fitted to the whole box and centred under its slat,
   // so an opened slat shows (nearly) the full frame, undistorted
   float c = (e0 + e1) * 0.5;
   vec2 p = vec2(v.x - c + 0.5, v.y);
+  p = (p - 0.5) / zb.x + 0.5;          // a newly opened shot punches in, then settles
   float rs = uRes.x / uRes.y;
   vec2 s = rs > uImg ? vec2(1.0, uImg / rs) : vec2(rs / uImg, 1.0);
   vec2 q = (p - 0.5) * s + 0.5;
@@ -103,13 +111,20 @@ void main() {
   float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
   g = mix(vec3(l), g, sat);
   vec3 o = mix(clamp(g, 0.0, 1.0), texture2D(uB, at).rgb, mx);
-  o = mix(o, raw, uHold);
-  // dark seams between slats, and the closed slats sit slightly back
+  // press and hold: the raw plate wipes out from the press point in a circle
+  float d = length((v - uHoldAt) * vec2(rs, 1.0));
+  float r = uHold * (rs + 1.0);
+  float inside = 1.0 - smoothstep(r - 0.006, r + 0.006, d);
+  o = mix(o, raw, inside);
+  // dark seams between slats; closed slats sit slightly back (eased per slat)
   float px = 1.0 / uRes.x;
   float seam = smoothstep(0.0, 2.5 * px, min(xs - e0, e1 - xs));
-  float closed = uFocus < 0.0 ? 1.0 : (abs(idx - uFocus) < 0.5 ? 1.0 : 0.72);
   float vg = smoothstep(1.25, 0.35, length(v - 0.5) * 1.4);
-  gl_FragColor = vec4(o * seam * closed * mix(0.82, 1.0, vg), 1.0);
+  vec3 col3 = o * seam * zb.y * mix(0.82, 1.0, vg);
+  // thin gold edge on the wipe while it moves
+  float edgeOn = step(0.002, uHold) * (1.0 - step(0.998, uHold));
+  col3 += vec3(0.91, 0.72, 0.45) * (1.0 - smoothstep(0.0, 0.006, abs(d - r))) * edgeOn;
+  gl_FragColor = vec4(col3, 1.0);
 }`
 
 function loadImg(src) {
@@ -155,8 +170,10 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   const labelRefs = useRef([])
   const state = useRef({
     p: 0, user: false, u: { lift: [0, 0, 0], gamma: [0, 0, 0], gain: [0, 0, 0] }, hold: 0, dirty: true,
-    inView: false, last: null, hover: -1, tap: -1, tour: -1, tourT0: 0,
+    inView: false, last: null, click: -1, clickP: 0, focus: -1,
     w: Array(MAX).fill(1), edges: [],
+    zoom: Array(MAX).fill(1), bright: Array(MAX).fill(1),
+    holdTarget: 0, holdV: 0, holdAt: [0.5, 0.5],
   })
   const glRef = useRef(null)
   const [user, setUser] = useState(false)
@@ -183,7 +200,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const aLoc = gl.getAttribLocation(prog, 'a')
     gl.enableVertexAttribArray(aLoc)
     gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-    const names = ['uA', 'uB', 'uRes', 'uImg', 'uTilt', 'uHold', 'uFocus', 'uE0', 'uE1', 'uLift', 'uGamma', 'uGain', 'uCSM']
+    const names = ['uA', 'uB', 'uRes', 'uImg', 'uTilt', 'uHold', 'uFocus', 'uE0', 'uE1', 'uLift', 'uGamma', 'uGain', 'uCSM', 'uZB', 'uHoldAt']
     const loc = {}
     names.forEach((nm) => (loc[nm] = gl.getUniformLocation(prog, nm) || gl.getUniformLocation(prog, nm + '[0]')))
     gl.uniform1i(loc.uA, 0)
@@ -252,8 +269,10 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
         const add = (a, u) => [a[0] + u[0], a[1] + u[1], a[2] + u[2]]
         return { lift: add(b.lift, S.u.lift), gamma: add(b.gamma, S.u.gamma), gain: add(b.gain, S.u.gain), con: b.con, sat: b.sat, mix: 0 }
       }
-      // wave from left to right, finishing together at the end of the scroll
-      return gradeAt(clamp01((S.p - k * WAVE) / (1 - (n - 1) * WAVE)))
+      // phase 1: a wave from left to right, all finished by GRADE_END
+      const gp = clamp01(S.p / GRADE_END)
+      const t = clamp01((gp - k * WAVE * 1.6) / (1 - (n - 1) * WAVE * 1.6))
+      return gradeAt(t * 0.8)
     }
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
@@ -261,20 +280,43 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       lastT = now
       // frame-rate independent easing: same glide at 60 Hz and 120 Hz
       const ease = 1 - Math.pow(1 - 0.11, dt / 16.67)
-      // which slat is open: hover > tap > auto tour
-      const resting = !S.user && S.inView && S.p >= 0.8 && !document.hidden && !REDUCED && n > 1
-      const manual = S.hover >= 0 ? S.hover : S.tap
-      if (manual < 0 && resting) {
-        if (S.tour < 0 || now - S.tourT0 > TOUR_MS) { S.tour = (S.tour + 1) % n; S.tourT0 = now }
-      } else if (S.tour >= 0) S.tour = -1
-      const f = manual >= 0 ? manual : S.tour
-      if (f !== lastFocus) { lastFocus = f; setFocus(f); S.dirty = true }
-      // slat widths ease toward their targets
-      const big = f >= 0 ? (OPEN_SHARE * (n - 1)) / (1 - OPEN_SHARE) : 1
+      // phase 2: scroll scrubs an "open position" across the slats; a click
+      // jumps to a slat and holds it until the visitor scrolls on
+      if (S.click >= 0 && Math.abs(S.p - S.clickP) > 0.035) { S.click = -1; S.dirty = true }
+      const opening = clamp01((S.p - GRADE_END) / (OPEN_START - GRADE_END)) // ramps the first slat open
+      const op = clamp01((S.p - OPEN_START) / (0.97 - OPEN_START)) * (n - 1)
+      const f = S.click >= 0 ? S.click : opening > 0.5 ? Math.round(op) : -1
+      S.focus = f
+      if (f !== lastFocus) {
+        // shot change: the newly opened slat punches in, then settles
+        if (f >= 0) S.zoom[f] = 1.14
+        lastFocus = f
+        setFocus(f)
+        S.dirty = true
+      }
+      const slow = 1 - Math.pow(1 - 0.07, dt / 16.67)
+      for (let k = 0; k < n; k++) {
+        const bt = f < 0 || k === f ? 1 : 0.72
+        const nb = lerp(S.bright[k], bt, ease)
+        const nz = lerp(S.zoom[k], 1, slow)
+        if (Math.abs(nb - bt) > 0.002 || Math.abs(nz - 1) > 0.001) S.dirty = true
+        S.bright[k] = Math.abs(nb - bt) > 0.002 ? nb : bt
+        S.zoom[k] = Math.abs(nz - 1) > 0.001 ? nz : 1
+      }
+      // press-and-hold raw wipe opens and closes over ~0.45s
+      const hv = lerp(S.holdV, S.holdTarget, 1 - Math.pow(1 - 0.12, dt / 16.67))
+      if (Math.abs(hv - S.holdTarget) > 0.001) S.dirty = true
+      S.holdV = Math.abs(hv - S.holdTarget) > 0.001 ? hv : S.holdTarget
+      // slat widths: driven continuously by the scroll (the open slat slides
+      // smoothly from one to the next), or by a click; eased either way
+      const big = (OPEN_SHARE * (n - 1)) / (1 - OPEN_SHARE)
       let moving = false
       for (let k = 0; k < n; k++) {
-        const target = f < 0 ? 1 : k === f ? big : 1
-        const nw = lerp(S.w[k], target, ease)
+        const target =
+          S.click >= 0
+            ? k === S.click ? big : 1
+            : 1 + (big - 1) * opening * clamp01(1 - Math.abs(op - k))
+        const nw = lerp(S.w[k], target, 1 - Math.pow(1 - 0.22, dt / 16.67))
         if (Math.abs(nw - target) > 0.002) moving = true
         S.w[k] = Math.abs(nw - target) > 0.002 ? nw : target
       }
@@ -293,7 +335,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       const grades = Array.from({ length: MAX }, (_, k) => (k < n ? slatGrade(k) : KEYS[0]))
       const lead = grades[f >= 0 ? f : Math.min(2, n - 1)]
       S.last = lead
-      const pe = S.p
+      const pe = clamp01(S.p / GRADE_END) * 0.8 // copy follows the grade phase
 
       STEPS.forEach((st, i) => { const el = stepRefs.current[i]; if (el) el.style.opacity = S.user ? 0 : stepOpacity(pe, st[0], st[1], i) })
       if (finalRef.current) {
@@ -321,10 +363,10 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
         ;(W.vals || []).forEach((el, k) => { if (el) el.textContent = (w === 'lift' && v[k] > 0 ? '+' : '') + v[k].toFixed(3) })
       })
       if (modeRef.current) {
-        const t = S.user ? 'Your grade, on all six' : lead.mix >= 0.999 ? 'Final grades' : lead.mix > 0.001 ? 'Dissolving to the final grades' : 'Scroll is grading'
+        const t = S.holdTarget ? 'Raw, as shot' : S.user ? 'Your grade, on all six' : lead.mix >= 0.999 ? 'Final grades' : lead.mix > 0.001 ? 'Dissolving to the final grades' : 'Scroll is grading'
         if (modeRef.current.textContent !== t) modeRef.current.textContent = t
       }
-      stageRef.current?.style.setProperty('--mix', S.hold ? 0 : lead.mix.toFixed(3))
+      stageRef.current?.style.setProperty('--mix', S.holdTarget ? 0 : lead.mix.toFixed(3))
 
       const G = glRef.current
       if (!G || !G.ready) return
@@ -333,7 +375,9 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       gl.uniform2f(loc.uRes, gl.canvas.width, gl.canvas.height)
       gl.uniform1f(loc.uImg, 16 / 9)
       gl.uniform1f(loc.uTilt, TILT)
-      gl.uniform1f(loc.uHold, S.hold)
+      gl.uniform1f(loc.uHold, S.holdV)
+      gl.uniform2f(loc.uHoldAt, S.holdAt[0], S.holdAt[1])
+      gl.uniform2fv(loc.uZB, new Float32Array(Array.from({ length: MAX }, (_, k) => [S.zoom[k], S.bright[k]]).flat()))
       gl.uniform1f(loc.uFocus, f)
       gl.uniform4f(loc.uE0, edges[0], edges[1], edges[2], edges[3])
       gl.uniform4f(loc.uE1, edges[4], edges[5], edges[6], 9)
@@ -341,7 +385,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       gl.uniform3fv(loc.uLift, flat3('lift'))
       gl.uniform3fv(loc.uGamma, flat3('gamma'))
       gl.uniform3fv(loc.uGain, flat3('gain'))
-      gl.uniform3fv(loc.uCSM, new Float32Array(grades.flatMap((g) => [g.con, g.sat, S.hold ? 0 : g.mix])))
+      gl.uniform3fv(loc.uCSM, new Float32Array(grades.flatMap((g) => [g.con, g.sat, g.mix])))
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
     raf = requestAnimationFrame(frame)
@@ -358,22 +402,81 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const xs = (x - (y - 0.5) * TILT + TILT / 2) / (1 + TILT)
     return Math.max(0, Math.min(n - 1, Math.floor(xs * n)))
   }
-  const onMove = (e) => {
-    if (!FINE || e.pointerType !== 'mouse') return
-    const k = slatAt(e)
-    if (k !== state.current.hover) { state.current.hover = k; state.current.dirty = true }
+  const press = useRef({ timer: null, holding: false, x: 0, y: 0, type: '' })
+  const toUV = (e) => {
+    const r = frameRef.current.getBoundingClientRect()
+    return [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height]
   }
-  const onLeave = () => { state.current.hover = -1; state.current.dirty = true }
-  const onTap = (e) => {
+  const startHold = (uv) => {
+    const S = state.current
+    S.holdAt = uv
+    S.holdTarget = 1
+    S.dirty = true
+    press.current.holding = true
+  }
+  const endHold = () => {
+    state.current.holdTarget = 0
+    state.current.dirty = true
+    press.current.holding = false
+  }
+  const onMove = (e) => {
+    const P = press.current
+    // a drag before the hold engages is a scroll or a sweep, not a hold
+    if (P.timer && Math.hypot(e.clientX - P.x, e.clientY - P.y) > 10) { clearTimeout(P.timer); P.timer = null }
+  }
+  const onLeave = () => {
+    const P = press.current
+    if (P.timer) { clearTimeout(P.timer); P.timer = null }
+    if (P.holding) endHold()
+  }
+  const onDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return
+    const P = press.current
+    P.x = e.clientX
+    P.y = e.clientY
+    P.type = e.pointerType
+    const uv = toUV(e)
+    clearTimeout(P.timer)
+    // mouse: hold 160ms; touch: a long press of 320ms (a tap still opens a slat)
+    P.timer = setTimeout(() => { P.timer = null; startHold(uv) }, e.pointerType === 'mouse' ? 160 : 320)
+  }
+  const onUp = (e) => {
+    const P = press.current
+    if (P.holding) { endHold(); return }
+    if (!P.timer) return // the press turned into a drag
+    clearTimeout(P.timer)
+    P.timer = null
     const k = slatAt(e)
-    if (e.pointerType === 'mouse') {
-      // a click on the open slat shows that graded frame full size
+    const S = state.current
+    if (k === S.focus) {
+      // the open slat: show that graded frame full size
       const pr = pairs[k]
       if (pr && onOpenImage) onOpenImage({ title: `${pr.title}, graded`, image: pr.after, mediaType: 'image' })
       return
     }
-    state.current.tap = state.current.tap === k ? -1 : k
-    state.current.dirty = true
+    // any other slat: jump to it
+    S.click = k
+    S.clickP = S.p
+    S.dirty = true
+  }
+  // while a touch hold is engaged, the finger must not scroll the page
+  useEffect(() => {
+    const el = frameRef.current
+    if (!el) return
+    const stop = (e) => { if (press.current.holding) e.preventDefault() }
+    const menu = (e) => e.preventDefault()
+    el.addEventListener('touchmove', stop, { passive: false })
+    el.addEventListener('contextmenu', menu)
+    return () => {
+      el.removeEventListener('touchmove', stop)
+      el.removeEventListener('contextmenu', menu)
+    }
+  }, [])
+  const onKeyDown = (e) => {
+    if ((e.key === ' ' || e.key.toLowerCase() === 'r') && !press.current.holding) { e.preventDefault(); startHold([0.5, 0.5]) }
+  }
+  const onKeyUp = (e) => {
+    if (e.key === ' ' || e.key.toLowerCase() === 'r') endHold()
   }
 
   // ── wheel input: only the puck is grabbable, relative drag, 6px threshold ──
@@ -431,7 +534,6 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     state.current.dirty = true
     setUser(false)
   }
-  const hold = (v) => () => { state.current.hold = v; state.current.dirty = true }
 
   if (!n) return null
   const focusPair = focus >= 0 ? pairs[focus] : null
@@ -440,7 +542,19 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   return (
     <section className="gw seam-top seam-bottom" id="grade" ref={ref}>
       <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
-        <div className="gw__frame" ref={frameRef} onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onTap}>
+        <div
+          className="gw__frame"
+          ref={frameRef}
+          tabIndex={0}
+          aria-label="Graded scenes. Press and hold, or hold R, to see the raw footage."
+          onPointerDown={onDown}
+          onPointerUp={onUp}
+          onPointerMove={onMove}
+          onPointerLeave={onLeave}
+          onPointerCancel={onLeave}
+          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
+        >
           <div className="gw__fallback" aria-hidden="true">
             {pairs.map((pr, k) => (
               <div key={pr.id || k} className="gw__fslat">
@@ -469,7 +583,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
           <div className="gw__final" ref={finalRef} style={{ opacity: 0 }}>
             <h2 className="gw__h">{countWord}, <em>graded.</em></h2>
             <p className="gw__note">
-              {FINE ? 'Hover a frame to see it whole.' : 'Tap a frame to see it whole.'} Then take a wheel and grade all {n} yourself.
+              Keep scrolling and each frame opens in turn. {FINE ? 'Click' : 'Tap'} one to jump to it, hold to see it raw.
             </p>
           </div>
         </div>
@@ -510,10 +624,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
           </div>
           <div className="gw__tools">
             <p className="gw__mode"><span className="gw__dot" /><span ref={modeRef}>Scroll is grading</span></p>
-            <button type="button" className="gw__chip" onPointerDown={hold(1)} onPointerUp={hold(0)} onPointerLeave={hold(0)}
-              onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && hold(1)()} onKeyUp={hold(0)} onBlur={hold(0)}>
-              Hold to see raw
-            </button>
+            <span className="gw__hint">{FINE ? 'Press and hold the frame for raw' : 'Touch and hold the frame for raw'}</span>
             {user && <button type="button" className="gw__chip" onClick={reset}>Back to his grade</button>}
           </div>
         </div>

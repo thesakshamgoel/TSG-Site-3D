@@ -56,9 +56,9 @@ export default function App() {
   }, [])
 
   const snapIds = useMemo(() => ['top', 'highlights', 'grade', 'work'], [])
-  const marqueeA = useMemo(() => ['Cinematography', 'Colour', 'Design', 'Edit'], [])
+  const marqueeA = useMemo(() => ['Cinematography', 'Editing', 'DI', 'Colour', 'VFX', 'Design'], [])
   const marqueeB = useMemo(() => ['Light', 'Grade', 'Story', 'Frame', 'Editing', 'VFX', 'Sound', 'DI'], [])
-  const marqueeC = useMemo(() => ['Shoot', 'Cut', 'Grade', 'Deliver'], [])
+  const marqueeC = useMemo(() => ['Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
   const progressSections = useMemo(
     () => [
       { id: 'top', label: 'Intro' },

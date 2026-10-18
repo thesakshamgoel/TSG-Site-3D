@@ -12,8 +12,12 @@ export default function FilmHUD() {
   useEffect(() => {
     let raf
     const start = performance.now()
+    let last = -1
     const tick = (now) => {
       const totalFrames = Math.floor(((now - start) / 1000) * 24)
+      // the read-out only changes 24 times a second: skip the other frames
+      if (totalFrames === last) { raf = requestAnimationFrame(tick); return }
+      last = totalFrames
       const ff = totalFrames % 24
       const totalSec = Math.floor(totalFrames / 24)
       const ss = totalSec % 60

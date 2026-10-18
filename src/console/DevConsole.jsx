@@ -13,8 +13,100 @@ import {
   addReview,
   deleteReview,
 } from '../data/store'
-import { thumbFor, parseVideoInput } from '../data/media'
+import { thumbFor, thumbHiFor, parseVideoInput } from '../data/media'
 import './DevConsole.css'
+
+// ── ★ Featured: the films in the home "Highlighted work" reel ────────────
+const KINDS = [
+  ['all', 'All'],
+  ['narrative', 'Short films'],
+  ['commercial', 'Commercials'],
+  ['music-video', 'Music videos'],
+  ['reel', 'Reels'],
+]
+function FeaturedTab({ projects, current, showToast }) {
+  const [q, setQ] = useState('')
+  const [kind, setKind] = useState('all')
+  const byId = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects])
+  const slots = [0, 1, 2].map((i) => byId.get(current[i]) || null)
+  const films = projects.filter(
+    (p) =>
+      (p.category === 'film' || p.mediaType === 'video') &&
+      (kind === 'all' || p.subcategory === kind) &&
+      (!q || p.title.toLowerCase().includes(q.toLowerCase()))
+  )
+  const save = (ids) => setFeaturedWorks(ids.filter(Boolean))
+  const toggle = (id) => {
+    if (current.includes(id)) return save(current.filter((x) => x !== id))
+    if (current.length >= 3) return showToast('Three films are featured. Remove one first.')
+    save([...current, id])
+  }
+  const move = (i, d) => {
+    const j = i + d
+    if (j < 0 || j >= current.length) return
+    const next = [...current]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    save(next)
+  }
+  return (
+    <div className="dc__feat">
+      <p className="dc__curate-hint">
+        These three films open one after another in “Highlighted work” on the home page, in
+        this order. Changes go live straight away.
+      </p>
+      <div className="dc__feat-slots">
+        {slots.map((p, i) => (
+          <div key={i} className={`dc__feat-slot ${p ? '' : 'is-empty'}`}>
+            <span className="dc__feat-no">{String(i + 1).padStart(2, '0')}</span>
+            {p ? (
+              <>
+                <img src={thumbHiFor(p)} alt="" onError={(e) => (e.currentTarget.src = thumbFor(p))} />
+                <div className="dc__feat-meta">
+                  <b>{p.title}</b>
+                  <span>{p.role}</span>
+                </div>
+                <div className="dc__feat-actions">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${p.title} earlier`}>↑</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i >= current.length - 1} aria-label={`Move ${p.title} later`}>↓</button>
+                  <button type="button" onClick={() => toggle(p.id)} aria-label={`Remove ${p.title}`}>✕</button>
+                </div>
+              </>
+            ) : (
+              <div className="dc__feat-meta">
+                <b>Empty slot</b>
+                <span>Pick a film below</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="dc__feat-bar">
+        <input type="search" placeholder="Search films" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search films" />
+        <div className="dc__feat-kinds">
+          {KINDS.map(([id, label]) => (
+            <button key={id} type="button" className={kind === id ? 'is-on' : ''} onClick={() => setKind(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="dc__feat-reset" onClick={() => save([])}>Use the default picks</button>
+      </div>
+      <div className="dc__feat-grid">
+        {films.map((p) => {
+          const at = current.indexOf(p.id)
+          return (
+            <button key={p.id} type="button" className={`dc__feat-film ${at >= 0 ? 'is-on' : ''}`} onClick={() => toggle(p.id)}>
+              <img src={thumbFor(p)} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
+              {at >= 0 && <span className="dc__feat-badge">{at + 1}</span>}
+              <span className="dc__feat-title">{p.title}</span>
+            </button>
+          )
+        })}
+        {!films.length && <p className="dc__curate-hint">No films match.</p>}
+      </div>
+    </div>
+  )
+}
 
 // role checkboxes → display text
 const ROLE_OPTIONS = [
@@ -282,6 +374,7 @@ export default function DevConsole({ data, onClose }) {
           {[
             ['add', editingId ? 'Edit' : 'Add project'],
             ['manage', `Manage (${projects.length})`],
+            ['featured', '★ Featured'],
             ['curate', 'Curate'],
             ['grade', 'Before / After'],
             ['data', 'Backup'],
@@ -534,38 +627,12 @@ export default function DevConsole({ data, onClose }) {
             </div>
           )}
 
+          {tab === 'featured' && (
+            <FeaturedTab projects={projects} current={currentFeatured} showToast={showToast} />
+          )}
+
           {tab === 'curate' && (
             <div className="dc__curate">
-              <div className="dc__curate-block">
-                <h4>
-                  Featured works <span>{currentFeatured.length}/3</span>
-                </h4>
-                <p className="dc__curate-hint">
-                  The three works in the home “Highlighted work” reel, in the
-                  order you pick them.
-                </p>
-                <div className="dc__pick-list">
-                  {projects.map((p) => (
-                    <label
-                      key={p.id}
-                      className={`dc__pick ${currentFeatured.includes(p.id) ? 'is-on' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={currentFeatured.includes(p.id)}
-                        onChange={() => toggleFeatured(p.id)}
-                      />
-                      <img
-                        src={thumbFor(p)}
-                        alt=""
-                        onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
-                      />
-                      <span className="dc__pick-title">{p.title}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               <div className="dc__curate-block">
                 <h4>
                   Display reviews <span>{currentDisplay.length}/3</span>

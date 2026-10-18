@@ -482,18 +482,23 @@ async function main() {
     assert(!/your grade/i.test(back || ''), `reset did not restore his grade: "${back}"`)
   })
 
-  await test('hovering a slat opens it and names the scene', async () => {
-    await gradeAt(0.5)
+  await test('after grading, scrolling opens the slats in turn and a click jumps to one', async () => {
+    await gradeAt(0.3)
     await sleep(400)
+    const none = (await textOf('.gw__caption')) || ''
+    assert(!none.trim(), `a slat opened while still grading: "${none}"`)
+    await gradeAt(0.6)
+    await sleep(700)
+    const a = (await textOf('.gw__caption')) || ''
+    await gradeAt(0.95)
+    await sleep(700)
+    const b = (await textOf('.gw__caption')) || ''
+    assert(a && b && a !== b, `open slat did not advance with scroll ("${a}" then "${b}")`)
     const box = await (await page.$('.gw__frame')).boundingBox()
-    await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * 0.5)
-    await sleep(900)
-    const cap = (await textOf('.gw__caption')) || ''
-    assert(/01/.test(cap) && cap.length > 4, `no scene caption after hovering the first slat: "${cap}"`)
-    await page.mouse.move(box.x + box.width * 0.92, box.y + box.height * 0.5)
-    await sleep(900)
-    const cap2 = (await textOf('.gw__caption')) || ''
-    assert(cap2 && cap2 !== cap, `caption did not follow the pointer to another slat ("${cap}")`)
+    await page.mouse.click(box.x + box.width * 0.04, box.y + box.height * 0.5)
+    await sleep(700)
+    const c = (await textOf('.gw__caption')) || ''
+    assert(/01/.test(c), `clicking the first slat did not jump to it: "${c}"`)
   })
 
   // ── WORK (2 category panels) ─────────────────────────────────────────
@@ -1062,14 +1067,15 @@ async function main() {
     await waitPresent('.dc__panel', 2000)
   })
 
-  await test('console has 5 tabs: Add / Manage / Curate / Before-After / Backup', async () => {
+  await test('console has 6 tabs: Add / Manage / Featured / Curate / Before-After / Backup', async () => {
     const labels = await page.$$eval('.dc__tabs button', (bs) => bs.map((b) => b.textContent.trim()))
-    assert(labels.length === 5, `expected 5 tabs, got ${labels.length}: ${labels.join(' | ')}`)
+    assert(labels.length === 6, `expected 6 tabs, got ${labels.length}: ${labels.join(' | ')}`)
     assert(/Add project/.test(labels[0]), `first tab unexpected: ${labels[0]}`)
     assert(/^Manage/.test(labels[1]), `second tab unexpected: ${labels[1]}`)
-    assert(labels[2] === 'Curate', `third tab unexpected: ${labels[2]}`)
-    assert(/Before/.test(labels[3]), `fourth tab unexpected: ${labels[3]}`)
-    assert(labels[4] === 'Backup', `fifth tab unexpected: ${labels[4]}`)
+    assert(/Featured/.test(labels[2]), `third tab unexpected: ${labels[2]}`)
+    assert(labels[3] === 'Curate', `fourth tab unexpected: ${labels[3]}`)
+    assert(/Before/.test(labels[4]), `fifth tab unexpected: ${labels[4]}`)
+    assert(labels[5] === 'Backup', `sixth tab unexpected: ${labels[5]}`)
   })
 
   await test('Curate tab: toggling a featured pick persists to the backend', async () => {
