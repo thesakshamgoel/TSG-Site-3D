@@ -288,20 +288,26 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       const f = S.click >= 0 ? S.click : opening > 0.5 ? Math.round(op) : -1
       S.focus = f
       if (f !== lastFocus) {
-        // shot change: the newly opened slat punches in, then settles
-        if (f >= 0) S.zoom[f] = 1.14
+        // only a click gets a settle; scrolling drives everything continuously
+        // (a zoom kick on every scroll-driven change read as a bounce)
+        if (S.click >= 0 && f === S.click) S.zoom[f] = 1.06
         lastFocus = f
         setFocus(f)
         S.dirty = true
       }
-      const slow = 1 - Math.pow(1 - 0.07, dt / 16.67)
+      // how open each slat is right now, straight from the scroll position
       for (let k = 0; k < n; k++) {
-        const bt = f < 0 || k === f ? 1 : 0.72
+        const a = S.click >= 0 ? (k === S.click ? 1 : 0) : clamp01(1 - Math.abs(op - k))
+        const amt = S.click >= 0 ? 1 : opening
+        // closed slats sit slightly back and slightly zoomed; the opening one
+        // eases out to full brightness and its natural framing
+        const bt = 1 - 0.28 * amt * (1 - a)
+        const zt = 1 + 0.06 * amt * (1 - a)
         const nb = lerp(S.bright[k], bt, ease)
-        const nz = lerp(S.zoom[k], 1, slow)
-        if (Math.abs(nb - bt) > 0.002 || Math.abs(nz - 1) > 0.001) S.dirty = true
-        S.bright[k] = Math.abs(nb - bt) > 0.002 ? nb : bt
-        S.zoom[k] = Math.abs(nz - 1) > 0.001 ? nz : 1
+        const nz = lerp(S.zoom[k], zt, ease)
+        if (Math.abs(nb - bt) > 0.001 || Math.abs(nz - zt) > 0.0005) S.dirty = true
+        S.bright[k] = Math.abs(nb - bt) > 0.001 ? nb : bt
+        S.zoom[k] = Math.abs(nz - zt) > 0.0005 ? nz : zt
       }
       // press-and-hold raw wipe opens and closes over ~0.45s
       const hv = lerp(S.holdV, S.holdTarget, 1 - Math.pow(1 - 0.12, dt / 16.67))

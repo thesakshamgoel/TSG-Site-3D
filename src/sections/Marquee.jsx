@@ -4,48 +4,63 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import './Marquee.css'
 
 /**
- * Giant type divider: two rows travelling in opposite directions, driven by
- * this strip's own pass through the viewport. The strip leans and swells as
- * it crosses the screen, and skews with scroll speed.
+ * Giant type divider. The strip pins in the middle of the screen for about
+ * two screens of scroll while its words travel all the way across, so the
+ * whole trail is read instead of glimpsed. Two rows run in opposite
+ * directions on a gently curved 3D band; words light up solid gold as they
+ * cross the centre (a static window over a gold copy of the row), and the
+ * band skews with scroll speed.
  */
+function Row({ words, x, skew, className, reduced }) {
+  const line = [...words, ...words, ...words, ...words]
+  return (
+    <motion.div className={`mq__track ${className || ''}`} style={reduced ? undefined : { x, skewX: skew }}>
+      {line.map((w, i) => (
+        <span key={i}>
+          {w}
+          <i />
+        </span>
+      ))}
+    </motion.div>
+  )
+}
+
 export default function Marquee({ words, reverse = false }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const { scrollY } = useScroll()
+  // progress across the whole pinned stretch
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start end', 'end start'] })
   const vel = useSpring(useVelocity(scrollY), { stiffness: 120, damping: 30 })
-  const skew = useTransform(vel, [-2500, 0, 2500], [8, 0, -8])
+  const skew = useTransform(vel, [-2500, 0, 2500], [7, 0, -7])
   const dir = reverse ? -1 : 1
-  const xA = useTransform(p, [0, 1], [`${-6 * dir}%`, `${-38 * dir}%`])
-  const xB = useTransform(p, [0, 1], [`${-36 * dir}%`, `${-4 * dir}%`])
-  const rotate = useTransform(p, [0, 0.5, 1], [-3 * dir, 0, 3 * dir])
-  // the strip rolls past the camera like a banner: tipped back on the way
-  // in, flat in the middle, tipping forward on the way out
-  const rotateX = useTransform(p, [0, 0.5, 1], [38, 0, -38])
-  const rotateY = useTransform(p, [0, 1], [-10 * dir, 10 * dir])
-  const scale = useTransform(p, [0, 0.5, 1], [0.92, 1.04, 0.92])
-  const opacity = useTransform(p, [0, 0.18, 0.82, 1], [0.2, 1, 1, 0.2])
-  const line = [...words, ...words, ...words, ...words]
+  // rows travel the full trail: the track is four copies wide, so -50% is two copies
+  // a row moving left travels 0% -> -50%; moving right it travels -50% -> 0%
+  // (mirroring the sign instead would slide the row off the right edge)
+  const leftward = ['2%', '-52%']
+  const rightward = ['-52%', '2%']
+  const xA = useTransform(p, [0, 1], dir > 0 ? leftward : rightward)
+  const xB = useTransform(p, [0, 1], dir > 0 ? rightward : leftward)
+  const rotY = useTransform(p, [0, 1], [-9 * dir, 9 * dir])
+  const scale = useTransform(p, [0, 0.5, 1], [0.94, 1.03, 0.94])
+  const opacity = useTransform(p, [0, 0.1, 0.9, 1], [0, 1, 1, 0])
+
   return (
     <div className="mq" ref={ref} aria-hidden="true">
-      <motion.div className="mq__rows" style={reduced ? undefined : { rotate, rotateX, rotateY, scale, opacity }}>
-        <motion.div className="mq__track" style={reduced ? undefined : { x: xA, skewX: skew, z: 70 }}>
-          {line.map((w, i) => (
-            <span key={i}>
-              {w}
-              <i />
-            </span>
-          ))}
+      <div className="mq__pin">
+        <motion.div className="mq__band" style={reduced ? undefined : { rotateY: rotY, scale, opacity }}>
+          <div className="mq__row mq__row--a">
+            <Row words={words} x={xA} skew={skew} reduced={reduced} />
+          </div>
+          <div className="mq__row mq__row--b">
+            <Row words={words} x={xB} skew={skew} className="mq__track--o" reduced={reduced} />
+            {/* the same row, solid gold, seen only through the centre window */}
+            <div className="mq__lit">
+              <Row words={words} x={xB} skew={skew} className="mq__track--lit" reduced={reduced} />
+            </div>
+          </div>
         </motion.div>
-        <motion.div className="mq__track mq__track--o" style={reduced ? undefined : { x: xB, skewX: skew, z: -70 }}>
-          {line.map((w, i) => (
-            <span key={i}>
-              {w}
-              <i />
-            </span>
-          ))}
-        </motion.div>
-      </motion.div>
+      </div>
     </div>
   )
 }

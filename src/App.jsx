@@ -18,6 +18,7 @@ import MobileTabBar from './components/MobileTabBar'
 import ConsolePin from './console/ConsolePin'
 import CategoryGallery from './components/CategoryGallery'
 import { usePortfolio } from './data/store'
+import { thumbFor } from './data/media'
 import { firebaseEnabled } from './firebase/config'
 import { watchOwner } from './firebase/auth'
 import { useLenis } from './hooks/useLenis'
@@ -56,6 +57,11 @@ export default function App() {
   }, [])
 
   const snapIds = useMemo(() => ['top', 'highlights', 'grade', 'work'], [])
+  // film frames for the loader's reel tunnel (small thumbnails, fast to fetch)
+  const loaderThumbs = useMemo(
+    () => data.projects.filter((p) => p.category === 'film').slice(0, 14).map((p) => thumbFor(p)),
+    [data.projects]
+  )
   const marqueeA = useMemo(() => ['Cinematography', 'Editing', 'DI', 'Colour', 'VFX', 'Design'], [])
   const marqueeB = useMemo(() => ['Light', 'Grade', 'Story', 'Frame', 'Editing', 'VFX', 'Sound', 'DI'], [])
   const marqueeC = useMemo(() => ['Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
@@ -160,7 +166,7 @@ export default function App() {
 
   return (
     <>
-      {!loaded && <Loader name={data.profile.name} onDone={() => setLoaded(true)} />}
+      {!loaded && <Loader name={data.profile.name} thumbs={loaderThumbs} onDone={() => setLoaded(true)} />}
 
       <Cursor />
       <ToastViewport />
@@ -168,9 +174,12 @@ export default function App() {
       {loaded && <FilmHUD />}
       {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
-      <Suspense fallback={null}>
-        <Scene3D />
-      </Suspense>
+      {/* the 3D background starts after the loader, so the two never compete */}
+      {loaded && (
+        <Suspense fallback={null}>
+          <Scene3D />
+        </Suspense>
+      )}
       <div className="aurora" aria-hidden="true" />
 
       <div id="top" className="app">

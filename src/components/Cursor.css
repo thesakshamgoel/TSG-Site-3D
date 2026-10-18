@@ -10,9 +10,7 @@ body.has-custom-cursor * {
   left: 0;
   z-index: 2000;
   pointer-events: none;
-  color: var(--gold);
-  filter: drop-shadow(0 2px 14px rgba(233, 184, 114, 0.75));
-  transition: opacity 0.25s ease, filter 0.25s ease;
+  transition: opacity 0.25s ease;
   will-change: transform;
 }
 .cursor-cam.is-hidden {
@@ -20,31 +18,55 @@ body.has-custom-cursor * {
 }
 .cursor-cam svg {
   display: block;
-  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
-  /* pivot hover-scale around the red REC dot so it stays on the pointer */
-  transform-origin: 35px 15px;
+  overflow: visible;
+  transform-origin: 2px 2px; /* scale around the tip so the click point stays put */
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-/* over a link / interactive element → RED + BOLD + bigger */
-.cursor-cam.is-hot {
-  color: #ff3b3b;
-  filter: drop-shadow(0 2px 18px rgba(255, 60, 60, 0.85));
+/* the arrow: dark with a gold edge, readable over bright and dark frames */
+.cursor-arrow {
+  fill: #0d0b09;
+  stroke: var(--gold);
+  stroke-width: 1.4;
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
-.cursor-cam.is-hot svg {
-  transform: scale(1.5) rotate(-6deg);
+.cursor-cam__body rect,
+.cursor-cam__body path {
+  fill: var(--gold);
+  stroke: #0d0b09;
+  stroke-width: 0.9;
 }
-.cursor-cam.is-hot svg rect,
-.cursor-cam.is-hot svg path,
-.cursor-cam.is-hot svg circle {
-  stroke-width: 3.2;
+.cursor-cam__body {
+  transform-origin: 19px 22px;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.cursor-cam.is-down svg {
-  transform: scale(0.9);
+.cursor-lens {
+  fill: #0d0b09;
+  stroke: #0d0b09;
+  stroke-width: 0.6;
 }
-
 .cursor-rec {
+  fill: #ff4444;
   animation: rec-blink 1.1s steps(1, end) infinite;
 }
+
+/* over a link / button: the arrow fills gold, the camera tilts and grows,
+   REC goes solid */
+.cursor-cam.is-hot .cursor-arrow {
+  fill: var(--gold);
+  stroke: #0d0b09;
+}
+.cursor-cam.is-hot .cursor-cam__body {
+  transform: scale(1.18) rotate(-8deg);
+}
+.cursor-cam.is-hot .cursor-rec {
+  animation: none;
+  fill: #ff2d2d;
+}
+/* pressing: the whole cursor dips slightly */
+.cursor-cam.is-down svg {
+  transform: scale(0.88);
+}
+
 @keyframes rec-blink {
   0%,
   60% {

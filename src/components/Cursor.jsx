@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import './Cursor.css'
 
 /**
- * Custom camera cursor + a soft glow that follows the pointer so the whole
- * site reacts to where the mouse is. Disabled on touch / coarse pointers and
- * when the user prefers reduced motion (falls back to the native cursor).
+ * Custom cursor: a small pointer arrow with a tiny camera riding at its
+ * corner, plus a soft glow that trails the pointer so the site reacts to
+ * where the mouse is. The arrow tip is the exact click point and follows
+ * the mouse with no lag. Disabled on touch / coarse pointers and when the
+ * user prefers reduced motion (falls back to the native cursor).
  */
 export default function Cursor() {
   const dotRef = useRef(null)
@@ -48,14 +50,14 @@ export default function Cursor() {
 
     let raf
     const loop = () => {
-      pos.x += (target.x - pos.x) * 0.28
-      pos.y += (target.y - pos.y) * 0.28
+      // the arrow sits exactly on the pointer; only the glow trails behind
+      pos.x = target.x
+      pos.y = target.y
       glow.x += (target.x - glow.x) * 0.12
       glow.y += (target.y - glow.y) * 0.12
       if (dotRef.current)
-        // anchor the pointer hotspot on the red REC dot (rendered at 35,15
-        // inside the 60×40 camera svg), not the camera's geometric centre
-        dotRef.current.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-35px, -15px)`
+        // the arrow tip is drawn at (2, 2) inside the svg: that is the hotspot
+        dotRef.current.style.transform = `translate(${pos.x - 2}px, ${pos.y - 2}px)`
       if (glowRef.current)
         glowRef.current.style.transform = `translate(${glow.x}px, ${glow.y}px) translate(-50%, -50%)`
       raf = requestAnimationFrame(loop)
@@ -94,16 +96,21 @@ export default function Cursor() {
         className={`cursor-cam ${hot ? 'is-hot' : ''}`}
         aria-hidden="true"
       >
-        <svg viewBox="0 0 48 32" width="60" height="40">
-          <rect x="1" y="7" width="34" height="22" rx="4" fill="none"
-            stroke="currentColor" strokeWidth="2.4" />
-          <path d="M35 14l11-6v16l-11-6z" fill="none" stroke="currentColor"
-            strokeWidth="2.4" strokeLinejoin="round" />
-          <circle cx="14" cy="18" r="6" fill="none" stroke="currentColor"
-            strokeWidth="2.4" />
-          <circle cx="14" cy="18" r="1.8" fill="currentColor" />
-          <rect x="7" y="3" width="8" height="5" rx="1.5" fill="currentColor" />
-          <circle className="cursor-rec" cx="28" cy="12" r="2" fill="#ff4444" />
+        <svg viewBox="0 0 30 30" width="30" height="30">
+          {/* pointer arrow: the tip at (2, 2) is the click point */}
+          <path
+            className="cursor-arrow"
+            d="M2 2 L2 20.5 L6.9 15.9 L10.4 23.4 L13.7 21.9 L10.3 14.5 L16.8 14.5 Z"
+            strokeLinejoin="round"
+          />
+          {/* the camera riding at the arrow's corner */}
+          <g className="cursor-cam__body">
+            <rect x="14.5" y="19" width="10" height="7.4" rx="1.8" />
+            <path d="M24.5 21.4 L29 19.2 L29 26.2 L24.5 24 Z" strokeLinejoin="round" />
+            <circle className="cursor-lens" cx="18.6" cy="22.7" r="2.1" />
+            <rect x="15.6" y="17.4" width="3.6" height="1.9" rx="0.6" />
+          </g>
+          <circle className="cursor-rec" cx="23" cy="20.6" r="1" />
         </svg>
       </div>
     </>

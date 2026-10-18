@@ -1,6 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useMagnetic } from '../hooks/useMagnetic'
+import { useReducedMotion } from '../hooks/useReducedMotion'
+import StarTunnel from '../components/StarTunnel'
 import './Hero.css'
 
 const REEL_LABELS = [
@@ -14,6 +16,49 @@ const REEL_LABELS = [
   'CAMERA OPERATOR',
 ]
 
+// one letter of the name: flips up out of a mask on arrival, and drifts away
+// from the centre of the name as the hero scrolls out
+function NameChar({ ch, k, mid, delay, exit, reduced }) {
+  const x = useTransform(exit, [0, 1], [0, (k - mid) * 16])
+  return (
+    <span className="hero__char-mask">
+      <motion.span
+        className="hero__char"
+        initial={reduced ? false : { y: '70%', rotateX: -85, opacity: 0 }}
+        animate={{ y: '0%', rotateX: 0, opacity: 1 }}
+        transition={{ duration: 0.95, delay, ease: [0.22, 1, 0.36, 1] }}
+        style={reduced ? undefined : { x }}
+      >
+        {ch}
+      </motion.span>
+    </span>
+  )
+}
+
+// counts a published figure up from zero ("100+" -> 0..100, then "+")
+function CountUp({ value, delay = 0.5 }) {
+  const ref = useRef(null)
+  const reduced = useReducedMotion()
+  useEffect(() => {
+    const m = String(value).match(/^(\d+)(.*)$/)
+    const el = ref.current
+    if (!m || !el || reduced) return
+    const target = +m[1], suffix = m[2]
+    let raf, t0 = null
+    const step = (t) => {
+      if (t0 == null) t0 = t + delay * 1000
+      const k = Math.min(1, Math.max(0, (t - t0) / 1600))
+      const e = 1 - Math.pow(1 - k, 3)
+      el.textContent = Math.round(target * e) + (k >= 1 ? suffix : '')
+      if (k < 1) raf = requestAnimationFrame(step)
+    }
+    el.textContent = '0'
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [value, delay, reduced])
+  return <b ref={ref}>{value}</b>
+}
+
 export default function Hero({ profile, onExplore }) {
   const magnet = useMagnetic(8)
   const nameWords = profile.name.split(' ')
@@ -22,19 +67,29 @@ export default function Hero({ profile, onExplore }) {
   const y = useTransform(scrollYProgress, [0, 1], [0, -160])
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18])
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
+  const reduced = useReducedMotion()
+  // the star drift is the same field that becomes the reel's tunnel below
+  const starsO = useTransform(scrollYProgress, [0, 1], [0.55, 0.9])
+  let charIndex = 0
+  const nameLen = profile.name.replace(/\s/g, '').length
 
   return (
     <section className="hero section" id="hero" ref={ref}>
+      <StarTunnel className="hero__stars" intensity={starsO} speed={reduced ? () => 0.0008 : undefined} reduced={reduced} />
+      <span className="hero__sweep" aria-hidden="true" />
       <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
-        <motion.img
-          className="hero__logo"
-          src="/logo.svg"
-          alt={`${profile.name} logo`}
-          initial={{ opacity: 0, scale: 0.7, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
+        <span className="hero__logo-wrap">
+          <span className="hero__halo" aria-hidden="true" />
+          <motion.img
+            className="hero__logo"
+            src="/logo.svg"
+            alt={`${profile.name} logo`}
+            initial={{ opacity: 0, scale: 0.7, y: 10, rotate: -12 }}
+            animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </span>
 
         <motion.span
           className="slate hero__slate"
@@ -48,25 +103,28 @@ export default function Hero({ profile, onExplore }) {
         {/* pointer-parallax wrapper — floats the name against the section tilt */}
         <div className="hero__name-float">
           <motion.h1
+            aria-label={profile.name}
             className="hero__name hero__breathe"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             {nameWords.map((word, i) => (
-              <span className="hero__word-mask" key={`${word}-${i}`}>
-                <motion.span
-                  className="hero__word"
-                  initial={{ y: '110%' }}
-                  animate={{ y: '0%' }}
-                  transition={{
-                    duration: 0.9,
-                    delay: 0.2 + i * 0.12,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  {word}
-                </motion.span>
+              <span className="hero__word-mask" key={`${word}-${i}`} aria-hidden="true">
+                {Array.from(word).map((ch) => {
+                  const k = charIndex++
+                  return (
+                    <NameChar
+                      key={k}
+                      ch={ch}
+                      k={k}
+                      mid={(nameLen - 1) / 2}
+                      delay={0.25 + k * 0.045}
+                      exit={scrollYProgress}
+                      reduced={reduced}
+                    />
+                  )
+                })}
               </span>
             ))}
           </motion.h1>
@@ -101,7 +159,7 @@ export default function Hero({ profile, onExplore }) {
           >
             {profile.stats.map((s) => (
               <div className="hero__stat" key={s.label}>
-                <b>{s.value}</b>
+                <CountUp value={s.value} />
                 <span>{s.label}</span>
               </div>
             ))}
