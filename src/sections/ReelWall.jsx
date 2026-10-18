@@ -79,7 +79,6 @@ export default function ReelWall({ projects, onOpenProject }) {
   const headOpacity = useTransform([e, p], ([a, b]) => Math.min(1, Math.max(0, (a - 0.6) / 0.4)) * (1 - Math.min(1, Math.max(0, (b - 0.72) / 0.18))))
   const count = useTransform(p, [0, 0.6], [0, filmCount])
   const countText = useTransform(count, (v) => Math.round(v))
-  const blurb = useTransform(p, [0.55, 0.65, 0.8, 0.9], [0, 1, 1, 0])
 
   return (
     <section className="rw seam-top" id="reelwall" ref={ref}>
@@ -97,9 +96,6 @@ export default function ReelWall({ projects, onOpenProject }) {
             films. <em>One eye.</em>
           </span>
         </motion.h2>
-        <motion.p className="rw__blurb" style={reduced ? undefined : { opacity: blurb }}>
-          Short films, commercials, music videos. Shot, cut and graded.
-        </motion.p>
       </div>
     </section>
   )

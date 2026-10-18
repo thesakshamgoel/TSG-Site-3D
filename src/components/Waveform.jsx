@@ -20,7 +20,7 @@ function level(i) {
   return Math.max(0.06, Math.min(1, phrase * beat * (0.7 + grain * 0.3)))
 }
 
-export default function Waveform({ variant = 'bars', label = '' }) {
+export default function Waveform({ variant = 'bars' }) {
   const canvasRef = useRef(null)
   const tcRef = useRef(null)
   const rootRef = useRef(null)
@@ -206,13 +206,11 @@ export default function Waveform({ variant = 'bars', label = '' }) {
       {variant === 'bars' && (
         <div className="wave__meta">
           <span className="wave__ch">A1</span>
-          <span className="wave__label">{label}</span>
           <span className="wave__tc" ref={tcRef}>00:00:00:00</span>
         </div>
       )}
       {variant === 'dots' && <canvas className="wave__canvas wave__grid" ref={gridRef} />}
       <canvas className="wave__canvas" ref={canvasRef} />
-      {variant === 'dots' && <p className="wave__caption" ref={tcRef}>Sound design · Score · Mix</p>}
       {variant === 'bars' && (
         <div className="wave__meta wave__meta--b">
           <span className="wave__ch">A2</span>

@@ -208,7 +208,7 @@ export default function App() {
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <Waveform variant="bars" label="Dialogue · Score · Foley" />
+          <Waveform variant="bars" />
 
           <FramesReel stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
 
