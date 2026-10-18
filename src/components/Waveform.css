@@ -11,37 +11,18 @@
   height: clamp(120px, 18vh, 190px);
 }
 .wave--scope .wave__canvas { height: clamp(90px, 14vh, 150px); }
-.wave--mesh {
-  /* pinned for ~2 screens: line -> terrain -> push-in */
-  height: 230vh;
-  padding: 0;
-}
-.wave__pin {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  overflow: hidden;
-}
-.wave--mesh .wave__canvas { height: 100%; }
+.wave--dots { position: relative; padding: clamp(40px, 8vh, 90px) 0; }
+.wave--dots .wave__canvas { height: clamp(220px, 40vh, 420px); }
 .wave__caption {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(40px, 10vh, 100px);
-  translate: -50% 0;
-  margin: 0;
+  margin: 14px 0 0;
+  text-align: center;
   font-family: var(--font-mono, monospace);
   font-size: 0.72rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--gold);
-  white-space: nowrap;
-  opacity: 0;
 }
-@media (prefers-reduced-motion: reduce) {
-  .wave--mesh { height: auto; }
-  .wave__pin { position: relative; height: 60vh; }
-}
+
 .wave__meta {
   display: flex;
   align-items: center;
@@ -65,3 +46,8 @@
   color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
+
+/* the static grid sits under the moving dots */
+.wave--dots { display: grid; }
+.wave--dots .wave__canvas { grid-area: 1 / 1; }
+.wave--dots .wave__caption { grid-area: 2 / 1; }

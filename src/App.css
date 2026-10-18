@@ -100,3 +100,8 @@ main {
 /* the 3D background fades in when it boots, never pops */
 .scene3d { animation: scene-in 1.6s ease-out both; }
 @keyframes scene-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* lite devices: no full-screen ambient motion layers */
+.lite .aurora { animation: none; }
+.lite body::after, html.lite body::after { display: none; }
+.lite .hero__sweep { display: none; }

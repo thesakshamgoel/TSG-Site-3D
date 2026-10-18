@@ -2,11 +2,12 @@ import { useMemo, useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { thumbFor } from '../data/media'
 import StarTunnel from '../components/StarTunnel'
+import { LITE } from '../perf'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import './ReelWall.css'
 
 const GAP = 340 // depth between frames, px
-const COUNT = 22
+const COUNT = LITE ? 12 : 22
 const LEAD = 2 * GAP // first frame starts this deep, so nothing pops in at full size
 
 // deterministic scatter so the wall is identical on every visit

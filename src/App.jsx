@@ -22,6 +22,7 @@ import { thumbFor } from './data/media'
 import { firebaseEnabled } from './firebase/config'
 import { watchOwner } from './firebase/auth'
 import { useLenis } from './hooks/useLenis'
+import { LITE } from './perf'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
 import Marquee from './sections/Marquee'
@@ -182,7 +183,8 @@ export default function App() {
       {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
       {/* the 3D background starts after the loader, so the two never compete */}
-      {scene && (
+      {/* lite devices skip the 3D background entirely; the ambient glow stays */}
+      {scene && !LITE && (
         <Suspense fallback={null}>
           <Scene3D />
         </Suspense>
@@ -220,7 +222,7 @@ export default function App() {
             onOpenCategory={openCategory}
           />
 
-          <Waveform variant="mesh" />
+          <Waveform variant="dots" />
 
           <About
             profile={data.profile}

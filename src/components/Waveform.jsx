@@ -9,8 +9,8 @@ import './Waveform.css'
  * variant "bars"   a stereo timeline track: mirrored channels, the part
  *                  already played lit gold, a running timecode
  * variant "scope"  an oscilloscope: three sound layers weaving together
- * variant "mesh"   a wireframe sound terrain: waveform rows receding in
- *                  perspective, joined into a mesh, rippling over time
+ * variant "dots"   a dot-matrix waveform in titanium and gold that
+ *                  assembles from scattered dots as it scrolls in
  */
 // deterministic pseudo-audio: phrases of energy with a little grain
 function level(i) {
@@ -24,6 +24,8 @@ export default function Waveform({ variant = 'bars', label = '' }) {
   const canvasRef = useRef(null)
   const tcRef = useRef(null)
   const rootRef = useRef(null)
+  const grid = useRef(null)
+  const gridRef = useRef(null) // the resting dot grid: drawn once, its own layer
 
   useEffect(() => {
     const c = canvasRef.current
@@ -39,6 +41,22 @@ export default function Waveform({ variant = 'bars', label = '' }) {
       c.width = Math.round(W * dpr)
       c.height = Math.round(H * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (variant === 'dots') {
+        const small = window.matchMedia('(max-width: 720px)').matches
+        const S = small ? 8 : 9
+        const cols = Math.floor(W / S), rows = Math.floor(H / S)
+        const faint = gridRef.current
+        faint.width = Math.max(1, Math.round(W * dpr))
+        faint.height = Math.max(1, Math.round(H * dpr))
+        const f = faint.getContext('2d')
+        f.setTransform(dpr, 0, 0, dpr, 0, 0)
+        f.fillStyle = 'rgba(200, 192, 180, 0.13)'
+        for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if ((c + r) % 2 === 0) f.fillRect((c + 0.5) * S - 0.6, (r + 0.5) * S - 0.6, 1.2, 1.2)
+        // fixed scatter offsets so the assembly is the same every visit
+        const scatter = new Float32Array(cols * rows * 2)
+        for (let i = 0; i < scatter.length; i++) scatter[i] = Math.sin(i * 12.9898 + 4.1) * 43758.5453 % 1
+        grid.current = { S, cols, rows, faint, scatter, dot: small ? 2 : 2.4 }
+      }
     }
     size()
     const gold = 'rgba(233, 184, 114, 1)'
@@ -52,75 +70,47 @@ export default function Waveform({ variant = 'bars', label = '' }) {
       const pass = Math.min(1, Math.max(0, (window.innerHeight - r.top) / (window.innerHeight + r.height)))
       ctx.clearRect(0, 0, W, H)
       const mid = H / 2
-      if (variant === 'mesh') {
-        // pinned: progress through the sticky stretch drives the scale story
-        const pp = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)))
-        const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x) }
-        const unfold = reduced ? 1 : sm(pp / 0.4) // a single line opens into terrain
-        const push = reduced ? 0 : sm((pp - 0.58) / 0.42) // then the camera pushes in
-        const fade = Math.min(1, pp / 0.05, (1 - pp) / 0.06 + 0.15)
+      if (variant === 'dots') {
+        // a dot-matrix waveform: a faint grid is always there (never a blank
+        // start); as the divider scrolls in, scattered dots fly home and
+        // assemble a mirrored waveform in brushed titanium fading to gold,
+        // with a light sheen sliding across
         const time = reduced ? 0 : (now - t0) / 1000
-        const ROWS = 18, STEP = 7
-        const cols = Math.ceil(W / STEP) + 1
-        // a calm, even swell: gentle amplitude, a soft response to scroll speed
-        const amp = H * (0.04 + 0.11 * unfold) * (1 + 0.25 * loud)
-        const pts = []
-        for (let r2 = 0; r2 < ROWS; r2++) {
-          const d = r2 / (ROWS - 1) // 0 back .. 1 front
-          // rows spread evenly; the push-in is a gentle approach, not a lunge
-          const persp = (1 - unfold + unfold * (0.5 + 0.5 * d)) * (1 + push * 0.35 * d)
-          const baseY = mid + (d - 0.5) * H * 0.5 * unfold + push * H * 0.06 * d
-          const row = []
-          for (let c = 0; c < cols; c++) {
-            const u = c / (cols - 1) - 0.5
-            const x = W / 2 + u * W * persp
-            const env = Math.exp(-Math.pow(u * 1.8, 2))
-            const ph = time * 0.55 + pp * 3
-            // two low, smooth harmonics only: no jagged high-frequency ripple
-            const v =
-              Math.sin(u * 11 + ph + r2 * 0.32) * 0.65 +
-              Math.sin(u * 5 - ph * 0.7 + r2 * 0.18) * 0.45
-            row.push([x, baseY - v * amp * env * (0.6 + 0.4 * persp)])
-          }
-          pts.push(row)
-        }
-        ctx.globalAlpha = Math.max(0, fade)
-        pts.forEach((row, r2) => {
-          const d = r2 / (ROWS - 1)
-          ctx.beginPath()
-          row.forEach(([x, y], c) => (c ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
-          const a = unfold < 0.05 ? (r2 === ROWS - 1 ? 0.9 : 0) : 0.08 + 0.55 * d * d
-          ctx.strokeStyle = `rgba(233, 184, 114, ${a.toFixed(3)})`
-          ctx.lineWidth = 0.5 + d * 0.8
-          ctx.stroke()
-        })
-        if (unfold > 0.05) {
-          ctx.lineWidth = 0.6
-          for (let c = 0; c < cols; c += 6) {
-            ctx.beginPath()
-            for (let r2 = 0; r2 < ROWS; r2++) {
-              const [x, y] = pts[r2][c]
-              r2 ? ctx.lineTo(x, y) : ctx.moveTo(x, y)
-            }
-            ctx.strokeStyle = `rgba(233, 184, 114, ${(0.07 * unfold).toFixed(3)})`
-            ctx.stroke()
-          }
-          // glowing points riding the peaks of the front rows
-          for (let r2 = ROWS - 2; r2 < ROWS; r2++) {
-            const row = pts[r2]
-            for (let c = 4; c < cols - 4; c += 4) {
-              if (row[c][1] < row[c - 4][1] && row[c][1] < row[c + 4][1]) {
-                const [x, y] = row[c]
-                ctx.fillStyle = 'rgba(255, 236, 200, 0.14)'
-                ctx.beginPath(); ctx.arc(x, y, 4, 0, 6.283); ctx.fill()
-                ctx.fillStyle = 'rgba(255, 244, 222, 0.9)'
-                ctx.beginPath(); ctx.arc(x, y, 1.3, 0, 6.283); ctx.fill()
-              }
-            }
+        const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x) }
+        const assemble = reduced ? 1 : sm((pass - 0.06) / 0.34)
+        const G = grid.current
+        if (!G) return
+        const { S, cols, rows, scatter } = G
+        const sheenX = (((time * 0.12 + pass * 0.8) % 1.5) - 0.25) * W
+        const boost = 1 + 0.35 * loud
+        for (let c = 0; c < cols; c++) {
+          const x = (c + 0.5) * S
+          const u = c / (cols - 1) - 0.5
+          const env = Math.exp(-Math.pow(u * 1.7, 2))
+          const osc = 0.5 + 0.5 * Math.sin(u * 13 + time * 1.4) * Math.sin(u * 4.6 - time * 0.8)
+          const ampC = (H / 2) * 0.88 * env * (0.25 + 0.75 * osc) * boost
+          // titanium (cool grey) at the left, warming to gold at the right
+          const k = sm((c / (cols - 1)) * 1.3 - 0.15)
+          const R = Math.round(158 + (233 - 158) * k)
+          const Gc = Math.round(156 + (184 - 156) * k)
+          const B = Math.round(152 + (114 - 152) * k)
+          ctx.fillStyle = `rgb(${R},${Gc},${B})`
+          for (let r2 = 0; r2 < rows; r2++) {
+            const y = (r2 + 0.5) * S
+            const dy = Math.abs(y - mid)
+            if (dy > ampC) continue
+            const idx = c * rows + r2
+            const off = 1 - assemble
+            const px = x + scatter[idx * 2] * off * W * 0.35
+            const py = y + scatter[idx * 2 + 1] * off * H * 0.9
+            const edge = 1 - (dy / Math.max(ampC, 1)) * 0.55
+            const shine = Math.exp(-Math.pow((x - sheenX - (y - mid) * 0.5) / 70, 2))
+            ctx.globalAlpha = Math.min(1, (0.35 + 0.65 * edge + shine * 0.6) * (0.25 + 0.75 * assemble))
+            const d = (G.dot + shine * 1.2) * (0.7 + 0.3 * edge)
+            ctx.fillRect(px - d / 2, py - d / 2, d, d)
           }
         }
         ctx.globalAlpha = 1
-        if (tcRef.current) tcRef.current.style.opacity = (unfold * (1 - push)).toFixed(3)
         return
       }
       if (variant === 'scope') {
@@ -201,14 +191,9 @@ export default function Waveform({ variant = 'bars', label = '' }) {
           <span className="wave__tc" ref={tcRef}>00:00:00:00</span>
         </div>
       )}
-      {variant === 'mesh' ? (
-        <div className="wave__pin">
-          <canvas className="wave__canvas" ref={canvasRef} />
-          <p className="wave__caption" ref={tcRef}>Sound design · Score · Mix</p>
-        </div>
-      ) : (
-        <canvas className="wave__canvas" ref={canvasRef} />
-      )}
+      {variant === 'dots' && <canvas className="wave__canvas wave__grid" ref={gridRef} />}
+      <canvas className="wave__canvas" ref={canvasRef} />
+      {variant === 'dots' && <p className="wave__caption" ref={tcRef}>Sound design · Score · Mix</p>}
       {variant === 'bars' && (
         <div className="wave__meta wave__meta--b">
           <span className="wave__ch">A2</span>

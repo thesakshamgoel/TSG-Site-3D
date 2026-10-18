@@ -50,7 +50,11 @@ export function thumbHiFor(p) {
   if (p.thumb) return p.thumb
   if (p.mediaType === 'image') return p.image || ''
   if (isVimeo(p)) return `https://vumbnail.com/${p.vimeoId}_large.jpg`
-  if (p.youtubeId && HIRES.has(p.youtubeId)) return `/highlights/${p.youtubeId}.jpg`
+  if (p.youtubeId && HIRES.has(p.youtubeId))
+    // phones get the 1280px copy; the 2560px one is for large screens
+    return typeof window !== 'undefined' && window.innerWidth <= 900
+      ? `/highlights/sm/${p.youtubeId}.jpg`
+      : `/highlights/${p.youtubeId}.jpg`
   if (p.youtubeId) return `https://i.ytimg.com/vi/${p.youtubeId}/maxresdefault.jpg`
   return ''
 }

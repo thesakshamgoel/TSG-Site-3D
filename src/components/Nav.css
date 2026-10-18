@@ -167,3 +167,21 @@
 @media (hover: hover) and (pointer: fine) {
   .nav__links a:hover::after { transform: scaleX(1); transform-origin: 0 50%; }
 }
+
+/* phones: the bar stays on one line */
+@media (max-width: 720px) {
+  .nav__name { white-space: nowrap; font-size: 0.92rem; }
+  .nav__cta { white-space: nowrap; min-height: 38px; padding: 0 14px; font-size: 0.8rem; }
+  /* "Sign in" becomes the round Google icon (the label stays for screen readers) */
+  .authportal__signin {
+    font-size: 0;
+    gap: 0;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .authportal__signin svg { width: 18px; height: 18px; }
+}

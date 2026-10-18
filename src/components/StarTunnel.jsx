@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { LITE } from '../perf'
 
 /**
  * Warp-speed star tunnel on a 2D canvas: stars stream out of the centre and
@@ -21,7 +22,7 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
     if (!c) return
     const ctx = c.getContext('2d')
     const small = window.matchMedia('(max-width: 720px)').matches
-    const N = small ? 140 : 320
+    const N = LITE ? (small ? 90 : 140) : 320
     let W = 0, H = 0, raf = null, lastY = window.scrollY, vel = 0
     const stars = Array.from({ length: N }, () => ({ x: 0, y: 0, z: 0, pz: 0 }))
     const seed = (s, far) => {
@@ -62,7 +63,7 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
         const a = Math.min(1, (1 - s.z) * 1.4) * k
         const w = (1 - s.z) * 2.4 + 0.3
         // soft halo on the near stars only, then the bright core
-        if (s.z < 0.45) {
+        if (!LITE && s.z < 0.45) {
           ctx.strokeStyle = `rgba(233, 184, 114, ${(a * 0.22).toFixed(3)})`
           ctx.lineWidth = w * 3.2
           ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y2); ctx.stroke()
