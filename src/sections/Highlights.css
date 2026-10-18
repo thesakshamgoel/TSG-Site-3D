@@ -14,7 +14,7 @@
   position: absolute;
   inset: 0;
   will-change: transform;
-  transform-origin: 50% 50%;
+  transform-origin: 50% 100%;
 }
 .hl__frame {
   position: absolute;
@@ -158,4 +158,33 @@
   .hl__pin { position: relative; height: auto; }
   .hl__slide { position: relative; height: 80vh; margin-bottom: 16px; }
   .hl__head { position: relative; top: auto; padding: 100px 0 30px; }
+}
+
+/* slow push-in while a film holds the screen */
+.hl__poster {
+  animation: hl-kb 16s ease-in-out infinite alternate;
+  transform-origin: 50% 45%;
+}
+@keyframes hl-kb {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+.hl__count {
+  color: var(--gold) !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums;
+}
+/* title letters rise out of a mask */
+.hl__title > span { display: inline; }
+.hl__ch {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding: 0 0.02em 0.12em;
+  margin-bottom: -0.12em;
+}
+.hl__ch > span { display: inline-block; will-change: transform; }
+.hl__sp { display: inline-block; width: 0.22em; }
+@media (prefers-reduced-motion: reduce) {
+  .hl__poster { animation: none; }
 }

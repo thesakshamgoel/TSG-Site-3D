@@ -230,3 +230,90 @@
   .gw .wheel__ring { width: 9vw; }
   .gw .wheel__val, .gw__scenes { display: none; }
 }
+
+/* ── six slats ───────────────────────────────────────────────────────────── */
+.gw__frame { cursor: default; }
+/* fallback without WebGL: six skewed slats of the stills, crossfading */
+.gw__fallback {
+  display: flex;
+  overflow: hidden;
+}
+.gw__fslat {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  transform: skewX(-6deg);
+  margin: 0 -2%;
+  border-right: 3px solid #070605;
+}
+.gw__fslat img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: skewX(6deg) scale(1.2);
+}
+.gw__fslat .gw__fb-out { opacity: var(--mix); }
+
+/* slat numbers ride along each slat's centre line at the top of the frame */
+.gw__tags {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: clamp(76px, 11vh, 110px);
+  height: 0;
+  pointer-events: none;
+}
+.gw__tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: rgba(243, 236, 225, 0.7);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  will-change: transform;
+  transition: color 0.25s ease, font-size 0.25s ease;
+}
+.gw__tag.is-on { color: var(--gold); font-size: 0.9rem; }
+.gw__stage.has-gl .gw__tags { display: block; }
+
+/* the scene that is open, named at the bottom left */
+.gw__caption {
+  position: absolute;
+  left: clamp(20px, 5vw, 80px);
+  bottom: clamp(24px, 5vh, 56px);
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.4rem, 2.6vw, 2.4rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+.gw__caption b {
+  font-style: normal;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.45em;
+  font-weight: 500;
+  color: var(--gold);
+  vertical-align: 0.35em;
+  margin-right: 8px;
+}
+
+@media (max-width: 720px) {
+  .gw__tags { top: 8px; }
+  .gw__tag { font-size: 0.62rem; }
+  .gw__tag.is-on { font-size: 0.72rem; }
+  /* caption sits inside the bottom of the picture band */
+  .gw__caption {
+    left: 14px;
+    bottom: auto;
+    top: calc(var(--frame-top) + 100vw * 9 / 16 - 34px);
+    font-size: 1.15rem;
+  }
+}

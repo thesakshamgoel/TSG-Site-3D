@@ -59,6 +59,7 @@ export default function App() {
   const snapIds = useMemo(() => ['top', 'highlights', 'grade', 'work'], [])
   const marqueeA = useMemo(() => ['Cinematography', 'Colour', 'Design', 'Edit'], [])
   const marqueeB = useMemo(() => ['Light', 'Grade', 'Story', 'Frame'], [])
+  const marqueeC = useMemo(() => ['Shoot', 'Cut', 'Grade', 'Deliver'], [])
   const progressSections = useMemo(
     () => [
       { id: 'top', label: 'Intro' },
@@ -196,6 +197,8 @@ export default function App() {
           <FramesReel stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
 
           <GradeWheels comparisons={data.comparisons} />
+
+          <Marquee words={marqueeC} reverse />
 
           <Work
             categories={data.categories}

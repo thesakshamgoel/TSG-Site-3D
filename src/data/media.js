@@ -40,11 +40,17 @@ export function thumbFor(p) {
 }
 
 /** large / hero thumbnail */
+// Full-resolution frame grabs (from the source video, up to 2560px) for the
+// featured films. YouTube's best thumbnail is a heavily compressed 1280px,
+// which goes soft at full-screen. Drop more in public/highlights/<id>.jpg.
+const HIRES = new Set(['iRlNM-tP0UA', 'yv9y7f4v6Yc', 'zZ2kurHSgzI', 'eiPDl-pBDK0', '_HE3d1wNVfA', 'rQFBpsqHCCM'])
+
 export function thumbHiFor(p) {
   if (!p) return ''
   if (p.thumb) return p.thumb
   if (p.mediaType === 'image') return p.image || ''
   if (isVimeo(p)) return `https://vumbnail.com/${p.vimeoId}_large.jpg`
+  if (p.youtubeId && HIRES.has(p.youtubeId)) return `/highlights/${p.youtubeId}.jpg`
   if (p.youtubeId) return `https://i.ytimg.com/vi/${p.youtubeId}/maxresdefault.jpg`
   return ''
 }

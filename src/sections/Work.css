@@ -354,3 +354,42 @@
 @media (max-width: 720px) {
   .work__slot { flex-basis: auto; }
 }
+
+/* moving wall of the reel's own work behind each panel */
+.panel__mosaic {
+  position: absolute;
+  inset: -4%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  transform: rotate(-4deg) scale(1.12);
+  z-index: 0;
+}
+.panel__col {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  will-change: transform;
+}
+.panel__col img {
+  position: static;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+  filter: grayscale(0.25) brightness(0.5);
+  transform: none;
+  transition: filter 0.5s ease;
+}
+/* the mosaic replaces the single cover image when there is enough work */
+.panel__mosaic ~ img { display: none; }
+.panel:hover .panel__col img,
+.panel.is-active .panel__col img { filter: grayscale(0) brightness(0.72); }
+
+/* hovered reel widens, the other one gives way */
+.work__slot { transition: flex-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (hover: hover) and (pointer: fine) {
+  .work__panels:hover .work__slot { flex-grow: 0.8; }
+  .work__panels .work__slot:hover { flex-grow: 1.3; }
+}

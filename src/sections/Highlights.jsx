@@ -10,7 +10,7 @@ import './Highlights.css'
 function bgSrc(s) {
   if (isVimeo(s)) return `https://player.vimeo.com/video/${s.vimeoId}?background=1&autoplay=1&loop=1&muted=1&dnt=1`
   const id = s.youtubeId
-  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&start=20&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&start=20&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
 }
 
 /**
@@ -19,13 +19,26 @@ function bgSrc(s) {
  * the compositor) while the one beneath sinks back. Once open, the film itself
  * starts playing silently behind the title.
  */
+// one letter of the title, rising out of a mask in sequence once the frame is open
+function Char({ ch, k, len, open, reduced }) {
+  const a = 0.62 + (k / Math.max(len, 1)) * 0.22
+  const y = useTransform(open, [a, a + 0.14], ['105%', '0%'])
+  if (ch === ' ') return <span className="hl__sp"> </span>
+  return (
+    <span className="hl__ch">
+      <motion.span style={reduced ? undefined : { y }}>{ch}</motion.span>
+    </span>
+  )
+}
+
 function Slide({ s, i, n, p, onOpen, reduced }) {
   const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
   const [live, setLive] = useState(false)
   const [shown, setShown] = useState(false)
   const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
   const t = useTransform(p, (v) => Math.min(1, Math.max(0, v * (n + 0.4) - i + (i === 0 ? 0.45 : 0))))
-  const rise = useTransform(t, [0, 0.45], ['100vh', '0vh'])
+  // the frame comes up tilted back, like a print lifted onto the light table
+  const tilt = useTransform(t, [0, 0.45], [26, 0])
   const open = useTransform(t, [0.3, 0.85], [0, 1])
   // frame window grows from 50% x 62% of the screen to full-bleed; the inner
   // layer counter-scales so the picture is cropped, never squashed
@@ -37,6 +50,10 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   // 0 until the next slide starts rising, 1 once it has fully covered this one
   const after = useTransform(p, (v) => (i === n - 1 ? 0 : Math.min(1, Math.max(0, (v * (n + 0.4) - i - 1) / 0.5))))
   const sink = useTransform(after, [0, 1], [1, 0.9])
+  // one vertical track: rise in from below, then drift up as the next takes over
+  const y = useTransform([t, after], ([tt, a]) =>
+    a > 0 || i === 0 ? `${(-6 * a).toFixed(3)}vh` : `${(100 * (1 - Math.min(1, tt / 0.45))).toFixed(3)}vh`
+  )
   const dim = useTransform(after, [0, 1], [0, 0.75])
   // the title arrives with the open frame and leaves as soon as the next one takes over
   const metaO = useTransform([open, after], ([o, a]) => Math.min(1, Math.max(0, (o - 0.72) / 0.28)) * (1 - Math.min(1, a * 3)))
@@ -67,6 +84,14 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
       try { d = typeof d === 'string' ? JSON.parse(d) : d } catch { return }
       const st = d?.event === 'infoDelivery' ? d.info?.playerState : d?.event === 'onStateChange' ? d.info : undefined
       if (st === 1) setShown(true)
+      // loop by hand: the playlist trick YouTube needs for loop=1 also shows
+      // previous / next buttons over the film
+      if (st === 0) {
+        const cmd = (func, args = []) =>
+          frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*')
+        cmd('seekTo', [20, true])
+        cmd('playVideo')
+      }
       if (d?.event === 'onError') setShown(false)
     }
     window.addEventListener('message', onMsg)
@@ -79,7 +104,10 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   }
 
   return (
-    <motion.div className="hl__slide" style={reduced ? undefined : { y: i === 0 ? 0 : rise, scale: sink, zIndex: i + 1 }}>
+    <motion.div
+      className="hl__slide"
+      style={reduced ? undefined : { y, rotateX: i === 0 ? 0 : tilt, scale: sink, zIndex: i + 1, transformPerspective: 1600 }}
+    >
       <motion.button
         type="button"
         className="hl__frame"
@@ -89,7 +117,7 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
       >
         <motion.div className="hl__inner" style={reduced ? undefined : { scaleX: ix, scaleY: iy }}>
           {!thumb.broken ? (
-            <img src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
+            <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
           ) : (
             <div className="hl__ph"><span>{s.title}</span></div>
           )}
@@ -111,10 +139,17 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
       </motion.button>
       <motion.div className="hl__meta" style={reduced ? undefined : { opacity: metaO, y: metaY }}>
         <div className="hl__tags">
+          <span className="hl__count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
           {s.award && <span className="hl__award">★ Award-winning</span>}
           {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
         </div>
-        <h3 className="hl__title">{s.title}</h3>
+        <h3 className="hl__title" aria-label={s.title}>
+          <span aria-hidden="true">
+            {Array.from(s.title).map((ch, k, arr) => (
+              <Char key={k} ch={ch} k={k} len={arr.length} open={open} reduced={reduced} />
+            ))}
+          </span>
+        </h3>
         <p className="hl__role">{s.role}</p>
         <button type="button" className="hl__play" onClick={() => onOpen(s)}>
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>

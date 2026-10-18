@@ -2,8 +2,13 @@
   position: relative;
   z-index: 3;
   overflow: hidden;
-  padding: clamp(40px, 8vw, 110px) 0;
+  padding: clamp(40px, 7vw, 100px) 0;
   pointer-events: none;
+}
+.mq__rows {
+  display: grid;
+  gap: clamp(4px, 1vw, 14px);
+  will-change: transform, opacity;
 }
 .mq__track {
   display: flex;
@@ -14,23 +19,26 @@
   display: inline-flex;
   align-items: center;
   font-family: var(--font-display);
-  font-size: clamp(4rem, 14vw, 13rem);
-  line-height: 1;
+  font-size: clamp(3.6rem, 12vw, 11.5rem);
+  line-height: 0.95;
   letter-spacing: -0.04em;
   color: var(--text);
   white-space: nowrap;
   padding-right: 0.3em;
 }
-.mq__track span.mq__o {
+.mq__track--o span {
   color: transparent;
-  -webkit-text-stroke: 1.5px rgba(233, 184, 114, 0.7);
+  -webkit-text-stroke: 1.5px rgba(233, 184, 114, 0.75);
   font-style: italic;
 }
 .mq__track i {
   display: inline-block;
-  width: 0.14em;
-  height: 0.14em;
+  width: 0.13em;
+  height: 0.13em;
   border-radius: 50%;
   background: var(--gold);
   margin-left: 0.3em;
+}
+@media (max-width: 720px) {
+  .mq__track--o span { -webkit-text-stroke-width: 1px; }
 }

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { projectsByCategory } from '../data/store'
-import { thumbHiFor, thumbFallbackFor } from '../data/media'
+import { thumbHiFor, thumbFallbackFor, thumbFor } from '../data/media'
 import { useImgFallback } from '../hooks/useImgFallback'
 import './Work.css'
 
@@ -17,7 +17,32 @@ const canHover = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
-function Panel({ category, projects, active, dimmed, index, onHover, onLeave, onOpen }) {
+// A moving wall of the category's own work: three columns drifting in
+// opposite directions with the scroll, behind the panel's gradient.
+function MosaicCol({ items, k, p }) {
+  const y = useTransform(p, [0, 1], k % 2 ? ['-38%', '-8%'] : ['-6%', '-36%'])
+  return (
+    <motion.div className="panel__col" style={{ y }}>
+      {[...items, ...items].map((it, i) => (
+        <img key={i} src={thumbFor(it)} alt="" loading="lazy" draggable="false" />
+      ))}
+    </motion.div>
+  )
+}
+function Mosaic({ projects, p }) {
+  const pics = projects.filter((x) => thumbFor(x)).slice(0, 18)
+  if (pics.length < 6) return null
+  const cols = [0, 1, 2].map((k) => pics.filter((_, i) => i % 3 === k))
+  return (
+    <div className="panel__mosaic" aria-hidden="true">
+      {cols.map((c, k) => (
+        <MosaicCol key={k} items={c} k={k} p={p} />
+      ))}
+    </div>
+  )
+}
+
+function Panel({ category, projects, active, dimmed, index, onHover, onLeave, onOpen, p }) {
   // Prefer an uploaded photo for the card artwork: featured-with-photo first,
   // then any project with a photo, then fall back to the old behaviour.
   const coverProject =
@@ -81,6 +106,7 @@ function Panel({ category, projects, active, dimmed, index, onHover, onLeave, on
       }
     >
       <div className="panel__media">
+        <Mosaic projects={projects} p={p} />
         {!coverProject ? (
           <span className="panel__ph">{category.number}</span>
         ) : !cover.broken ? (
@@ -130,6 +156,8 @@ export default function Work({ categories, projects, onOpenCategory }) {
   const rL = useTransform(scrollYProgress, [0, 1], [-7, 0])
   const rR = useTransform(scrollYProgress, [0, 1], [7, 0])
   const sc = useTransform(scrollYProgress, [0, 1], [0.82, 1])
+  // the whole pass of the section through the viewport drives the mosaics
+  const { scrollYProgress: pass } = useScroll({ target: ref, offset: ['start end', 'end start'] })
 
   return (
     <section className="work section" id="work" ref={ref}>
@@ -159,6 +187,7 @@ export default function Work({ categories, projects, onOpenCategory }) {
               onHover={() => setHover(cat.id)}
               onLeave={() => setHover(null)}
               onOpen={onOpenCategory}
+              p={pass}
             />
             </motion.div>
           ))}

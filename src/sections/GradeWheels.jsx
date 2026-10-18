@@ -3,10 +3,13 @@ import { useScroll } from 'framer-motion'
 import './GradeWheels.css'
 
 /**
- * The grade. Scroll drives real lift / gamma / gain on the ungraded plate,
- * the wheels move by themselves, then the frame dissolves into the actual
- * final grade. After that the visitor can grab a wheel and grade it.
- * WebGL with an <img> crossfade fallback.
+ * The grade, six at once. The screen is cut into diagonal slats, one scene
+ * each. Scroll drives real lift / gamma / gain on every raw plate in a wave
+ * from left to right, then each dissolves into its actual final grade.
+ * Hovering (or tapping) a slat opens it so the whole frame reads; when the
+ * visitor rests on the finished grade the slats take turns opening by
+ * themselves. The wheels grade all six together once grabbed.
+ * One WebGL shader; before/after frames are packed into two texture atlases.
  */
 const KEYS = [
   { p: 0.06, lift: [0, 0, 0], gamma: [1, 1, 1], gain: [1, 1, 1], con: 1, sat: 1, mix: 0 },
@@ -23,6 +26,14 @@ const STEPS = [
 ]
 const WHEELS = ['lift', 'gamma', 'gain']
 const WSCALE = 0.09
+const MAX = 6
+const WAVE = 0.035 // grade delay between neighbouring slats, in scroll progress
+const TILT = 0.12 // slat lean, as a fraction of the width across the full height
+const OPEN_SHARE = 0.8 // width an opened slat takes
+const TOUR_MS = 2600 // each slat's turn during the auto tour
+const REDUCED = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const FINE = typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches
+
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x)
 const smooth = (x) => { x = clamp01(x); return x * x * (3 - 2 * x) }
 const lerp = (a, b, t) => a + (b - a) * t
@@ -47,67 +58,118 @@ const stepOpacity = (p, a, b, i) => {
 }
 
 const VS = 'attribute vec2 a;varying vec2 v;void main(){v=a*.5+.5;gl_Position=vec4(a,0.,1.);}'
-const FS = [
-  'precision mediump float;varying vec2 v;',
-  'uniform sampler2D uA,uB;uniform vec2 uRes;uniform float uImg,uSat,uCon,uMix,uHold;',
-  'uniform vec3 uLift,uGamma,uGain;',
-  'vec2 cover(vec2 p){float rs=uRes.x/uRes.y;vec2 s=rs>uImg?vec2(1.,uImg/rs):vec2(rs/uImg,1.);return (p-.5)*s+.5;}',
-  'void main(){vec2 uv=cover(v);uv.y=1.-uv.y;',
-  'vec3 raw=texture2D(uA,uv).rgb;vec3 c=raw*uGain+uLift*(1.-raw);',
-  'c=pow(max(c,0.),1./uGamma);c=(c-.45)*uCon+.45;',
-  'float l=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(l),c,uSat);',
-  'vec3 o=mix(clamp(c,0.,1.),texture2D(uB,uv).rgb,uMix);o=mix(o,raw,uHold);',
-  'float vg=smoothstep(1.25,.35,length(v-.5)*1.4);gl_FragColor=vec4(o*mix(.82,1.,vg),1.);}',
-].join('')
-
-// The scene picker uses 320px copies of the seeded pairs instead of the 4K
-// masters. The frame keeps the masters: they are already tightly compressed.
-// Console-added URLs are used as given.
-const SEED = /^\/beforeafter\/(ba-\d+-(?:before|after))\.jpg$/
-const frameSrc = (u) => u
-const thumbSrc = (u) => (SEED.test(u) ? u.replace(SEED, '/beforeafter/thumb/$1.jpg') : u)
-
-const HOLD_MS = 2600 // how long a finished grade holds before the next scene
-const GRADE_MS = 3600 // how long the automatic grade of the next scene takes
-const REDUCED = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const FS = `
+precision mediump float;
+varying vec2 v;
+uniform sampler2D uA, uB;
+uniform vec2 uRes;
+uniform float uImg, uTilt, uHold, uFocus;
+// packed tightly: some phones only allow 64 fragment uniform vectors
+uniform vec4 uE0, uE1;               // slat edges 0..6
+uniform vec3 uLift[6], uGamma[6], uGain[6];
+uniform vec3 uCSM[6];                // contrast, saturation, mix per slat
+float edge(int k) {
+  if (k == 0) return uE0.x; if (k == 1) return uE0.y; if (k == 2) return uE0.z; if (k == 3) return uE0.w;
+  if (k == 4) return uE1.x; if (k == 5) return uE1.y; return uE1.z;
+}
+void main() {
+  float xs = v.x - (v.y - 0.5) * uTilt;          // position across the diagonal slats
+  float idx = 0.0, e0 = 0.0, e1 = 1.0;
+  vec3 lift = vec3(0.0), gam = vec3(1.0), gain = vec3(1.0);
+  float con = 1.0, sat = 1.0, mx = 0.0;
+  for (int k = 0; k < 6; k++) {
+    float a = edge(k), b = edge(k + 1);
+    if (xs >= a && xs < b) {
+      idx = float(k); e0 = a; e1 = b;
+      lift = uLift[k]; gam = uGamma[k]; gain = uGain[k];
+      vec3 csm = uCSM[k]; con = csm.x; sat = csm.y; mx = csm.z;
+    }
+  }
+  // each scene is cover-fitted to the whole box and centred under its slat,
+  // so an opened slat shows (nearly) the full frame, undistorted
+  float c = (e0 + e1) * 0.5;
+  vec2 p = vec2(v.x - c + 0.5, v.y);
+  float rs = uRes.x / uRes.y;
+  vec2 s = rs > uImg ? vec2(1.0, uImg / rs) : vec2(rs / uImg, 1.0);
+  vec2 q = (p - 0.5) * s + 0.5;
+  q.y = 1.0 - q.y;
+  q = clamp(q, 0.003, 0.997);
+  float col = mod(idx, 2.0), row = floor(idx / 2.0);
+  vec2 at = (vec2(col, row) + q) / vec2(2.0, 3.0);
+  vec3 raw = texture2D(uA, at).rgb;
+  vec3 g = raw * gain + lift * (1.0 - raw);
+  g = pow(max(g, 0.0), 1.0 / gam);
+  g = (g - 0.45) * con + 0.45;
+  float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
+  g = mix(vec3(l), g, sat);
+  vec3 o = mix(clamp(g, 0.0, 1.0), texture2D(uB, at).rgb, mx);
+  o = mix(o, raw, uHold);
+  // dark seams between slats, and the closed slats sit slightly back
+  float px = 1.0 / uRes.x;
+  float seam = smoothstep(0.0, 2.5 * px, min(xs - e0, e1 - xs));
+  float closed = uFocus < 0.0 ? 1.0 : (abs(idx - uFocus) < 0.5 ? 1.0 : 0.72);
+  float vg = smoothstep(1.25, 0.35, length(v - 0.5) * 1.4);
+  gl_FragColor = vec4(o * seam * closed * mix(0.82, 1.0, vg), 1.0);
+}`
 
 function loadImg(src) {
   return new Promise((res, rej) => {
     const i = new Image()
     i.crossOrigin = 'anonymous'
+    i.decoding = 'async'
     i.onload = () => res(i)
     i.onerror = rej
     i.src = src
   })
 }
+// pack up to six frames into a 2 x 3 atlas, each cover-cropped to 16:9
+function atlas(imgs, cw, ch) {
+  const c = document.createElement('canvas')
+  c.width = cw * 2
+  c.height = ch * 3
+  const g = c.getContext('2d')
+  g.fillStyle = '#000'
+  g.fillRect(0, 0, c.width, c.height)
+  imgs.forEach((im, k) => {
+    if (!im) return
+    const col = k % 2, row = Math.floor(k / 2)
+    const ir = im.naturalWidth / im.naturalHeight, cr = cw / ch
+    let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0
+    if (ir > cr) { sw = sh * cr; sx = (im.naturalWidth - sw) / 2 } else { sh = sw / cr; sy = (im.naturalHeight - sh) / 2 }
+    g.drawImage(im, sx, sy, sw, sh, col * cw, row * ch, cw, ch)
+  })
+  return c
+}
 
 export default function GradeWheels({ comparisons }) {
-  const pairs = (comparisons || []).filter((c) => c.before && c.after).slice(0, 6)
+  const pairs = (comparisons || []).filter((c) => c.before && c.after).slice(0, MAX)
+  const n = pairs.length
   const ref = useRef(null)
   const stageRef = useRef(null)
+  const frameRef = useRef(null)
   const canvasRef = useRef(null)
   const stepRefs = useRef([])
   const finalRef = useRef(null)
   const wheelRefs = useRef({})
   const modeRef = useRef(null)
-  const scenesRef = useRef(null)
+  const labelRefs = useRef([])
   const state = useRef({
     p: 0, user: false, u: { lift: [0, 0, 0], gamma: [0, 0, 0], gain: [0, 0, 0] }, hold: 0, dirty: true,
-    scene: 0, readyScene: -1, inView: false, last: null,
-    auto: { on: false, phase: 'idle', t0: 0, target: -1 },
+    inView: false, last: null, hover: -1, tap: -1, tour: -1, tourT0: 0,
+    w: Array(MAX).fill(1), edges: [],
   })
   const glRef = useRef(null)
-  const [scene, setScene] = useState(0)
   const [user, setUser] = useState(false)
   const [hasGL, setHasGL] = useState(false)
+  const [focus, setFocus] = useState(-1)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
 
-  // ── GL setup ──
+  // ── GL setup + atlases ──
   useEffect(() => {
     const canvas = canvasRef.current
     let gl = null
     try { gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false }) } catch { gl = null }
-    if (!gl) return
+    if (!gl || !n) return
     const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o }
     const prog = gl.createProgram()
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS))
@@ -121,15 +183,15 @@ export default function GradeWheels({ comparisons }) {
     const aLoc = gl.getAttribLocation(prog, 'a')
     gl.enableVertexAttribArray(aLoc)
     gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
+    const names = ['uA', 'uB', 'uRes', 'uImg', 'uTilt', 'uHold', 'uFocus', 'uE0', 'uE1', 'uLift', 'uGamma', 'uGain', 'uCSM']
     const loc = {}
-    ;['uA', 'uB', 'uRes', 'uImg', 'uSat', 'uCon', 'uMix', 'uHold', 'uLift', 'uGamma', 'uGain'].forEach((n) => (loc[n] = gl.getUniformLocation(prog, n)))
+    names.forEach((nm) => (loc[nm] = gl.getUniformLocation(prog, nm) || gl.getUniformLocation(prog, nm + '[0]')))
     gl.uniform1i(loc.uA, 0)
     gl.uniform1i(loc.uB, 1)
-    glRef.current = { gl, loc, texA: gl.createTexture(), texB: gl.createTexture(), ready: false, aspect: 16 / 9 }
+    const G = { gl, loc, texA: gl.createTexture(), texB: gl.createTexture(), ready: false }
+    glRef.current = G
     const size = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-      // size to the canvas box, not the window: on phones the frame is a
-      // 16:9 band, not the full portrait screen
       canvas.width = Math.round((canvas.clientWidth || window.innerWidth) * dpr)
       canvas.height = Math.round((canvas.clientHeight || window.innerHeight) * dpr)
       state.current.dirty = true
@@ -138,42 +200,36 @@ export default function GradeWheels({ comparisons }) {
     window.addEventListener('resize', size)
     const ro = window.ResizeObserver ? new ResizeObserver(size) : null
     ro?.observe(canvas)
-    return () => {
-      window.removeEventListener('resize', size)
-      ro?.disconnect()
-    }
-  }, [])
 
-  // ── load the chosen pair ──
-  useEffect(() => {
-    const G = glRef.current
-    const pair = pairs[scene]
-    if (!G || !pair) return
+    // phones get a smaller atlas: the frame band there is only ~400px wide
+    const small = window.matchMedia('(max-width: 720px)').matches
+    const cw = small ? 1024 : 1600, ch = Math.round((cw * 9) / 16)
     let live = true
-    state.current.scene = scene
-    Promise.all([loadImg(frameSrc(pair.before)), loadImg(frameSrc(pair.after))]).then(([a, b]) => {
+    Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then((res) => {
       if (!live) return
-      const { gl } = G
-      ;[[G.texA, 0, a], [G.texB, 1, b]].forEach(([tex, unit, img]) => {
+      const up = (tex, unit, src) => {
         gl.activeTexture(gl.TEXTURE0 + unit)
         gl.bindTexture(gl.TEXTURE_2D, tex)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img)
-      })
-      G.aspect = a.naturalWidth / a.naturalHeight
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src)
+      }
+      up(G.texA, 0, atlas(res.map((r) => r[0]), cw, ch))
+      up(G.texB, 1, atlas(res.map((r) => r[1]), cw, ch))
       G.ready = true
-      state.current.readyScene = scene
       setHasGL(true)
       state.current.dirty = true
-    }).catch(() => {})
-    return () => { live = false }
+    })
+    return () => {
+      live = false
+      window.removeEventListener('resize', size)
+      ro?.disconnect()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene, pairs.length])
+  }, [n])
 
-  // only auto-advance while the stage is actually on screen
   useEffect(() => {
     const el = stageRef.current
     if (!el || !window.IntersectionObserver) { state.current.inView = true; return }
@@ -181,109 +237,136 @@ export default function GradeWheels({ comparisons }) {
     io.observe(el)
     return () => io.disconnect()
   }, [])
-  useEffect(() => { state.current.scene = scene }, [scene])
 
-  // ── render loop: only draws when progress or input changed ──
-  const nPairs = pairs.length
+  // ── render loop: draws only while something is changing ──
   useEffect(() => {
     const S = state.current
     const unsub = scrollYProgress.on('change', (v) => { S.p = v; S.dirty = true })
     S.p = scrollYProgress.get()
     let raf
-    // once a scene is fully graded and the visitor has stopped on it, hold,
-    // then load the next scene and grade it automatically
-    const runAuto = (now) => {
-      const A = S.auto
-      const eligible = !S.user && !S.hold && S.inView && S.p >= 0.8 && !document.hidden && !REDUCED && nPairs > 1
-      if (!eligible) {
-        if (A.on) { A.on = false; A.phase = 'idle'; S.dirty = true }
-        return
+    let lastFocus = -2
+    const slatGrade = (k) => {
+      if (S.user) {
+        const b = KEYS[3]
+        const add = (a, u) => [a[0] + u[0], a[1] + u[1], a[2] + u[2]]
+        return { lift: add(b.lift, S.u.lift), gamma: add(b.gamma, S.u.gamma), gain: add(b.gain, S.u.gain), con: b.con, sat: b.sat, mix: 0 }
       }
-      if (!A.on) { A.on = true; A.phase = 'hold'; A.t0 = now }
-      if (A.phase === 'hold' && now - A.t0 > HOLD_MS) {
-        A.target = (S.scene + 1) % nPairs
-        A.phase = 'load'
-        setScene(A.target)
-      } else if (A.phase === 'load' && (S.readyScene === A.target || !glRef.current)) {
-        A.phase = 'grade'
-        A.t0 = now
-      } else if (A.phase === 'grade' && now - A.t0 > GRADE_MS) {
-        A.phase = 'hold'
-        A.t0 = now
-      }
-      S.dirty = true
-    }
-    // the progress the grade is drawn at: scroll, or the automatic run
-    const progressNow = (now) => {
-      const A = S.auto
-      if (A.on && A.phase === 'grade') return 0.06 + smooth((now - A.t0) / GRADE_MS) * 0.74
-      return S.p
-    }
-    let pe = 0
-    const effective = () => {
-      if (!S.user) return gradeAt(pe)
-      const b = KEYS[3]
-      const add = (a, u) => [a[0] + u[0], a[1] + u[1], a[2] + u[2]]
-      return { lift: add(b.lift, S.u.lift), gamma: add(b.gamma, S.u.gamma), gain: add(b.gain, S.u.gain), con: b.con, sat: b.sat, mix: 0 }
+      // wave from left to right, finishing together at the end of the scroll
+      return gradeAt(clamp01((S.p - k * WAVE) / (1 - (n - 1) * WAVE)))
     }
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
-      runAuto(now)
+      // which slat is open: hover > tap > auto tour
+      const resting = !S.user && S.inView && S.p >= 0.8 && !document.hidden && !REDUCED && n > 1
+      const manual = S.hover >= 0 ? S.hover : S.tap
+      if (manual < 0 && resting) {
+        if (S.tour < 0 || now - S.tourT0 > TOUR_MS) { S.tour = (S.tour + 1) % n; S.tourT0 = now }
+      } else if (S.tour >= 0) S.tour = -1
+      const f = manual >= 0 ? manual : S.tour
+      if (f !== lastFocus) { lastFocus = f; setFocus(f); S.dirty = true }
+      // slat widths ease toward their targets
+      const big = f >= 0 ? (OPEN_SHARE * (n - 1)) / (1 - OPEN_SHARE) : 1
+      let moving = false
+      for (let k = 0; k < n; k++) {
+        const target = f < 0 ? 1 : k === f ? big : 1
+        const nw = lerp(S.w[k], target, 0.12)
+        if (Math.abs(nw - target) > 0.002) moving = true
+        S.w[k] = Math.abs(nw - target) > 0.002 ? nw : target
+      }
+      if (moving) S.dirty = true
       if (!S.dirty) return
       S.dirty = false
-      pe = progressNow(now)
-      const s = effective()
-      S.last = s
-      // the hold timer fills the active scene thumbnail
-      const A = S.auto
-      scenesRef.current?.style.setProperty('--t', A.on && A.phase === 'hold' ? clamp01((now - A.t0) / HOLD_MS).toFixed(3) : '0')
-      // copy follows whichever progress is drawing the grade
-      STEPS.forEach((st, i) => { const n = stepRefs.current[i]; if (n) n.style.opacity = S.user ? 0 : stepOpacity(pe, st[0], st[1], i) })
+
+      // edges along the diagonal span past both sides so the slats fill the box
+      const sum = S.w.slice(0, n).reduce((a, b) => a + b, 0)
+      const lo = -TILT / 2, span = 1 + TILT
+      const edges = [lo]
+      for (let k = 0; k < n; k++) edges.push(edges[k] + (S.w[k] / sum) * span)
+      while (edges.length < 7) edges.push(9)
+      S.edges = edges
+
+      const grades = Array.from({ length: MAX }, (_, k) => (k < n ? slatGrade(k) : KEYS[0]))
+      const lead = grades[f >= 0 ? f : Math.min(2, n - 1)]
+      S.last = lead
+      const pe = S.p
+
+      STEPS.forEach((st, i) => { const el = stepRefs.current[i]; if (el) el.style.opacity = S.user ? 0 : stepOpacity(pe, st[0], st[1], i) })
       if (finalRef.current) {
-        const o = S.user ? 1 : smooth((pe - 0.7) / 0.05)
+        const o = S.user ? 1 : smooth((pe - 0.72) / 0.05)
         finalRef.current.style.opacity = o
         finalRef.current.style.transform = `translateY(${(1 - o) * 20}px)`
       }
-      // wheels
+      // slat number tags ride on each slat's centre line
+      const fw = frameRef.current?.clientWidth || window.innerWidth
+      labelRefs.current.forEach((el, k) => {
+        if (!el) return
+        const c = (edges[k] + edges[k + 1]) / 2
+        el.style.transform = `translateX(${(c * fw).toFixed(1)}px)`
+        el.classList.toggle('is-on', k === f)
+      })
       WHEELS.forEach((w) => {
         const W = wheelRefs.current[w]
-        if (!W) return
-        const v = s[w], d = w === 'lift' ? v : [v[0] - 1, v[1] - 1, v[2] - 1]
+        if (!W || !W.ring) return
+        const v = lead[w], d = w === 'lift' ? v : [v[0] - 1, v[1] - 1, v[2] - 1]
         const xy = toXY(d), R = (W.ring.clientWidth / 2) * 0.86
         let px = (xy[0] / WSCALE) * R, py = (-xy[1] / WSCALE) * R
         const len = Math.hypot(px, py)
         if (len > R) { px *= R / len; py *= R / len }
         W.puck.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`
-        W.vals.forEach((n, k) => { if (n) n.textContent = (w === 'lift' && v[k] > 0 ? '+' : '') + v[k].toFixed(3) })
+        ;(W.vals || []).forEach((el, k) => { if (el) el.textContent = (w === 'lift' && v[k] > 0 ? '+' : '') + v[k].toFixed(3) })
       })
       if (modeRef.current) {
-        const auto = S.auto.on && S.auto.phase !== 'hold'
-        const t = S.user ? 'Your grade' : auto ? 'Grading the next scene' : s.mix >= 0.999 ? 'Final grade' : s.mix > 0.001 ? 'Dissolving to the final grade' : 'Scroll is grading'
+        const t = S.user ? 'Your grade, on all six' : lead.mix >= 0.999 ? 'Final grades' : lead.mix > 0.001 ? 'Dissolving to the final grades' : 'Scroll is grading'
         if (modeRef.current.textContent !== t) modeRef.current.textContent = t
       }
-      stageRef.current?.style.setProperty('--mix', S.hold ? 0 : s.mix.toFixed(3))
+      stageRef.current?.style.setProperty('--mix', S.hold ? 0 : lead.mix.toFixed(3))
+
       const G = glRef.current
       if (!G || !G.ready) return
       const { gl, loc } = G
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
       gl.uniform2f(loc.uRes, gl.canvas.width, gl.canvas.height)
-      gl.uniform1f(loc.uImg, G.aspect)
-      gl.uniform3fv(loc.uLift, s.lift)
-      gl.uniform3fv(loc.uGamma, s.gamma)
-      gl.uniform3fv(loc.uGain, s.gain)
-      gl.uniform1f(loc.uCon, s.con)
-      gl.uniform1f(loc.uSat, s.sat)
-      gl.uniform1f(loc.uMix, s.mix)
+      gl.uniform1f(loc.uImg, 16 / 9)
+      gl.uniform1f(loc.uTilt, TILT)
       gl.uniform1f(loc.uHold, S.hold)
+      gl.uniform1f(loc.uFocus, f)
+      gl.uniform4f(loc.uE0, edges[0], edges[1], edges[2], edges[3])
+      gl.uniform4f(loc.uE1, edges[4], edges[5], edges[6], 9)
+      const flat3 = (key) => new Float32Array(grades.flatMap((g) => g[key]))
+      gl.uniform3fv(loc.uLift, flat3('lift'))
+      gl.uniform3fv(loc.uGamma, flat3('gamma'))
+      gl.uniform3fv(loc.uGain, flat3('gain'))
+      gl.uniform3fv(loc.uCSM, new Float32Array(grades.flatMap((g) => [g.con, g.sat, S.hold ? 0 : g.mix])))
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf); unsub() }
-  }, [scrollYProgress, nPairs])
+  }, [scrollYProgress, n])
 
-  // ── wheel input ──
+  // ── which slat is under the pointer (same diagonal maths as the shader) ──
+  const slatAt = (e) => {
+    const r = frameRef.current.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width, y = 1 - (e.clientY - r.top) / r.height
+    const xs = x - (y - 0.5) * TILT
+    const E = state.current.edges
+    for (let k = 0; k < n; k++) if (xs >= E[k] && xs < E[k + 1]) return k
+    return -1
+  }
+  const onMove = (e) => {
+    if (!FINE || e.pointerType !== 'mouse') return
+    const k = slatAt(e)
+    if (k !== state.current.hover) { state.current.hover = k; state.current.dirty = true }
+  }
+  const onLeave = () => { state.current.hover = -1; state.current.dirty = true }
+  const onTap = (e) => {
+    if (e.pointerType === 'mouse') return
+    const k = slatAt(e)
+    state.current.tap = state.current.tap === k ? -1 : k
+    state.current.dirty = true
+  }
+
+  // ── wheel input: only the puck is grabbable, relative drag, 6px threshold ──
   const goUser = () => { if (!state.current.user) { state.current.user = true; setUser(true) } }
-  // set the user offset so the wheel shows the puck at normalised (x, y)
   const setPuck = (w, x, y) => {
     const len = Math.hypot(x, y)
     if (len > 1) { x /= len; y /= len }
@@ -292,8 +375,6 @@ export default function GradeWheels({ comparisons }) {
     state.current.u[w] = [want[0] - have[0], want[1] - have[1], want[2] - have[2]]
     state.current.dirty = true
   }
-  // Only the puck is grabbable, and only a deliberate drag counts: taps and
-  // vertical swipes anywhere else on a wheel scroll the page as normal.
   const onWheelDown = (w) => (e) => {
     if (!e.target.closest('.wheel__puck')) return
     e.preventDefault()
@@ -341,32 +422,54 @@ export default function GradeWheels({ comparisons }) {
   }
   const hold = (v) => () => { state.current.hold = v; state.current.dirty = true }
 
-  if (!pairs.length) return null
-  const pair = pairs[scene]
+  if (!n) return null
+  const focusPair = focus >= 0 ? pairs[focus] : null
+  const countWord = ['', 'One scene', 'Two scenes', 'Three scenes', 'Four scenes', 'Five scenes', 'Six scenes'][n]
 
   return (
     <section className="gw" id="grade" ref={ref}>
       <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
-        <div className="gw__frame">
-        <div className="gw__fallback" aria-hidden="true">
-          <img src={frameSrc(pair.before)} alt="" decoding="async" />
-          <img className="gw__fb-out" src={frameSrc(pair.after)} alt="" decoding="async" />
-        </div>
-        <canvas className="gw__gl" ref={canvasRef} aria-hidden="true" />
+        <div className="gw__frame" ref={frameRef} onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onTap}>
+          <div className="gw__fallback" aria-hidden="true">
+            {pairs.map((pr, k) => (
+              <div key={pr.id || k} className="gw__fslat">
+                <img src={pr.before} alt="" loading="lazy" />
+                <img className="gw__fb-out" src={pr.after} alt="" loading="lazy" />
+              </div>
+            ))}
+          </div>
+          <canvas className="gw__gl" ref={canvasRef} aria-hidden="true" />
+          <div className="gw__tags" aria-hidden="true">
+            {pairs.map((pr, k) => (
+              <span key={pr.id || k} className="gw__tag" ref={(el) => (labelRefs.current[k] = el)}>
+                {String(k + 1).padStart(2, '0')}
+              </span>
+            ))}
+          </div>
         </div>
         <div className="gw__scrim" aria-hidden="true" />
 
         <div className="gw__copy">
           {STEPS.map((s, i) => (
-            <p key={s[2]} className="gw__step" ref={(n) => (stepRefs.current[i] = n)} style={{ opacity: i === 0 ? 1 : 0 }}>
+            <p key={s[2]} className="gw__step" ref={(el) => (stepRefs.current[i] = el)} style={{ opacity: i === 0 ? 1 : 0 }}>
               <b>{s[2]}</b> {s[3]}
             </p>
           ))}
           <div className="gw__final" ref={finalRef} style={{ opacity: 0 }}>
-            <h2 className="gw__h">{pair.title}, <em>graded.</em></h2>
-            <p className="gw__note">Saksham's final grade. Now take a wheel and make it yours.</p>
+            <h2 className="gw__h">{countWord}, <em>graded.</em></h2>
+            <p className="gw__note">
+              {FINE ? 'Hover a frame to see it whole.' : 'Tap a frame to see it whole.'} Then take a wheel and grade all {n} yourself.
+            </p>
           </div>
         </div>
+
+        <p className="gw__caption" aria-live="polite">
+          {focusPair ? (
+            <>
+              <b>{String(focus + 1).padStart(2, '0')}</b> {focusPair.title}
+            </>
+          ) : null}
+        </p>
 
         <div className="gw__panel" role="group" aria-label="Colour wheels">
           <div className="gw__wheels">
@@ -379,14 +482,14 @@ export default function GradeWheels({ comparisons }) {
                   aria-label={`${w} wheel. Arrow keys move the colour balance.`}
                   onPointerDown={onWheelDown(w)}
                   onKeyDown={onWheelKey(w)}
-                  ref={(n) => { if (n) wheelRefs.current[w] = { ring: n, puck: n.firstChild, vals: wheelRefs.current[w]?.vals || [] } }}
+                  ref={(el) => { if (el) wheelRefs.current[w] = { ...(wheelRefs.current[w] || {}), ring: el, puck: el.firstChild } }}
                 >
                   <span className="wheel__puck" />
                 </div>
                 <p className="wheel__name">{w}</p>
                 <p className="wheel__val">
                   {[0, 1, 2].map((k) => (
-                    <span key={k} ref={(n) => { wheelRefs.current[w] = { ...(wheelRefs.current[w] || {}), vals: Object.assign(wheelRefs.current[w]?.vals || [], { [k]: n }) } }}>
+                    <span key={k} ref={(el) => { const W = (wheelRefs.current[w] = wheelRefs.current[w] || {}); W.vals = W.vals || []; W.vals[k] = el }}>
                       {w === 'lift' ? '0.000' : '1.000'}
                     </span>
                   ))}
@@ -401,19 +504,6 @@ export default function GradeWheels({ comparisons }) {
               Hold to see raw
             </button>
             {user && <button type="button" className="gw__chip" onClick={reset}>Back to his grade</button>}
-          </div>
-          <div className="gw__scenes" role="radiogroup" aria-label="Choose a scene" ref={scenesRef}>
-            {pairs.map((c, i) => (
-              <button
-                key={c.id || i}
-                type="button"
-                role="radio"
-                aria-checked={i === scene}
-                aria-label={c.title}
-                style={{ backgroundImage: `url(${thumbSrc(c.after)})` }}
-                onClick={() => { state.current.auto.on = false; state.current.auto.phase = 'idle'; setScene(i) }}
-              />
-            ))}
           </div>
         </div>
       </div>

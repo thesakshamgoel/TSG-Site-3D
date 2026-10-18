@@ -1,87 +1,93 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './ScrollProgress.css'
 
 /**
- * Premium right-side scroll indicator: a vertical track that fills with scroll
- * progress, labelled section nodes you can click to jump, and a live frame
- * read-out. Purely a nav aid — hidden on small screens.
+ * Right-edge section rail. A hairline track that fills with progress, a dot
+ * per section (the active one stretches into a gold capsule), and the active
+ * section's name in a small chip that shows only while you scroll, then tucks
+ * away so it never sits on top of the work. Hover any dot for its name.
+ * Progress is written straight to a transform; React only re-renders when the
+ * active section changes.
  */
+function layoutTop(el) {
+  let y = 0
+  for (let n = el; n; n = n.offsetParent) y += n.offsetTop
+  return y
+}
+
 export default function ScrollProgress({ sections, onNavigate }) {
-  const [progress, setProgress] = useState(0)
   const [active, setActive] = useState(0)
+  const [moving, setMoving] = useState(false)
+  const fillRef = useRef(null)
 
   useEffect(() => {
     let raf = null
+    let idle = null
     const update = () => {
       raf = null
-      // Anchor the fill to the SAME section offsets as the (evenly-spaced) dots
-      // so the line reaches a dot exactly when that section becomes active.
-      // A plain scrollY/scrollHeight fraction drifts out of sync because the
-      // sections aren't equal heights (the About tail is much taller).
       const n = sections.length
-      const ref = window.scrollY + window.innerHeight * 0.3
+      const ref = window.scrollY + window.innerHeight * 0.4
       const tops = sections.map((s) => {
         const el = document.getElementById(s.id)
-        return el ? el.offsetTop : 0
+        return el ? layoutTop(el) : 0
       })
-
-      // continuous position along the section list [0 … n-1]
       let seg = 0
-      for (let i = 0; i < n - 1; i++) {
-        if (ref >= tops[i]) seg = i
-      }
-      let posIndex = seg
+      for (let i = 0; i < n; i++) if (ref >= tops[i]) seg = i
+      let pos = seg
       if (seg < n - 1) {
         const span = tops[seg + 1] - tops[seg]
-        const local = span > 0 ? (ref - tops[seg]) / span : 0
-        posIndex = seg + Math.max(0, Math.min(1, local))
+        pos = seg + (span > 0 ? Math.max(0, Math.min(1, (ref - tops[seg]) / span)) : 0)
       }
-      setProgress(n > 1 ? posIndex / (n - 1) : 0)
-
-      // nearest section → active dot (use the same reference point)
-      let best = 0
-      let bestDist = Infinity
-      tops.forEach((t, i) => {
-        const d = Math.abs(t - ref)
-        if (d < bestDist) {
-          bestDist = d
-          best = i
-        }
-      })
-      setActive(best)
+      if (fillRef.current) fillRef.current.style.transform = `scaleY(${(n > 1 ? pos / (n - 1) : 0).toFixed(4)})`
+      setActive((a) => (a === seg ? a : seg))
     }
     const onScroll = () => {
       if (raf == null) raf = requestAnimationFrame(update)
+      setMoving(true)
+      clearTimeout(idle)
+      idle = setTimeout(() => setMoving(false), 1200)
     }
     update()
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
+    const ro = window.ResizeObserver ? new ResizeObserver(() => { if (raf == null) raf = requestAnimationFrame(update) }) : null
+    ro?.observe(document.body)
     return () => {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
+      ro?.disconnect()
+      clearTimeout(idle)
       if (raf) cancelAnimationFrame(raf)
     }
   }, [sections])
 
+  const n = sections.length
   return (
-    <div className="sprog" aria-hidden="true">
-      <div className="sprog__frame timecode">
+    <nav className={`sprog ${moving ? 'is-moving' : ''}`} aria-label="Page sections">
+      <span className="sprog__count timecode" aria-hidden="true">
         {String(active + 1).padStart(2, '0')}
-        <span>/{String(sections.length).padStart(2, '0')}</span>
-      </div>
+      </span>
       <div className="sprog__track">
-        <div className="sprog__fill" style={{ height: `${progress * 100}%` }} />
+        <span className="sprog__rail" aria-hidden="true">
+          <span className="sprog__fill" ref={fillRef} />
+        </span>
         {sections.map((s, i) => (
           <button
             key={s.id}
-            className={`sprog__node ${i === active ? 'is-on' : ''}`}
-            style={{ top: `${(i / (sections.length - 1)) * 100}%` }}
+            type="button"
+            className={`sprog__node ${i === active ? 'is-on' : ''} ${i < active ? 'is-past' : ''}`}
+            style={{ top: `${(i / Math.max(n - 1, 1)) * 100}%` }}
             onClick={() => onNavigate(s.id)}
+            aria-label={s.label}
+            aria-current={i === active ? 'true' : undefined}
           >
             <span className="sprog__label">{s.label}</span>
           </button>
         ))}
       </div>
-    </div>
+      <span className="sprog__count sprog__count--total timecode" aria-hidden="true">
+        {String(n).padStart(2, '0')}
+      </span>
+    </nav>
   )
 }

@@ -482,14 +482,18 @@ async function main() {
     assert(!/your grade/i.test(back || ''), `reset did not restore his grade: "${back}"`)
   })
 
-  await test('choosing another scene changes the graded title', async () => {
-    const n = await countOf('.gw__scenes button')
-    if (n < 2) return skip('choosing another scene changes the graded title', 'only one comparison pair')
-    const t0 = await textOf('.gw__h')
-    await page.click('.gw__scenes button:nth-child(2)')
+  await test('hovering a slat opens it and names the scene', async () => {
+    await gradeAt(0.5)
     await sleep(400)
-    const t1 = await textOf('.gw__h')
-    assert(t0 !== t1, `scene title did not change ("${t0}")`)
+    const box = await (await page.$('.gw__frame')).boundingBox()
+    await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * 0.5)
+    await sleep(900)
+    const cap = (await textOf('.gw__caption')) || ''
+    assert(/01/.test(cap) && cap.length > 4, `no scene caption after hovering the first slat: "${cap}"`)
+    await page.mouse.move(box.x + box.width * 0.92, box.y + box.height * 0.5)
+    await sleep(900)
+    const cap2 = (await textOf('.gw__caption')) || ''
+    assert(cap2 && cap2 !== cap, `caption did not follow the pointer to another slat ("${cap}")`)
   })
 
   // ── WORK (2 category panels) ─────────────────────────────────────────

@@ -683,3 +683,28 @@
     animation: none;
   }
 }
+
+/* timeline line that draws down with the scroll, over the faint base line */
+.timeline__draw {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--gold);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+/* letters rising out of a mask */
+.rollin {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+.rollin > span { display: inline-block; }
+@media (max-width: 720px) {
+  /* single column on phones: no column drift */
+  .review__drift { transform: none !important; }
+}

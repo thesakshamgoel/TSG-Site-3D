@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { emailEnabled, sendEmail } from '../data/email'
 import { toast } from '../components/Toast'
@@ -13,7 +14,14 @@ function Chapter({ no, title, children }) {
         <div className="chapter__head">
           <span className="chapter__no">{no}</span>
           <h3 className="chapter__title">{title}</h3>
-          <span className="chapter__rule" />
+          <motion.span
+            className="chapter__rule"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+            style={{ transformOrigin: '0 50%' }}
+          />
         </div>
       </Reveal>
       {children}
@@ -21,13 +29,18 @@ function Chapter({ no, title, children }) {
   )
 }
 
-function CertCard({ cert, onView }) {
+function CertCard({ cert, onView, i = 0 }) {
   const [imgOk, setImgOk] = useState(true)
   const hasImg = cert.image && imgOk
   return (
-    <button
+    <motion.button
       className={`cert glass ${hasImg ? 'cert--img' : ''}`}
       onClick={() => hasImg && onView(cert)}
+      initial={{ opacity: 0, y: 40, rotateX: -24 }}
+      whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.8, delay: (i % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      style={{ transformPerspective: 900 }}
     >
       {hasImg && (
         <div className="cert__scan">
@@ -43,7 +56,89 @@ function CertCard({ cert, onView }) {
           </div>
         </div>
       </div>
-    </button>
+    </motion.button>
+  )
+}
+
+// timeline whose gold line draws down with the scroll, entries sliding in
+function Timeline({ experiences }) {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 80%', 'end 55%'] })
+  return (
+    <ol className="timeline" ref={ref}>
+      <motion.span className="timeline__draw" style={{ scaleY: scrollYProgress }} aria-hidden="true" />
+      {experiences.map((e, i) => (
+        <motion.li
+          key={e.id}
+          className="timeline__item"
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <span className="timeline__dot" />
+          <div className="timeline__period timecode">{e.period}</div>
+          <div className="timeline__role">
+            {e.role}
+            {e.highlight && <span className="timeline__badge">★ {e.highlight}</span>}
+          </div>
+          <div className="timeline__org">{e.org}</div>
+          {e.detail && <p className="timeline__detail">{e.detail}</p>}
+        </motion.li>
+      ))}
+    </ol>
+  )
+}
+
+// a heading whose letters rise out of a mask when it comes into view
+function RollIn({ text, as: Tag = 'h4', className }) {
+  return (
+    <Tag className={className} aria-label={text}>
+      {Array.from(text).map((ch, k) => (
+        <span key={k} className="rollin" aria-hidden="true">
+          <motion.span
+            initial={{ y: '105%' }}
+            whileInView={{ y: '0%' }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.7, delay: k * 0.035, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {ch === ' ' ? '\u00a0' : ch}
+          </motion.span>
+        </span>
+      ))}
+    </Tag>
+  )
+}
+
+// reviews: staggered rise, and the columns drift at different speeds
+function Reviews({ reviews }) {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const y0 = useTransform(scrollYProgress, [0, 1], [40, -40])
+  const y1 = useTransform(scrollYProgress, [0, 1], [90, -60])
+  const y2 = useTransform(scrollYProgress, [0, 1], [20, -20])
+  const ys = [y0, y1, y2]
+  return (
+    <div className="reviews" id="reviews" ref={ref}>
+      {reviews.map((r, i) => (
+        <motion.div key={r.id} className="review__drift" style={{ y: ys[i % 3] }}>
+          <motion.figure
+            className="review glass"
+            initial={{ opacity: 0, y: 50, scale: 0.96 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.8, delay: (i % 3) * 0.1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="review__quote">"</div>
+            <blockquote>{r.quote}</blockquote>
+            <figcaption>
+              <span className="review__name">{r.name}</span>
+              <span className="review__role">{r.role}</span>
+            </figcaption>
+          </motion.figure>
+        </motion.div>
+      ))}
+    </div>
   )
 }
 
@@ -330,15 +425,29 @@ export default function About({
                 The person <span className="gradient-text">behind the lens.</span>
               </h2>
               <p className="section-sub">
-                Experience, credentials, kind words — and a way to start a
+                Experience, credentials, kind words, and a way to start a
                 conversation.
               </p>
               {profile.bio && <p className="about__bio">{profile.bio}</p>}
             </div>
             <div className="about__portrait-wrap">
-              <div className="about__portrait">
+              <motion.div
+                className="about__portrait"
+                initial={{ clipPath: 'inset(100% 0% 0% 0% round 16px)' }}
+                whileInView={{ clipPath: 'inset(0% 0% 0% 0% round 16px)' }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1] }}
+              >
                 {profile.photo && photoOk ? (
-                  <img src={profile.photo} alt={profile.name} onError={() => setPhotoOk(false)} />
+                  <motion.img
+                    src={profile.photo}
+                    alt={profile.name}
+                    onError={() => setPhotoOk(false)}
+                    initial={{ scale: 1.3 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+                  />
                 ) : (
                   <div className="about__portrait-ph">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -350,7 +459,7 @@ export default function About({
                     <span className="timecode">public/photo.jpg</span>
                   </div>
                 )}
-              </div>
+              </motion.div>
               <div className="about__portrait-card">
                 <strong>{profile.name}</strong>
                 <span>Filmmaker</span>
@@ -360,51 +469,25 @@ export default function About({
         </Reveal>
 
         <Chapter no="01" title="Experience">
-          <ol className="timeline">
-            {experiences.map((e) => (
-              <li key={e.id} className="timeline__item">
-                <span className="timeline__dot" />
-                <div className="timeline__period timecode">{e.period}</div>
-                <div className="timeline__role">
-                  {e.role}
-                  {e.highlight && <span className="timeline__badge">★ {e.highlight}</span>}
-                </div>
-                <div className="timeline__org">{e.org}</div>
-                {e.detail && <p className="timeline__detail">{e.detail}</p>}
-              </li>
-            ))}
-          </ol>
+          <Timeline experiences={experiences} />
         </Chapter>
 
         <Chapter no="02" title="Credentials">
           <div className="certs">
-            {certificates.map((c) => (
-              <CertCard key={c.id} cert={c} onView={(cert) => onViewImage?.({ title: cert.title, image: cert.image, mediaType: 'image' })} />
+            {certificates.map((c, i) => (
+              <CertCard key={c.id} i={i} cert={c} onView={(cert) => onViewImage?.({ title: cert.title, image: cert.image, mediaType: 'image' })} />
             ))}
           </div>
         </Chapter>
 
         <Chapter no="03" title="Reviews">
-          <div className="reviews" id="reviews">
-            {reviews.map((r, i) => (
-              <Reveal key={r.id} delay={0.06 * (i % 3)}>
-                <figure className="review glass">
-                  <div className="review__quote">"</div>
-                  <blockquote>{r.quote}</blockquote>
-                  <figcaption>
-                    <span className="review__name">{r.name}</span>
-                    <span className="review__role">{r.role}</span>
-                  </figcaption>
-                </figure>
-              </Reveal>
-            ))}
-          </div>
+          <Reviews reviews={reviews} />
         </Chapter>
 
         <Chapter no="04" title="Start a Project">
           <div className="contact" id="contact">
             <div className="contact__intro">
-              <h4>Let's roll.</h4>
+              <RollIn text="Let's roll." />
               <p>Available for cinematography, colour &amp; design work worldwide.</p>
               {gated ? (
                 <button type="button" className="contact__locked" onClick={doSignIn}>
