@@ -6,8 +6,8 @@
   background-repeat: repeat;
   /* very faint — barely perceptible, but still present in a full-res capture
      so ownership stays traceable. Raise toward ~0.13 for visible marking. */
-  opacity: 0.035;
-  mix-blend-mode: soft-light;
+  /* plain alpha: a full-screen blend mode re-composites the whole page every frame */
+  opacity: 0.022;
 }
 
 @media (prefers-reduced-motion: reduce) {

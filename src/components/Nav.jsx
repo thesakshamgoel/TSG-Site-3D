@@ -12,7 +12,11 @@ export default function Nav({ name, onOpenConsole, onNavigate }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
+    let raf = null
+    const onScroll = () => {
+      if (raf != null) return
+      raf = requestAnimationFrame(() => { raf = null; setScrolled(window.scrollY > 40) })
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)

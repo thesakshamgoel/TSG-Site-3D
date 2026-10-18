@@ -19,13 +19,17 @@ export default function Marquee({ words, reverse = false }) {
   const xA = useTransform(p, [0, 1], [`${-6 * dir}%`, `${-38 * dir}%`])
   const xB = useTransform(p, [0, 1], [`${-36 * dir}%`, `${-4 * dir}%`])
   const rotate = useTransform(p, [0, 0.5, 1], [-3 * dir, 0, 3 * dir])
+  // the strip rolls past the camera like a banner: tipped back on the way
+  // in, flat in the middle, tipping forward on the way out
+  const rotateX = useTransform(p, [0, 0.5, 1], [38, 0, -38])
+  const rotateY = useTransform(p, [0, 1], [-10 * dir, 10 * dir])
   const scale = useTransform(p, [0, 0.5, 1], [0.92, 1.04, 0.92])
   const opacity = useTransform(p, [0, 0.18, 0.82, 1], [0.2, 1, 1, 0.2])
   const line = [...words, ...words, ...words, ...words]
   return (
     <div className="mq" ref={ref} aria-hidden="true">
-      <motion.div className="mq__rows" style={reduced ? undefined : { rotate, scale, opacity }}>
-        <motion.div className="mq__track" style={reduced ? undefined : { x: xA, skewX: skew }}>
+      <motion.div className="mq__rows" style={reduced ? undefined : { rotate, rotateX, rotateY, scale, opacity }}>
+        <motion.div className="mq__track" style={reduced ? undefined : { x: xA, skewX: skew, z: 70 }}>
           {line.map((w, i) => (
             <span key={i}>
               {w}
@@ -33,7 +37,7 @@ export default function Marquee({ words, reverse = false }) {
             </span>
           ))}
         </motion.div>
-        <motion.div className="mq__track mq__track--o" style={reduced ? undefined : { x: xB, skewX: skew }}>
+        <motion.div className="mq__track mq__track--o" style={reduced ? undefined : { x: xB, skewX: skew, z: -70 }}>
           {line.map((w, i) => (
             <span key={i}>
               {w}

@@ -137,7 +137,8 @@
 .hl__play:hover { transform: translateY(-2px); }
 .hl__head {
   position: absolute;
-  top: clamp(84px, 12vh, 130px);
+  top: clamp(80px, 10vh, 120px);
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
   left: 0;
   right: 0;
   margin: 0;
@@ -178,10 +179,12 @@
 .hl__title > span { display: inline; }
 .hl__ch {
   display: inline-block;
-  overflow: hidden;
   vertical-align: top;
-  padding: 0 0.02em 0.12em;
-  margin-bottom: -0.12em;
+  /* clip only the bottom edge (letters rise from below it) and leave room
+     for italic overhangs, the Q's tail and the dots: overflow:hidden cut them */
+  padding: 0.18em 0.12em 0.3em;
+  margin: -0.18em -0.12em -0.3em;
+  clip-path: inset(-1em -1em 0 -1em);
 }
 .hl__ch > span { display: inline-block; will-change: transform; }
 .hl__sp { display: inline-block; width: 0.22em; }

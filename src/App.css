@@ -84,3 +84,25 @@ main {
     animation: none;
   }
 }
+
+/* Soft seams: a dark full-screen section fades into its neighbour over a
+   third of a screen instead of meeting it at a hard line. The feather sits
+   just outside the section edge and scrolls with it. */
+.seam-top::before,
+.seam-bottom::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 36vh;
+  pointer-events: none;
+  z-index: 4;
+}
+.seam-top::before {
+  bottom: 100%;
+  background: linear-gradient(to bottom, transparent, var(--seam, #060507) 92%);
+}
+.seam-bottom::after {
+  top: 100%;
+  background: linear-gradient(to top, transparent, var(--seam, #060507) 92%);
+}

@@ -60,6 +60,35 @@ function CertCard({ cert, onView, i = 0 }) {
   )
 }
 
+// circular portrait inside a gold ring that draws itself as you scroll past,
+// with a soft glow and a comet riding the end of the line
+function PortraitOrb({ children }) {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 95%', 'end 25%'] })
+  const draw = useTransform(scrollYProgress, [0, 1], [0.04, 1])
+  const spin = useTransform(scrollYProgress, [0, 1], [-100, 160])
+  const glow = useTransform(scrollYProgress, [0, 0.5, 1], [0.35, 1, 0.75])
+  const cx = useTransform(draw, (d) => 50 + 47 * Math.cos(2 * Math.PI * d))
+  const cy = useTransform(draw, (d) => 50 + 47 * Math.sin(2 * Math.PI * d))
+  return (
+    <div className="about__orb" ref={ref}>
+      <motion.svg className="about__ring" viewBox="0 0 100 100" style={{ rotate: spin }} aria-hidden="true">
+        <defs>
+          <filter id="aboutRingGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
+        </defs>
+        <circle cx="50" cy="50" r="47" className="about__ring-base" />
+        <motion.circle cx="50" cy="50" r="47" className="about__ring-glow" filter="url(#aboutRingGlow)" style={{ pathLength: draw, opacity: glow }} />
+        <motion.circle cx="50" cy="50" r="47" className="about__ring-line" style={{ pathLength: draw }} />
+        <motion.circle r="1.6" className="about__comet" filter="url(#aboutRingGlow)" style={{ cx, cy }} />
+        <motion.circle r="0.9" className="about__comet" style={{ cx, cy }} />
+      </motion.svg>
+      {children}
+    </div>
+  )
+}
+
 // timeline whose gold line draws down with the scroll, entries sliding in
 function Timeline({ experiences }) {
   const ref = useRef(null)
@@ -431,10 +460,11 @@ export default function About({
               {profile.bio && <p className="about__bio">{profile.bio}</p>}
             </div>
             <div className="about__portrait-wrap">
+              <PortraitOrb>
               <motion.div
                 className="about__portrait"
-                initial={{ clipPath: 'inset(100% 0% 0% 0% round 16px)' }}
-                whileInView={{ clipPath: 'inset(0% 0% 0% 0% round 16px)' }}
+                initial={{ clipPath: 'circle(0% at 50% 50%)' }}
+                whileInView={{ clipPath: 'circle(50% at 50% 50%)' }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1] }}
               >
@@ -460,6 +490,7 @@ export default function About({
                   </div>
                 )}
               </motion.div>
+              </PortraitOrb>
               <div className="about__portrait-card">
                 <strong>{profile.name}</strong>
                 <span>Filmmaker</span>

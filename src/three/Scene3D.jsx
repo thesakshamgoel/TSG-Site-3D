@@ -292,7 +292,7 @@ export default function Scene3D() {
       <Canvas
         frameloop={active ? 'always' : 'never'}
         camera={{ position: [0, 0, 6], fov: 62 }}
-        dpr={isMobile ? [1, 1] : [1, 1.5]}
+        dpr={isMobile ? [1, 1] : [1, 1.25]}
         gl={{ antialias: !isMobile, alpha: true, powerPreference: 'high-performance' }}
       >
         <Suspense fallback={null}>

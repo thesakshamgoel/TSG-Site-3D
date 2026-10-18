@@ -1,4 +1,5 @@
 .gw {
+  --seam: #090807;
   position: relative;
   z-index: 3;
   height: 480vh;
@@ -232,7 +233,7 @@
 }
 
 /* ── six slats ───────────────────────────────────────────────────────────── */
-.gw__frame { cursor: default; }
+@media (hover: hover) and (pointer: fine) { .gw__frame { cursor: zoom-in; } }
 /* fallback without WebGL: six skewed slats of the stills, crossfading */
 .gw__fallback {
   display: flex;

@@ -72,6 +72,5 @@ body.has-custom-cursor * {
     rgba(233, 184, 114, 0.06) 34%,
     transparent 68%
   );
-  mix-blend-mode: screen;
   will-change: transform;
 }

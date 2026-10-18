@@ -51,8 +51,13 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   const after = useTransform(p, (v) => (i === n - 1 ? 0 : Math.min(1, Math.max(0, (v * (n + 0.4) - i - 1) / 0.5))))
   const sink = useTransform(after, [0, 1], [1, 0.9])
   // one vertical track: rise in from below, then drift up as the next takes over
-  const y = useTransform([t, after], ([tt, a]) =>
-    a > 0 || i === 0 ? `${(-6 * a).toFixed(3)}vh` : `${(100 * (1 - Math.min(1, tt / 0.45))).toFixed(3)}vh`
+  // the first card starts lower so it sits clear of the section heading
+  const y = useTransform([t, after, open], ([tt, a, o]) =>
+    i === 0
+      ? `${(-6 * a + 16 * (1 - o)).toFixed(3)}vh`
+      : a > 0
+        ? `${(-6 * a).toFixed(3)}vh`
+        : `${(100 * (1 - Math.min(1, tt / 0.45))).toFixed(3)}vh`
   )
   const dim = useTransform(after, [0, 1], [0, 0.75])
   // the title arrives with the open frame and leaves as soon as the next one takes over
@@ -166,14 +171,15 @@ export default function Highlights({ projects, onOpenProject }) {
   const reduced = useReducedMotion()
   // no spring here: Lenis already smooths the scroll, a second smoother only adds lag
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  const headO = useTransform(p, [0, 0.12], [1, 0])
-  const headY = useTransform(p, [0, 0.12], [0, -40])
+  // the heading leaves as the first film opens beneath it
+  const headO = useTransform(p, [0, 0.09], [1, 0])
+  const headY = useTransform(p, [0, 0.09], [0, -60])
 
   if (!slides.length) return null
   const n = slides.length
 
   return (
-    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n + 0.4) * 100}vh` }}>
+    <section className="hl seam-bottom" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n + 0.4) * 100}vh` }}>
       <div className="hl__pin" data-opaque>
         {slides.map((s, i) => (
           <Slide key={s.id} s={s} i={i} n={n} p={p} onOpen={onOpenProject} reduced={reduced} />

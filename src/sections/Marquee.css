@@ -2,12 +2,15 @@
   position: relative;
   z-index: 3;
   overflow: hidden;
-  padding: clamp(40px, 7vw, 100px) 0;
+  padding: clamp(50px, 8vw, 120px) 0;
   pointer-events: none;
+  perspective: 1100px;
+  perspective-origin: 50% 50%;
 }
 .mq__rows {
   display: grid;
   gap: clamp(4px, 1vw, 14px);
+  transform-style: preserve-3d;
   will-change: transform, opacity;
 }
 .mq__track {

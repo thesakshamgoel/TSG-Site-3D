@@ -38,7 +38,10 @@ export function useLenis(ready, paused) {
       const el = id && document.getElementById(id)
       if (!el) return
       e.preventDefault()
-      lenis.scrollTo(el, { duration: 1.2, offset: -64 })
+      // re-measure first: images that loaded since mount make the page taller,
+      // and a stale height clamps the jump short
+      lenis.resize()
+      lenis.scrollTo(el, { duration: 1.2, offset: -64, force: true })
     }
     document.addEventListener('click', onClick)
     return () => {
@@ -60,7 +63,10 @@ export function useLenis(ready, paused) {
     const el = id === 'top' ? document.documentElement : document.getElementById(id)
     if (!el) return
     const l = lenisRef.current
-    if (l) l.scrollTo(id === 'top' ? 0 : el, { duration: 1.2, offset: id === 'top' ? 0 : -64 })
+    if (l) {
+      l.resize()
+      l.scrollTo(id === 'top' ? 0 : el, { duration: 1.2, offset: id === 'top' ? 0 : -64, force: true })
+    }
     else el.scrollIntoView({ behavior: 'auto', block: 'start' })
   }, [])
 

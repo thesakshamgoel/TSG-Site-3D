@@ -141,7 +141,7 @@ function atlas(imgs, cw, ch) {
   return c
 }
 
-export default function GradeWheels({ comparisons }) {
+export default function GradeWheels({ comparisons, onOpenImage }) {
   const pairs = (comparisons || []).filter((c) => c.before && c.after).slice(0, MAX)
   const n = pairs.length
   const ref = useRef(null)
@@ -245,6 +245,7 @@ export default function GradeWheels({ comparisons }) {
     S.p = scrollYProgress.get()
     let raf
     let lastFocus = -2
+    let lastT = 0
     const slatGrade = (k) => {
       if (S.user) {
         const b = KEYS[3]
@@ -256,6 +257,10 @@ export default function GradeWheels({ comparisons }) {
     }
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
+      const dt = Math.min(64, lastT ? now - lastT : 16)
+      lastT = now
+      // frame-rate independent easing: same glide at 60 Hz and 120 Hz
+      const ease = 1 - Math.pow(1 - 0.11, dt / 16.67)
       // which slat is open: hover > tap > auto tour
       const resting = !S.user && S.inView && S.p >= 0.8 && !document.hidden && !REDUCED && n > 1
       const manual = S.hover >= 0 ? S.hover : S.tap
@@ -269,7 +274,7 @@ export default function GradeWheels({ comparisons }) {
       let moving = false
       for (let k = 0; k < n; k++) {
         const target = f < 0 ? 1 : k === f ? big : 1
-        const nw = lerp(S.w[k], target, 0.12)
+        const nw = lerp(S.w[k], target, ease)
         if (Math.abs(nw - target) > 0.002) moving = true
         S.w[k] = Math.abs(nw - target) > 0.002 ? nw : target
       }
@@ -343,14 +348,15 @@ export default function GradeWheels({ comparisons }) {
     return () => { cancelAnimationFrame(raf); unsub() }
   }, [scrollYProgress, n])
 
-  // ── which slat is under the pointer (same diagonal maths as the shader) ──
+  // ── which slat the pointer picks ──
+  // An even split of the width along the same diagonal, NOT the live slat
+  // edges: when a slat opens its edges move under the pointer, which used to
+  // flip the hover back and forth. This way sweeping across scrubs 1 to 6.
   const slatAt = (e) => {
     const r = frameRef.current.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width, y = 1 - (e.clientY - r.top) / r.height
-    const xs = x - (y - 0.5) * TILT
-    const E = state.current.edges
-    for (let k = 0; k < n; k++) if (xs >= E[k] && xs < E[k + 1]) return k
-    return -1
+    const xs = (x - (y - 0.5) * TILT + TILT / 2) / (1 + TILT)
+    return Math.max(0, Math.min(n - 1, Math.floor(xs * n)))
   }
   const onMove = (e) => {
     if (!FINE || e.pointerType !== 'mouse') return
@@ -359,8 +365,13 @@ export default function GradeWheels({ comparisons }) {
   }
   const onLeave = () => { state.current.hover = -1; state.current.dirty = true }
   const onTap = (e) => {
-    if (e.pointerType === 'mouse') return
     const k = slatAt(e)
+    if (e.pointerType === 'mouse') {
+      // a click on the open slat shows that graded frame full size
+      const pr = pairs[k]
+      if (pr && onOpenImage) onOpenImage({ title: `${pr.title}, graded`, image: pr.after, mediaType: 'image' })
+      return
+    }
     state.current.tap = state.current.tap === k ? -1 : k
     state.current.dirty = true
   }
@@ -427,7 +438,7 @@ export default function GradeWheels({ comparisons }) {
   const countWord = ['', 'One scene', 'Two scenes', 'Three scenes', 'Four scenes', 'Five scenes', 'Six scenes'][n]
 
   return (
-    <section className="gw" id="grade" ref={ref}>
+    <section className="gw seam-top seam-bottom" id="grade" ref={ref}>
       <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
         <div className="gw__frame" ref={frameRef} onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onTap}>
           <div className="gw__fallback" aria-hidden="true">
