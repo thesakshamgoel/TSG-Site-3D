@@ -43,7 +43,7 @@ export default function Cursor() {
       )
 
       const interactive = e.target.closest(
-        'a, button, [role="button"], input, select, textarea, .card, .workcard'
+        'a, button, [role="button"], [role="slider"], [role="tab"], [tabindex]:not([tabindex="-1"]), label, summary, input, select, textarea, .card, .workcard, .film, .rw__frame, .fr__frame, .hl__frame'
       )
       setHot(!!interactive)
     }

@@ -1,0 +1,67 @@
+/* audio waveform divider */
+.wave {
+  position: relative;
+  z-index: 3;
+  padding: clamp(50px, 9vh, 110px) clamp(16px, 4vw, 60px);
+  pointer-events: none;
+}
+.wave__canvas {
+  display: block;
+  width: 100%;
+  height: clamp(120px, 18vh, 190px);
+}
+.wave--scope .wave__canvas { height: clamp(90px, 14vh, 150px); }
+.wave--mesh {
+  /* pinned for ~2 screens: line -> terrain -> push-in */
+  height: 230vh;
+  padding: 0;
+}
+.wave__pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+.wave--mesh .wave__canvas { height: 100%; }
+.wave__caption {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(40px, 10vh, 100px);
+  translate: -50% 0;
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave--mesh { height: auto; }
+  .wave__pin { position: relative; height: 60vh; }
+}
+.wave__meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.wave__meta--b { margin: 8px 0 0; }
+.wave__ch {
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(233, 184, 114, 0.4);
+  color: var(--gold);
+}
+.wave__tc {
+  margin-left: auto;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}

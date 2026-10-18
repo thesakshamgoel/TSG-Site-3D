@@ -17,9 +17,13 @@ const DURATION = 1600
 const RING = 14 // frames on the ring
 const GAP = 520 // depth between frames, px
 
-export default function Loader({ onDone, name = 'Saksham Goel', thumbs = [] }) {
+export default function Loader({ onDone, name = 'Saksham Goel', thumbs: thumbsProp = [] }) {
   const [exiting, setExiting] = useState(false)
+  // take the frames once: live content arriving mid-load must not rebuild the
+  // ring (that restarted the whole animation, a visible jerk back to 000)
+  const [thumbs] = useState(thumbsProp)
   const progressRef = useRef(0)
+  const readyRef = useRef(false)
   const countRef = useRef(null)
   const markRef = useRef(null)
   const frameRefs = useRef([])
@@ -37,11 +41,29 @@ export default function Loader({ onDone, name = 'Saksham Goel', thumbs = [] }) {
 
   useEffect(() => {
     let raf
-    let start = null
+    let last = null
+    let elapsed = 0
+    let first = null
+    let smoothRun = 0
     const travel = RING * GAP + 1400
     const step = (ts) => {
-      if (start == null) start = ts
-      const t = Math.min((ts - start) / DURATION, 1)
+      // the clock advances at most one frame's worth per frame: when the
+      // browser stalls (the site booting behind), the reel pauses for a
+      // moment instead of jumping ahead to catch up
+      const raw = last == null ? 0 : ts - last
+      last = ts
+      if (first == null) first = ts
+      // wait for the site's boot to finish (a few smooth frames in a row, at
+      // most 1.2s) so the reel starts once and then runs uninterrupted
+      if (!readyRef.current) {
+        smoothRun = raw > 0 && raw < 24 ? smoothRun + 1 : 0
+        if (smoothRun >= 6 || ts - first > 1200) readyRef.current = true
+        raf = requestAnimationFrame(step)
+        return
+      }
+      const dt = Math.min(raw, 1000 / 50)
+      elapsed += dt
+      const t = Math.min(elapsed / DURATION, 1)
       // ease-in-out: a gentle start, a warp in the middle, a settle at 100%
       const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
       progressRef.current = e
@@ -79,7 +101,7 @@ export default function Loader({ onDone, name = 'Saksham Goel', thumbs = [] }) {
       {!exiting && (
         <motion.div className="loader" exit={{ opacity: 0, transition: { duration: 0.7, ease } }}>
           <div className="loader__canvas">
-            <StarTunnel className="loader__stars" speed={() => 0.003 + Math.pow(progressRef.current, 2) * 0.05} />
+            <StarTunnel className="loader__stars" speed={() => (readyRef.current ? 0.003 + Math.pow(progressRef.current, 2) * 0.05 : 0.0006)} />
             <div className="loader__ring" aria-hidden="true">
               {ring.map((f, i) => (
                 <div key={i} className="loader__frame" ref={(el) => (frameRefs.current[i] = el)}>

@@ -56,24 +56,14 @@ main {
   opacity: 0;
 }
 .main--in {
-  animation: site-unfold 1.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: center top;
+  /* opacity only: a 3D tilt + blur on the whole (very tall) page made the
+     hero's entrance stutter, and its final transform kept the page on one
+     giant composited layer forever */
+  animation: site-in 0.6s ease-out both;
 }
-@keyframes site-unfold {
-  0% {
-    opacity: 0;
-    transform: perspective(1600px) rotateX(10deg) scale(1.12) translateY(40px);
-    filter: blur(10px);
-  }
-  60% {
-    opacity: 1;
-    filter: blur(0);
-  }
-  100% {
-    opacity: 1;
-    transform: perspective(1600px) rotateX(0deg) scale(1) translateY(0);
-    filter: blur(0);
-  }
+@keyframes site-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -106,3 +96,7 @@ main {
   top: 100%;
   background: linear-gradient(to top, transparent, var(--seam, #060507) 92%);
 }
+
+/* the 3D background fades in when it boots, never pops */
+.scene3d { animation: scene-in 1.6s ease-out both; }
+@keyframes scene-in { from { opacity: 0; } to { opacity: 1; } }

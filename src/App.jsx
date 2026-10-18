@@ -26,6 +26,7 @@ import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
 import Marquee from './sections/Marquee'
 import FramesReel from './sections/FramesReel'
+import Waveform from './components/Waveform'
 import './App.css'
 
 // Code-split the heavy bits so the hero content paints first.
@@ -35,6 +36,13 @@ const DevConsole = lazy(() => import('./console/DevConsole'))
 export default function App() {
   const data = usePortfolio()
   const [loaded, setLoaded] = useState(false)
+  // the 3D background boots a moment after the hero's intro, not on top of it
+  const [scene, setScene] = useState(false)
+  useEffect(() => {
+    if (!loaded) return
+    const t = setTimeout(() => setScene(true), 1400)
+    return () => clearTimeout(t)
+  }, [loaded])
   const [lightbox, setLightbox] = useState(null)
   const [galleryCat, setGalleryCat] = useState(null)
   const [galleryOrigin, setGalleryOrigin] = useState({ x: 50, y: 50 })
@@ -62,9 +70,8 @@ export default function App() {
     () => data.projects.filter((p) => p.category === 'film').slice(0, 14).map((p) => thumbFor(p)),
     [data.projects]
   )
-  const marqueeA = useMemo(() => ['Cinematography', 'Editing', 'DI', 'Colour', 'VFX', 'Design'], [])
-  const marqueeB = useMemo(() => ['Light', 'Grade', 'Story', 'Frame', 'Editing', 'VFX', 'Sound', 'DI'], [])
-  const marqueeC = useMemo(() => ['Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
+  // the one text divider carries the whole trail
+  const marqueeC = useMemo(() => ['Light', 'Story', 'Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
   const progressSections = useMemo(
     () => [
       { id: 'top', label: 'Intro' },
@@ -175,7 +182,7 @@ export default function App() {
       {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
       {/* the 3D background starts after the loader, so the two never compete */}
-      {loaded && (
+      {scene && (
         <Suspense fallback={null}>
           <Scene3D />
         </Suspense>
@@ -199,7 +206,7 @@ export default function App() {
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <Marquee words={marqueeA} />
+          <Waveform variant="bars" label="Dialogue · Score · Foley" />
 
           <FramesReel stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
 
@@ -213,7 +220,7 @@ export default function App() {
             onOpenCategory={openCategory}
           />
 
-          <Marquee words={marqueeB} reverse />
+          <Waveform variant="mesh" />
 
           <About
             profile={data.profile}

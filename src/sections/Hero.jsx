@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useMagnetic } from '../hooks/useMagnetic'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import StarTunnel from '../components/StarTunnel'
+import LogoMark from '../components/LogoMark'
 import './Hero.css'
 
 const REEL_LABELS = [
@@ -70,6 +71,13 @@ export default function Hero({ profile, onExplore }) {
   const reduced = useReducedMotion()
   // the star drift is the same field that becomes the reel's tunnel below
   const starsO = useTransform(scrollYProgress, [0, 1], [0.55, 0.9])
+  // depth on the way out: each layer leaves at its own speed
+  const yLogo = useTransform(scrollYProgress, [0, 1], [0, -200])
+  const yName = useTransform(scrollYProgress, [0, 1], [0, -90])
+  const yCopy = useTransform(scrollYProgress, [0, 1], [0, -30])
+  const yStats = useTransform(scrollYProgress, [0, 1], [0, 40])
+  const yReel = useTransform(scrollYProgress, [0, 1], [0, 90])
+  const reelX = useTransform(scrollYProgress, [0, 1], ['0%', '-12%'])
   let charIndex = 0
   const nameLen = profile.name.replace(/\s/g, '').length
 
@@ -79,17 +87,9 @@ export default function Hero({ profile, onExplore }) {
       <span className="hero__sweep" aria-hidden="true" />
       <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
-        <span className="hero__logo-wrap">
-          <span className="hero__halo" aria-hidden="true" />
-          <motion.img
-            className="hero__logo"
-            src="/logo.svg"
-            alt={`${profile.name} logo`}
-            initial={{ opacity: 0, scale: 0.7, y: 10, rotate: -12 }}
-            animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </span>
+        <motion.div className="hero__layer hero__layer--1" style={{ y: yLogo }}>
+          <LogoMark className="hero__logo" label={`${profile.name} logo`} />
+        </motion.div>
 
         <motion.span
           className="slate hero__slate"
@@ -101,7 +101,7 @@ export default function Hero({ profile, onExplore }) {
         </motion.span>
 
         {/* pointer-parallax wrapper — floats the name against the section tilt */}
-        <div className="hero__name-float">
+        <motion.div className="hero__name-float hero__layer hero__layer--2" style={{ y: yName }}>
           <motion.h1
             aria-label={profile.name}
             className="hero__name hero__breathe"
@@ -128,15 +128,26 @@ export default function Hero({ profile, onExplore }) {
               </span>
             ))}
           </motion.h1>
-        </div>
+        </motion.div>
 
+        <motion.div className="hero__layer hero__layer--3" style={{ y: yCopy }}>
         <motion.p
-          className="hero__tagline gradient-text"
+          className="hero__tagline"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.18 }}
         >
-          {profile.tagline}
+          {profile.tagline.split(' ').map((w, i) => (
+            <motion.span
+              key={i}
+              className="hero__tagword"
+              initial={reduced ? false : { opacity: 0, y: '0.6em', filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: '0em', filter: 'blur(0px)' }}
+              transition={{ duration: 0.7, delay: 0.7 + i * 0.09, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {w}
+            </motion.span>
+          ))}
         </motion.p>
 
 
@@ -148,8 +159,10 @@ export default function Hero({ profile, onExplore }) {
         >
           {profile.intro}
         </motion.p>
+        </motion.div>
 
         {profile.stats?.length > 0 && (
+          <motion.div className="hero__layer hero__layer--4" style={{ y: yStats }}>
           <motion.div
             className="hero__stats"
             aria-label="Track record"
@@ -164,9 +177,11 @@ export default function Hero({ profile, onExplore }) {
               </div>
             ))}
           </motion.div>
+          </motion.div>
         )}
 
         {/* film-strip accent */}
+        <motion.div className="hero__layer hero__layer--5" style={{ y: yReel, x: reelX }}>
         <motion.div
           className="hero__reel"
           initial={{ opacity: 0 }}
@@ -185,6 +200,7 @@ export default function Hero({ profile, onExplore }) {
             </div>
           </div>
           <span className="perf-row hero__reel-perf" />
+        </motion.div>
         </motion.div>
 
         <motion.div

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './InstaFeed.css'
 
 /**
@@ -13,7 +13,18 @@ export default function InstaFeed({ profile }) {
   // Load the right widget script once. Behold uses a web component; iframe
   // widgets (SnapWidget / LightWidget-paid) need no script but LightWidget's
   // auto-resize helper is loaded when its URL is used.
+  const rootRef = useRef(null)
+  const [near, setNear] = useState(false)
   useEffect(() => {
+    const el = rootRef.current
+    if (!el || !window.IntersectionObserver) return setNear(true)
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect() } }, { rootMargin: '600px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    // third-party widget scripts load only when the feed is about to be seen
+    if (!near) return
     if (profile.instagramElfsight && !document.querySelector('script[data-elfsight]')) {
       const s = document.createElement('script')
       s.src = 'https://elfsightcdn.com/platform.js'
@@ -40,7 +51,7 @@ export default function InstaFeed({ profile }) {
       s.setAttribute('data-lightwidget', '1')
       document.body.appendChild(s)
     }
-  }, [profile.instagramElfsight, profile.instagramBehold, profile.instagramWidget])
+  }, [profile.instagramElfsight, profile.instagramBehold, profile.instagramWidget, near])
 
   return (
     <section className="insta section" id="insta">

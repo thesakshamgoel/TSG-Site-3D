@@ -1,0 +1,11 @@
+/* the colour wheel turns slowly around its own centre once it has arrived */
+.logomark { display: block; overflow: visible; }
+.logomark__wheel {
+  transform-box: view-box;
+  transform-origin: 676.6px 500.8px;
+  animation: logomark-turn 24s linear 2s infinite;
+}
+@keyframes logomark-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .logomark__wheel { animation: none; }
+}

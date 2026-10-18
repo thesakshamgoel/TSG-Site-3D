@@ -42,11 +42,13 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   const open = useTransform(t, [0.3, 0.85], [0, 1])
   // frame window grows from 50% x 62% of the screen to full-bleed; the inner
   // layer counter-scales so the picture is cropped, never squashed
-  const sx = useTransform(open, (o) => 0.5 + 0.5 * o)
-  const sy = useTransform(open, (o) => 0.62 + 0.38 * o)
-  const zoom = useTransform(open, [0, 1], [1.25, 1])
-  const ix = useTransform([sx, zoom], ([a, z]) => z / a)
-  const iy = useTransform([sy, zoom], ([a, z]) => z / a)
+  // an even scale (a smaller print of the same frame), so the rounded corners
+  // and film-strip rails keep their shape; the picture settles from a slight zoom
+  const fs = useTransform(open, (o) => 0.56 + 0.44 * o)
+  const zoom = useTransform(open, [0, 1], [1.18, 1])
+  // the sprocket rails sit on the print, then slide away as it fills the screen
+  const railT = useTransform(open, [0.78, 1], ['0%', '-105%'])
+  const railB = useTransform(open, [0.78, 1], ['0%', '105%'])
   // 0 until the next slide starts rising, 1 once it has fully covered this one
   const after = useTransform(p, (v) => (i === n - 1 ? 0 : Math.min(1, Math.max(0, (v * (n + 0.4) - i - 1) / 0.5))))
   const sink = useTransform(after, [0, 1], [1, 0.9])
@@ -116,11 +118,11 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
       <motion.button
         type="button"
         className="hl__frame"
-        style={reduced ? undefined : { scaleX: sx, scaleY: sy }}
+        style={reduced ? undefined : { scale: fs }}
         onClick={() => onOpen(s)}
         aria-label={`Watch ${s.title} with sound`}
       >
-        <motion.div className="hl__inner" style={reduced ? undefined : { scaleX: ix, scaleY: iy }}>
+        <motion.div className="hl__inner" style={reduced ? undefined : { scale: zoom }}>
           {!thumb.broken ? (
             <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
           ) : (
@@ -140,6 +142,8 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
           )}
         </motion.div>
         <span className="hl__shade" />
+        <motion.span className="hl__rail hl__rail--t" style={reduced ? undefined : { y: railT }} aria-hidden="true" />
+        <motion.span className="hl__rail hl__rail--b" style={reduced ? undefined : { y: railB }} aria-hidden="true" />
         <motion.span className="hl__dim" style={reduced ? undefined : { opacity: dim }} />
       </motion.button>
       <motion.div className="hl__meta" style={reduced ? undefined : { opacity: metaO, y: metaY }}>

@@ -287,6 +287,7 @@ export default function Scene3D() {
   return (
     <div
       aria-hidden="true"
+      className="scene3d"
       style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
     >
       <Canvas

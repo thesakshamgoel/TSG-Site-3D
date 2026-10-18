@@ -396,3 +396,37 @@
   .hero__sweep, .hero__halo { animation: none; }
   .hero__sweep { display: none; }
 }
+
+/* the old halo ring is retired: the logo animates itself now */
+.hero__halo { display: none; }
+.hero__logo.logomark {
+  width: clamp(150px, 17vw, 220px);
+  height: auto;
+  margin: 0 auto 22px;
+  animation: none;
+  filter: none;
+}
+/* depth layers: each one also leans with the mouse at its own depth
+   (the 'translate' property composes with the scroll transform) */
+.hero__layer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero__layer--1 { translate: calc(var(--pnx, 0) * 16px) calc(var(--pny, 0) * 10px); }
+  .hero__layer--2 { translate: calc(var(--pnx, 0) * 9px) calc(var(--pny, 0) * 6px); }
+  .hero__layer--3 { translate: calc(var(--pnx, 0) * 5px) calc(var(--pny, 0) * 3px); }
+  .hero__layer--4 { translate: calc(var(--pnx, 0) * -6px) calc(var(--pny, 0) * -4px); }
+  .hero__layer--5 { translate: calc(var(--pnx, 0) * -12px) calc(var(--pny, 0) * -6px); }
+}
+.hero__layer { transition: translate 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+/* tagline words */
+.hero__tagword { display: inline-block; color: var(--gold-soft); }
+.hero__tagword:last-child { color: var(--gold); }
+
+/* word spacing as margin: a trailing space inside an inline-block collapses */
+.hero__tagword { margin-right: 0.28em; }
+.hero__tagword:last-child { margin-right: 0; }

@@ -23,6 +23,8 @@ export function useLenis(ready, paused) {
       touchMultiplier: 1.2,
     })
     lenisRef.current = lenis
+    window.__lenis = lenis
+    window.__lenisWheel = 0.9 // the base wheel speed, for sections that slow it
     let raf
     const loop = (t) => {
       lenis.raf(t)
@@ -49,6 +51,7 @@ export function useLenis(ready, paused) {
       cancelAnimationFrame(raf)
       lenis.destroy()
       lenisRef.current = null
+      if (window.__lenis === lenis) delete window.__lenis
     }
   }, [reduced])
 

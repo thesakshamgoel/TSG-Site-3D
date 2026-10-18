@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useScrollDamp } from '../hooks/useScrollDamp'
 import './FramesReel.css'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -52,6 +53,8 @@ export default function FramesReel({ stills, onOpenImage }) {
   const [active, setActive] = useState(0)
 
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // 30% slower scroll while inside, so each still gets more time (no locking)
+  useScrollDamp(ref, 0.7)
   // continuous index of the frame in focus, with a short settle at each end
   const c = useTransform(p, (v) => clamp((v - 0.06) / 0.88, 0, 1) * (n - 1))
   useMotionValueEvent(c, 'change', (v) => setActive(Math.round(v)))

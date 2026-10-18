@@ -12,7 +12,7 @@ import './Marquee.css'
  * band skews with scroll speed.
  */
 function Row({ words, x, skew, className, reduced }) {
-  const line = [...words, ...words, ...words, ...words]
+  const line = [...words, ...words, ...words]
   return (
     <motion.div className={`mq__track ${className || ''}`} style={reduced ? undefined : { x, skewX: skew }}>
       {line.map((w, i) => (
@@ -37,8 +37,8 @@ export default function Marquee({ words, reverse = false }) {
   // rows travel the full trail: the track is four copies wide, so -50% is two copies
   // a row moving left travels 0% -> -50%; moving right it travels -50% -> 0%
   // (mirroring the sign instead would slide the row off the right edge)
-  const leftward = ['2%', '-52%']
-  const rightward = ['-52%', '2%']
+  const leftward = ['2%', '-38%']
+  const rightward = ['-38%', '2%']
   const xA = useTransform(p, [0, 1], dir > 0 ? leftward : rightward)
   const xB = useTransform(p, [0, 1], dir > 0 ? rightward : leftward)
   const rotY = useTransform(p, [0, 1], [-9 * dir, 9 * dir])

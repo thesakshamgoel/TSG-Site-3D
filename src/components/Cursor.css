@@ -96,3 +96,13 @@ body.has-custom-cursor * {
   );
   will-change: transform;
 }
+
+/* no cursor while the loader plays */
+.loader ~ .cursor-cam,
+.loader ~ .cursor-glow { opacity: 0 !important; }
+/* over anything clickable, the camera itself turns red */
+.cursor-cam.is-hot .cursor-cam__body rect,
+.cursor-cam.is-hot .cursor-cam__body path { fill: #ff3b3b; }
+.cursor-cam.is-hot .cursor-lens { fill: #2a0d0d; stroke: #2a0d0d; }
+.cursor-cam.is-hot .cursor-rec { fill: #ffd2d2; }
+.cursor-cam__body rect, .cursor-cam__body path { transition: fill 0.18s ease; }

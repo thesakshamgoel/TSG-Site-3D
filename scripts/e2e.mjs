@@ -324,10 +324,11 @@ async function main() {
 
   await test('logo renders in hero', async () => {
     const ok = await page.evaluate(() => {
-      const img = document.querySelector('.hero__logo')
-      return !!img && img.complete && img.naturalWidth > 0
+      // the mark is an inline, animated SVG of the brand logo
+      const svg = document.querySelector('.hero__logo')
+      return !!svg && svg.tagName.toLowerCase() === 'svg' && svg.querySelectorAll('path').length > 5
     })
-    assert(ok, 'hero logo <img> missing or failed to load')
+    assert(ok, 'hero logo mark missing')
   })
 
   await test('name and tagline render', async () => {
@@ -487,11 +488,12 @@ async function main() {
     await sleep(400)
     const none = (await textOf('.gw__caption')) || ''
     assert(!none.trim(), `a slat opened while still grading: "${none}"`)
+    // each still is a snap stop: wait for the glide to settle before reading
     await gradeAt(0.6)
-    await sleep(700)
+    await sleep(1400)
     const a = (await textOf('.gw__caption')) || ''
     await gradeAt(0.95)
-    await sleep(700)
+    await sleep(1400)
     const b = (await textOf('.gw__caption')) || ''
     assert(a && b && a !== b, `open slat did not advance with scroll ("${a}" then "${b}")`)
     const box = await (await page.$('.gw__frame')).boundingBox()

@@ -398,3 +398,10 @@
   .panel:hover .panel__mosaic { transform: rotate(-4deg) scale(1.2); }
   .panel.is-dimmed { opacity: 0.72; }
 }
+
+/* the panel ground under the line-art */
+.panel__media {
+  background:
+    radial-gradient(70% 60% at 70% 35%, rgba(233, 184, 114, 0.12), transparent 70%),
+    linear-gradient(160deg, #16120d, #08070a 70%);
+}

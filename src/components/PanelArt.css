@@ -1,0 +1,111 @@
+/* reel panel line-art */
+.part {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.part__line {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.82;
+}
+.part__line--soft { opacity: 0.38; }
+.part__line--fine { stroke-width: 0.8; opacity: 0.5; }
+.part__line--dash { stroke-dasharray: 2 7; opacity: 0.45; }
+.part__glass { fill: rgba(233, 184, 114, 0.08); stroke: var(--gold); stroke-width: 1.3; }
+.part__glint { stroke: #fff3d6; opacity: 0.55; }
+.part__node { fill: #0d0b09; stroke: var(--gold); stroke-width: 1.3; }
+.part__runner { fill: #fff3d6; offset-rotate: 0deg; }
+.part__seg { fill: none; stroke-width: 9; stroke-linecap: butt; opacity: 0.9; }
+.part__type {
+  font-family: var(--font-display);
+  font-size: 54px;
+  font-style: italic;
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.1;
+  opacity: 0.7;
+}
+.part__sprocket {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 3.2;
+  stroke-dasharray: 3 8;
+  opacity: 0.55;
+}
+.part__frames {
+  fill: none;
+  stroke: rgba(233, 184, 114, 0.18);
+  stroke-width: 20;
+  stroke-dasharray: 26 6;
+}
+.part__spin, .part__counter, .part__iris, .part__wheel, .part__layer, .part__clap {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.part__clap { transform-origin: 0 100%; }
+
+/* everything waits until the Work section is on screen */
+.part * { animation-play-state: paused; }
+.work.is-live .part * { animation-play-state: running; }
+
+.part__spin { animation: part-spin 30s linear infinite; }
+.part__counter { animation: part-spin 50s linear infinite reverse; }
+.part__iris { animation: part-iris 7s ease-in-out infinite; }
+.part__wheel { animation: part-spin 18s linear infinite; }
+.part__layer--a { animation: part-spin 16s linear infinite; }
+.part__layer--b { animation: part-spin 10s linear infinite reverse; }
+.part__layer--c { animation: part-float-spin 9s ease-in-out infinite; }
+.part__clap { animation: part-clap 4.2s cubic-bezier(0.6, 0, 0.4, 1) infinite; }
+.part__ray { animation: part-ray 3.6s ease-in-out infinite; }
+.part__sprocket { animation: part-run 1.4s linear infinite; }
+.part__frames { animation: part-frames 1.4s linear infinite; }
+.part__spiral {
+  stroke-dasharray: 700;
+  animation: part-draw 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.part__draw {
+  stroke-dasharray: 320;
+  animation: part-draw 5.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.part__runner { animation: part-run-path 5.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+
+@keyframes part-spin { to { transform: rotate(360deg); } }
+@keyframes part-iris {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(40deg) scale(0.82); }
+}
+@keyframes part-clap {
+  0%, 62% { transform: rotate(-22deg); }
+  70%, 100% { transform: rotate(0deg); }
+}
+@keyframes part-ray {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.45; }
+}
+@keyframes part-run { to { stroke-dashoffset: -22; } }
+@keyframes part-frames { to { stroke-dashoffset: -32; } }
+@keyframes part-draw {
+  0% { stroke-dashoffset: 700; }
+  55%, 80% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -700; }
+}
+@keyframes part-run-path {
+  0% { offset-distance: 0%; }
+  55%, 80% { offset-distance: 100%; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@keyframes part-float-spin {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(60deg); }
+}
+.panel .part { opacity: 0.78; transition: opacity 0.4s ease; }
+.panel:hover .part, .panel.is-active .part { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .part * { animation: none !important; }
+}

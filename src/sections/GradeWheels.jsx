@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useScroll } from 'framer-motion'
+import { useScrollDamp } from '../hooks/useScrollDamp'
 import './GradeWheels.css'
 
 /**
@@ -114,7 +115,7 @@ void main() {
   // press and hold: the raw plate wipes out from the press point in a circle
   float d = length((v - uHoldAt) * vec2(rs, 1.0));
   float r = uHold * (rs + 1.0);
-  float inside = 1.0 - smoothstep(r - 0.006, r + 0.006, d);
+  float inside = 1.0 - smoothstep(r - 0.025, r + 0.025, d);  // a soft edge
   o = mix(o, raw, inside);
   // dark seams between slats; closed slats sit slightly back (eased per slat)
   float px = 1.0 / uRes.x;
@@ -123,7 +124,7 @@ void main() {
   vec3 col3 = o * seam * zb.y * mix(0.82, 1.0, vg);
   // thin gold edge on the wipe while it moves
   float edgeOn = step(0.002, uHold) * (1.0 - step(0.998, uHold));
-  col3 += vec3(0.91, 0.72, 0.45) * (1.0 - smoothstep(0.0, 0.006, abs(d - r))) * edgeOn;
+  col3 += vec3(0.91, 0.72, 0.45) * 0.55 * (1.0 - smoothstep(0.0, 0.016, abs(d - r))) * edgeOn;
   gl_FragColor = vec4(col3, 1.0);
 }`
 
@@ -173,13 +174,15 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     inView: false, last: null, click: -1, clickP: 0, focus: -1,
     w: Array(MAX).fill(1), edges: [],
     zoom: Array(MAX).fill(1), bright: Array(MAX).fill(1),
-    holdTarget: 0, holdV: 0, holdAt: [0.5, 0.5],
+    holdTarget: 0, holdV: 0, holdAt: [0.5, 0.5], holdGoal: 0, holdFrom: 0, holdT0: 0,
   })
   const glRef = useRef(null)
   const [user, setUser] = useState(false)
   const [hasGL, setHasGL] = useState(false)
   const [focus, setFocus] = useState(-1)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // 30% slower scroll while inside, so each frame gets more time (no locking)
+  useScrollDamp(ref, 0.7)
 
   // ── GL setup + atlases ──
   useEffect(() => {
@@ -222,7 +225,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const small = window.matchMedia('(max-width: 720px)').matches
     const cw = small ? 1024 : 1600, ch = Math.round((cw * 9) / 16)
     let live = true
-    Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then((res) => {
+    const load = () => Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then((res) => {
       if (!live) return
       const up = (tex, unit, src) => {
         gl.activeTexture(gl.TEXTURE0 + unit)
@@ -239,8 +242,13 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
       setHasGL(true)
       state.current.dirty = true
     })
+    // twelve 4K frames into two atlases is real work: do it only as the
+    // section approaches, not while the site is booting
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); load() } }, { rootMargin: '150% 0px' })
+    io.observe(ref.current)
     return () => {
       live = false
+      io.disconnect()
       window.removeEventListener('resize', size)
       ro?.disconnect()
     }
@@ -309,10 +317,13 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
         S.bright[k] = Math.abs(nb - bt) > 0.001 ? nb : bt
         S.zoom[k] = Math.abs(nz - zt) > 0.0005 ? nz : zt
       }
-      // press-and-hold raw wipe opens and closes over ~0.45s
-      const hv = lerp(S.holdV, S.holdTarget, 1 - Math.pow(1 - 0.12, dt / 16.67))
-      if (Math.abs(hv - S.holdTarget) > 0.001) S.dirty = true
-      S.holdV = Math.abs(hv - S.holdTarget) > 0.001 ? hv : S.holdTarget
+      // press-and-hold raw wipe: a timed ease-in-out (0.9s open, 0.65s close)
+      // from wherever it is, instead of a lerp that lunges at the start
+      if (S.holdTarget !== S.holdGoal) { S.holdGoal = S.holdTarget; S.holdFrom = S.holdV; S.holdT0 = now }
+      const hk = Math.min(1, (now - S.holdT0) / (S.holdGoal ? 900 : 650))
+      const he = hk < 0.5 ? 4 * hk * hk * hk : 1 - Math.pow(-2 * hk + 2, 3) / 2
+      S.holdV = S.holdFrom + (S.holdGoal - S.holdFrom) * he
+      if (hk < 1) S.dirty = true
       // slat widths: driven continuously by the scroll (the open slat slides
       // smoothly from one to the next), or by a click; eased either way
       const big = (OPEN_SHARE * (n - 1)) / (1 - OPEN_SHARE)

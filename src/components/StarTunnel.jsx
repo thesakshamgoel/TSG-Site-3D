@@ -21,7 +21,7 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
     if (!c) return
     const ctx = c.getContext('2d')
     const small = window.matchMedia('(max-width: 720px)').matches
-    const N = small ? 220 : 520
+    const N = small ? 140 : 320
     let W = 0, H = 0, raf = null, lastY = window.scrollY, vel = 0
     const stars = Array.from({ length: N }, () => ({ x: 0, y: 0, z: 0, pz: 0 }))
     const seed = (s, far) => {
@@ -32,7 +32,7 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
     }
     stars.forEach((s) => seed(s, false))
     const size = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.5)
+      const dpr = 1
       W = c.clientWidth
       H = c.clientHeight
       c.width = Math.round(W * dpr)
@@ -61,10 +61,12 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
         if (x < -40 || x > W + 40 || y2 < -40 || y2 > H + 40) { seed(s, true); continue }
         const a = Math.min(1, (1 - s.z) * 1.4) * k
         const w = (1 - s.z) * 2.4 + 0.3
-        // soft halo, then the bright core
-        ctx.strokeStyle = `rgba(233, 184, 114, ${(a * 0.22).toFixed(3)})`
-        ctx.lineWidth = w * 3.2
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y2); ctx.stroke()
+        // soft halo on the near stars only, then the bright core
+        if (s.z < 0.45) {
+          ctx.strokeStyle = `rgba(233, 184, 114, ${(a * 0.22).toFixed(3)})`
+          ctx.lineWidth = w * 3.2
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y2); ctx.stroke()
+        }
         ctx.strokeStyle = `rgba(255, 240, 214, ${(a * 0.9).toFixed(3)})`
         ctx.lineWidth = w
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x + 0.01, y2 + 0.01); ctx.stroke()
