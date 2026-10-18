@@ -42,8 +42,9 @@ html.lenis body {
 }
 
 html {
-  /* clamp any stray sub-pixel / third-party-widget horizontal overflow */
-  overflow-x: hidden;
+  /* clamp any stray sub-pixel / third-party-widget horizontal overflow.
+     `clip` (not `hidden`) so position: sticky pinned sections still work */
+  overflow-x: clip;
 }
 
 body {
@@ -51,7 +52,7 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
   line-height: 1.55;
   letter-spacing: -0.01em;
 }
@@ -63,8 +64,7 @@ body::after {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -255,5 +255,25 @@ img {
   * {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* section titles rise out of a mask when they enter the viewport */
+.js-reveal .section-title {
+  opacity: 0;
+  transform: translateY(46px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.js-reveal .section-title.is-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal .section-title {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }

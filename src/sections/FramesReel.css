@@ -1,0 +1,117 @@
+.fr {
+  position: relative;
+  z-index: 3;
+}
+.fr__pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(18px, 3vh, 36px);
+}
+.fr__head {
+  position: relative;
+  z-index: 2;
+  padding-top: 70px;
+}
+.fr__bg {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: clamp(9rem, 30vw, 30rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(233, 184, 114, 0.16);
+  pointer-events: none;
+  user-select: none;
+}
+.fr__track {
+  position: relative;
+  z-index: 2;
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 24px);
+  padding: 0 30vw;
+  width: max-content;
+  will-change: transform;
+}
+.fr__frame {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: #0b0b0e;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+}
+.fr__frame--0 {
+  width: clamp(280px, 50vw, 820px);
+  aspect-ratio: 16 / 10;
+}
+.fr__frame--1 {
+  width: clamp(220px, 28vw, 460px);
+  aspect-ratio: 4 / 5;
+}
+.fr__frame--2 {
+  width: clamp(260px, 42vw, 680px);
+  aspect-ratio: 3 / 2;
+}
+.fr__frame img {
+  width: 118%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  transition: filter 0.5s ease;
+  filter: saturate(0.9) brightness(0.9);
+}
+.fr__frame:hover img {
+  filter: saturate(1.1) brightness(1.05);
+}
+.fr__cap {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  color: #fff;
+  text-shadow: 0 1px 10px #000;
+}
+.fr__prog {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(20px, 5vh, 48px);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 3;
+}
+.fr__prog b {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fr__pin {
+    position: relative;
+    height: auto;
+    padding: 100px 0;
+  }
+  .fr__track {
+    overflow-x: auto;
+    width: 100%;
+  }
+  .fr__prog,
+  .fr__bg {
+    display: none;
+  }
+}

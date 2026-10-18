@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
 import Hero from './sections/Hero'
 import Highlights from './sections/Highlights'
-import BeforeAfter from './sections/BeforeAfter'
 import Work from './sections/Work'
 import About from './sections/About'
 import Footer from './components/Footer'
@@ -22,7 +21,11 @@ import CategoryGallery from './components/CategoryGallery'
 import { usePortfolio } from './data/store'
 import { firebaseEnabled } from './firebase/config'
 import { watchOwner } from './firebase/auth'
-import { useSmoothScroll } from './hooks/useSmoothScroll'
+import { useLenis } from './hooks/useLenis'
+import ReelWall from './sections/ReelWall'
+import GradeWheels from './sections/GradeWheels'
+import Marquee from './sections/Marquee'
+import FramesReel from './sections/FramesReel'
 import './App.css'
 
 // Code-split the heavy bits so the hero content paints first.
@@ -54,18 +57,40 @@ export default function App() {
   }, [])
 
   const snapIds = useMemo(() => ['top', 'highlights', 'grade', 'work'], [])
+  const marqueeA = useMemo(() => ['Cinematography', 'Colour', 'Design', 'Edit'], [])
+  const marqueeB = useMemo(() => ['Light', 'Grade', 'Story', 'Frame'], [])
   const progressSections = useMemo(
     () => [
       { id: 'top', label: 'Intro' },
+      { id: 'reelwall', label: 'The reel' },
       { id: 'highlights', label: 'Featured' },
-      { id: 'grade', label: 'Before / After' },
+      { id: 'frames', label: 'Stills' },
+      { id: 'grade', label: 'The grade' },
       { id: 'work', label: 'Work' },
       { id: 'about', label: 'About' },
     ],
     []
   )
   const paused = !!(galleryCat || lightbox || consoleOpen)
-  const { scrollToId, indexRef } = useSmoothScroll(snapIds, 'about', loaded, paused)
+  const { scrollToId, indexRef } = useLenis(loaded, paused)
+
+  // section titles reveal as they enter the viewport
+  useEffect(() => {
+    if (!loaded) return
+    document.documentElement.classList.add('js-reveal')
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add('is-in'), io.unobserve(e.target))),
+      { threshold: 0.2 }
+    )
+    const scan = () => document.querySelectorAll('.section-title:not(.is-in)').forEach((el) => io.observe(el))
+    scan()
+    const t = setInterval(scan, 1500) // catches titles mounted later (galleries, tabs)
+    return () => {
+      clearInterval(t)
+      io.disconnect()
+      document.documentElement.classList.remove('js-reveal')
+    }
+  }, [loaded])
 
   // lock the page + custom scroll while the loader is up
   useEffect(() => {
@@ -121,7 +146,7 @@ export default function App() {
         const el = document.getElementById('reviews') || document.getElementById('contact')
         if (el) {
           if (indexRef) indexRef.current = snapIds.length
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          scrollToId(el.id)
         } else {
           scrollToId('about')
         }
@@ -159,21 +184,26 @@ export default function App() {
         <main className={loaded ? 'main--in' : 'main--pre'}>
           <Hero profile={data.profile} onExplore={() => scrollToId('highlights')} />
 
+          <ReelWall projects={data.projects} onOpenProject={(p) => setLightbox(p)} />
+
           <Highlights
             projects={data.featuredProjects}
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <BeforeAfter
-            comparisons={data.comparisons}
-            onOpenImage={(img) => setLightbox(img)}
-          />
+          <Marquee words={marqueeA} />
+
+          <FramesReel stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
+
+          <GradeWheels comparisons={data.comparisons} />
 
           <Work
             categories={data.categories}
             projects={data.projects}
             onOpenCategory={openCategory}
           />
+
+          <Marquee words={marqueeB} reverse />
 
           <About
             profile={data.profile}

@@ -372,26 +372,37 @@ async function main() {
     assert(title && title.length > 0, 'highlight title missing')
   })
 
-  await test('dot count matches slide count (<=3)', async () => {
-    const n = await countOf('.hl__dot')
-    assert(n >= 1 && n <= 3, `expected 1-3 highlight dots, got ${n}`)
+  await test('featured films are stacked full-screen frames (1-4)', async () => {
+    const n = await countOf('.hl__slide')
+    assert(n >= 1 && n <= 4, `expected 1-4 highlight slides, got ${n}`)
   })
 
-  await test('next arrow advances the slide', async () => {
-    const before = await textOf('.hl__title')
-    await page.click('.hl__arrow[aria-label="Next"]')
-    await sleep(900)
-    const after = await textOf('.hl__title')
-    assert(before !== after, `title did not change after Next click ("${before}")`)
-  })
-
-  await test('dot click jumps directly to a slide', async () => {
-    const dots = await page.$$('.hl__dot')
-    if (dots.length < 2) return skip('dot click jumps directly to a slide', 'fewer than 2 highlight slides')
-    await dots[0].click()
-    await sleep(600)
-    const isOn = await page.evaluate(() => document.querySelectorAll('.hl__dot')[0]?.classList.contains('is-on'))
-    assert(isOn, 'first dot did not become active after click')
+  await test('scrolling through Highlights opens the next film', async () => {
+    const titles = await page.$$eval('.hl__title', (els) => els.map((e) => e.textContent.trim()))
+    if (titles.length < 2) return skip('scrolling through Highlights opens the next film', 'fewer than 2 highlight slides')
+    const shownTitle = () =>
+      page.evaluate(() => {
+        const vis = [...document.querySelectorAll('.hl__meta')].find((m) => parseFloat(getComputedStyle(m).opacity) > 0.9)
+        return vis ? vis.querySelector('.hl__title').textContent.trim() : null
+      })
+    await page.evaluate(() => {
+      const s = document.getElementById('highlights')
+      window.scrollTo({ top: s.offsetTop + (s.offsetHeight - innerHeight) * 0.2, behavior: 'instant' })
+    })
+    await sleep(700)
+    const first = await shownTitle()
+    await page.evaluate(() => {
+      const s = document.getElementById('highlights')
+      window.scrollTo({ top: s.offsetTop + (s.offsetHeight - innerHeight) * 0.55, behavior: 'instant' })
+    })
+    await sleep(700)
+    const second = await shownTitle()
+    assert(first && second && first !== second, `open film did not change on scroll ("${first}" then "${second}")`)
+    await page.evaluate(() => {
+      const s = document.getElementById('highlights')
+      window.scrollTo({ top: s.offsetTop + (s.offsetHeight - innerHeight) * 0.2, behavior: 'instant' })
+    })
+    await sleep(700)
   })
 
   await test('clicking the frame opens the Lightbox', async () => {
@@ -418,59 +429,60 @@ async function main() {
   section('Before / After')
   await scrollToId('grade')
 
-  await test('before/after stage is landscape ~16:9 (not full-bleed ultra-wide)', async () => {
-    const ratio = await page.evaluate(() => {
-      const el = document.querySelector('.ba__stage')
-      const r = el.getBoundingClientRect()
-      return r.width / r.height
-    })
-    assert(ratio > 1.6 && ratio < 2.0, `before/after stage aspect ratio out of range: ${ratio.toFixed(2)}`)
-  })
+  const gradeAt = (f) =>
+    page.evaluate((f) => {
+      const s = document.getElementById('grade')
+      window.scrollTo({ top: s.offsetTop + (s.offsetHeight - innerHeight) * f, behavior: 'instant' })
+    }, f)
 
-  await test('both before and after frames are loaded images or the drop placeholder', async () => {
-    const state = await page.evaluate(() => {
-      const imgs = [...document.querySelectorAll('.ba__layer img')]
-      const ph = document.querySelectorAll('.ba__ph').length
-      if (!imgs.length) return ph ? 'placeholder' : 'missing'
-      return imgs.every((im) => im.complete && im.naturalWidth > 0) ? 'loaded' : 'broken'
-    })
-    assert(state === 'loaded' || state === 'placeholder', `unexpected before/after state: ${state}`)
-  })
-
-  await test('there are up to 6 comparison dots and a draggable handle', async () => {
-    const { dots, hasHandle } = await page.evaluate(() => ({
-      dots: document.querySelectorAll('.ba__dot').length,
-      hasHandle: !!document.querySelector('.ba__handle'),
-    }))
-    assert(dots >= 1 && dots <= 6, `dot count out of range: ${dots}`)
-    assert(hasHandle, 'no drag handle found')
-  })
-
-  await test('dragging the handle changes the reveal amount', async () => {
-    const stage = await page.$('.ba__stage')
-    const box = await stage.boundingBox()
-    const y = box.y + box.height / 2
-    const posBefore = await page.evaluate(
-      () => document.querySelector('.ba__stage').style.getPropertyValue('--pos')
-    )
-    // drag from ~30% to ~70% across the stage
-    await page.mouse.move(box.x + box.width * 0.3, y)
-    await page.mouse.down()
-    await page.mouse.move(box.x + box.width * 0.7, y, { steps: 8 })
-    await page.mouse.up()
-    await sleep(200)
-    const posAfter = await page.evaluate(
-      () => document.querySelector('.ba__stage').style.getPropertyValue('--pos')
-    )
-    assert(posBefore !== posAfter, `reveal did not change on drag (${posBefore} → ${posAfter})`)
-  })
-
-  await test('next arrow advances to another comparison', async () => {
-    const titleBefore = await textOf('.ba__title')
-    await page.click('.ba__arrow[aria-label="Next comparison"]')
+  await test('grade stage fills the screen with the frame and three colour wheels', async () => {
+    await gradeAt(0.1)
     await sleep(600)
-    const titleAfter = await textOf('.ba__title')
-    assert(titleBefore !== titleAfter, 'comparison title did not change after Next click')
+    const st = await page.evaluate(() => ({
+      wheels: document.querySelectorAll('.gw .wheel__ring').length,
+      gl: !!document.querySelector('.gw__stage.has-gl'),
+      fb: [...document.querySelectorAll('.gw__fallback img')].every((im) => im.complete && im.naturalWidth > 0),
+    }))
+    assert(st.wheels === 3, `expected 3 colour wheels, got ${st.wheels}`)
+    assert(st.gl || st.fb, 'neither the WebGL frame nor the image fallback loaded')
+  })
+
+  await test('scrolling grades the frame: lift wheel leaves neutral', async () => {
+    await gradeAt(0.05)
+    await sleep(400)
+    const v0 = await textOf('.gw .wheel:first-child .wheel__val')
+    await gradeAt(0.4)
+    await sleep(400)
+    const v1 = await textOf('.gw .wheel:first-child .wheel__val')
+    assert(v0 !== v1, `lift values did not move with scroll (${v0})`)
+  })
+
+  await test('dragging a wheel switches to the visitor grade, reset restores it', async () => {
+    await gradeAt(0.95)
+    await sleep(500)
+    const ring = await page.$('.gw .wheel:last-child .wheel__ring')
+    const box = await ring.boundingBox()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.25, { steps: 6 })
+    await page.mouse.up()
+    await sleep(300)
+    const mode = await textOf('.gw__mode')
+    assert(/your grade/i.test(mode || ''), `mode did not switch after drag: "${mode}"`)
+    await clickByText('.gw__tools', 'Back to his grade')
+    await sleep(300)
+    const back = await textOf('.gw__mode')
+    assert(!/your grade/i.test(back || ''), `reset did not restore his grade: "${back}"`)
+  })
+
+  await test('choosing another scene changes the graded title', async () => {
+    const n = await countOf('.gw__scenes button')
+    if (n < 2) return skip('choosing another scene changes the graded title', 'only one comparison pair')
+    const t0 = await textOf('.gw__h')
+    await page.click('.gw__scenes button:nth-child(2)')
+    await sleep(400)
+    const t1 = await textOf('.gw__h')
+    assert(t0 !== t1, `scene title did not change ("${t0}")`)
   })
 
   // ── WORK (2 category panels) ─────────────────────────────────────────
@@ -911,9 +923,9 @@ async function main() {
   // ── SCROLL PROGRESS RAIL ──────────────────────────────────────────────
   section('Scroll progress rail')
 
-  await test('progress rail has 5 nodes (Intro/Featured/Before-After/Work/About)', async () => {
+  await test('progress rail has 7 nodes (Intro/Reel/Featured/Stills/Grade/Work/About)', async () => {
     const labels = await page.$$eval('.sprog__label', (els) => els.map((e) => e.textContent.trim()))
-    assert(labels.length === 5, `expected 5 progress nodes, got ${labels.length}: ${labels.join(', ')}`)
+    assert(labels.length === 7, `expected 7 progress nodes, got ${labels.length}: ${labels.join(', ')}`)
   })
 
   await test('clicking a progress node navigates to that section', async () => {

@@ -318,3 +318,11 @@
     transition: none;
   }
 }
+
+/* scroll-linked exit wrapper: hero content drifts, scales and blurs away */
+.hero__scroll {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  will-change: transform, opacity;
+}

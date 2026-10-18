@@ -1,270 +1,161 @@
 .hl {
-  min-height: 100vh;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  padding: clamp(90px, 11vh, 130px) 0;
-}
-.hl__head {
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto clamp(28px, 4vh, 44px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.hl__stage {
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: #0b0b0e;
-  box-shadow: 0 40px 80px -34px rgba(0, 0, 0, 0.85);
-}
-.hl__perf {
-  display: block;
-  height: 16px;
-  background-size: auto 16px;
-  opacity: 0.7;
-}
-
-.hl__frame {
   position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 21 / 9;
-  border: none;
-  padding: 0;
-  background: #050506;
-  overflow: hidden;
-  cursor: pointer;
+  z-index: 3;
 }
-.hl__frame img {
+.hl__pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #060507;
+}
+.hl__slide {
   position: absolute;
   inset: 0;
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+.hl__frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: #0b0b0e;
+  overflow: hidden;
+  cursor: pointer;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.hl__inner {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.hl__inner img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* slow ken-burns; restarts on each keyed slide mount (framer-motion swaps the img) */
-  animation: hl-kenburns 7s ease-out both;
 }
-@keyframes hl-kenburns {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.06);
-  }
+/* cover-fit a 16:9 player to any viewport, slightly overscanned so YouTube's
+   edge chrome never shows */
+.hl__video {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, 177.78vh);
+  height: max(56.25vw, 100vh);
+  translate: -50% -50%;
+  scale: 1.18;
+  border: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s ease;
 }
+.hl__video.is-on { opacity: 1; }
+.hl__ph {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: var(--text-dim);
+}
+/* density only where the title sits: bottom-left corner */
 .hl__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(5, 5, 6, 0.85) 0%, transparent 55%),
-    linear-gradient(0deg, rgba(5, 5, 6, 0.7) 0%, transparent 45%);
+  background: radial-gradient(70% 60% at 12% 100%, rgba(5, 5, 6, 0.88), transparent 70%);
+  pointer-events: none;
 }
-.hl__play {
+.hl__dim {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  width: 74px;
-  height: 74px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(5, 5, 6, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
-  backdrop-filter: blur(4px);
-  transition: transform 0.3s ease, background 0.3s ease;
+  inset: 0;
+  background: #050506;
+  opacity: 0;
+  pointer-events: none;
 }
-.hl__frame:hover .hl__play {
-  transform: translate(-50%, -50%) scale(1);
-  background: var(--gold);
-  color: #0a0a0a;
-  border-color: transparent;
-}
-
 .hl__meta {
   position: absolute;
-  left: clamp(24px, 4vw, 54px);
-  bottom: clamp(24px, 4vh, 48px);
-  max-width: 60%;
+  z-index: 2;
+  left: clamp(20px, 5vw, 80px);
+  bottom: clamp(36px, 9vh, 100px);
+  right: 20px;
+  text-align: left;
 }
 .hl__tags {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 14px;
 }
 .hl__tags span {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #fff;
-  padding: 5px 11px;
-  border: 1px solid var(--border);
-  border-radius: 100px;
-  background: rgba(5, 5, 6, 0.6);
-  backdrop-filter: blur(4px);
+  color: var(--text);
+  opacity: 0.85;
 }
-.hl__tags .hl__award {
-  color: var(--gold);
-  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
-  box-shadow: 0 0 14px -3px rgba(233, 184, 114, 0.55);
-}
+.hl__tags .hl__award { color: var(--gold); opacity: 1; }
 .hl__title {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 3.4rem);
-  font-weight: 500;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(3.4rem, 11vw, 11rem);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
   color: #fff;
-  line-height: 1;
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
 }
 .hl__role {
-  color: var(--gold);
-  margin-top: 8px;
-  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
-}
-
-.hl__controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 26px;
-}
-.hl__arrow {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  margin-top: 14px;
+  font-size: 1.05rem;
   color: var(--text);
-  font-size: 1.1rem;
-  transition: border-color 0.2s ease, transform 0.2s ease,
-    background 0.25s ease, color 0.25s ease, box-shadow 0.3s ease;
 }
-.hl__arrow:hover {
-  border-color: transparent;
-  background: var(--gold);
-  color: #0a0a0a;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px -6px rgba(233, 184, 114, 0.4);
-}
-.hl__dots {
-  display: flex;
-  gap: 12px;
-}
-.hl__dot {
-  position: relative; /* ::before widens the tap area to ~44px tall */
-  width: 60px;
-  height: 4px;
+.hl__play {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 12px 20px;
   border-radius: 100px;
-  border: none;
-  background: rgba(255, 255, 255, 0.14);
-  padding: 0; /* overflow hidden removed so the ::before hit area isn't clipped */
+  border: 0;
+  background: var(--gold);
+  color: #140f06;
+  font-weight: 600;
+  font-size: 0.92rem;
   cursor: pointer;
+  transition: transform 0.15s ease;
 }
-.hl__dot::before {
-  content: '';
+.hl__play:hover { transform: translateY(-2px); }
+.hl__head {
   position: absolute;
-  inset: -20px 0;
-  z-index: -1;
+  top: clamp(84px, 12vh, 130px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3.7rem);
+  letter-spacing: -0.02em;
+  z-index: 20;
+  pointer-events: none;
 }
-.hl__dot-fill {
-  display: block;
-  width: 0;
-  height: 100%;
-  border-radius: 100px;
-  overflow: hidden;
-  background: var(--gold);
-}
-.hl__dot.is-on .hl__dot-fill {
-  animation: hl-fill 5.2s linear forwards;
-}
-@keyframes hl-fill {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hl__frame img {
-    animation: none;
-  }
-}
-
-/* touch devices never fire :hover — show the play button in its full, clear
-   state so the reel reads as tappable */
-@media (hover: none) {
-  .hl__play {
-    transform: translate(-50%, -50%) scale(1);
-    background: rgba(5, 5, 6, 0.62);
-  }
-}
-
+.hl__head em { color: var(--gold); }
 @media (max-width: 720px) {
-  /* .section.* beats global.css's .section rule, which loads later in the bundle */
-  .section.hl {
-    min-height: 0;
-    padding: 48px 0;
-  }
-  .hl__head {
-    margin-bottom: 22px;
-  }
-  /* match the real 16:9 video thumbnail instead of hard-cropping to 4:3 */
-  .hl__frame {
-    aspect-ratio: 16 / 9;
-  }
-  /* full-width caption anchored to the bottom, not a floating 84% box that
-     collided with the centre play button */
-  .hl__meta {
-    left: 14px;
-    right: 14px;
-    bottom: 14px;
-    max-width: none;
-  }
-  .hl__shade {
-    background: linear-gradient(
-      0deg,
-      rgba(5, 5, 6, 0.92) 0%,
-      rgba(5, 5, 6, 0.25) 46%,
-      transparent 72%
-    );
-  }
-  .hl__play {
-    width: 56px;
-    height: 56px;
-    top: 42%;
-  }
-  .hl__tags {
-    margin-bottom: 9px;
-    gap: 6px;
-  }
-  .hl__tags span {
-    font-size: 0.6rem;
-    padding: 4px 9px;
-  }
-  .hl__title {
-    font-size: 1.5rem;
-  }
-  .hl__role {
-    font-size: 0.85rem;
-    margin-top: 5px;
-  }
-  .hl__controls {
-    gap: 16px;
-    margin-top: 18px;
-  }
-  .hl__arrow {
-    width: 42px;
-    height: 42px;
-  }
-  .hl__dot {
-    width: 34px;
-  }
+  .hl__title { font-size: 3.2rem; }
+  .hl__shade { background: linear-gradient(to top, rgba(5, 5, 6, 0.9), transparent 60%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hl__pin { position: relative; height: auto; }
+  .hl__slide { position: relative; height: 80vh; margin-bottom: 16px; }
+  .hl__head { position: relative; top: auto; padding: 100px 0 30px; }
 }

@@ -260,9 +260,28 @@ export default function Scene3D() {
     typeof document === 'undefined' || document.visibilityState !== 'hidden'
   )
   useEffect(() => {
-    const onVis = () => setActive(document.visibilityState !== 'hidden')
-    document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
+    let raf = null
+    const check = () => {
+      raf = null
+      const hidden = document.visibilityState === 'hidden'
+      // an opaque pinned stage fills the screen: nothing of the scene is visible
+      const covered = Array.prototype.some.call(document.querySelectorAll('[data-opaque]'), (n) => {
+        const r = n.getBoundingClientRect()
+        return r.top <= 1 && r.bottom >= window.innerHeight - 1
+      })
+      setActive(!hidden && !covered)
+    }
+    const queue = () => { if (raf == null) raf = requestAnimationFrame(check) }
+    document.addEventListener('visibilitychange', queue)
+    window.addEventListener('scroll', queue, { passive: true })
+    window.addEventListener('resize', queue)
+    check()
+    return () => {
+      document.removeEventListener('visibilitychange', queue)
+      window.removeEventListener('scroll', queue)
+      window.removeEventListener('resize', queue)
+      if (raf) cancelAnimationFrame(raf)
+    }
   }, [])
 
   return (

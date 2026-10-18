@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { useMagnetic } from '../hooks/useMagnetic'
 import './Hero.css'
 
@@ -16,9 +17,15 @@ const REEL_LABELS = [
 export default function Hero({ profile, onExplore }) {
   const magnet = useMagnetic(8)
   const nameWords = profile.name.split(' ')
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
+  const y = useTransform(scrollYProgress, [0, 1], [0, -160])
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18])
+  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
 
   return (
-    <section className="hero section" id="hero">
+    <section className="hero section" id="hero" ref={ref}>
+      <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
         <motion.img
           className="hero__logo"
@@ -142,11 +149,8 @@ export default function Hero({ profile, onExplore }) {
           </a>
         </motion.div>
       </div>
+      </motion.div>
 
-      <div className="hero__scrollhint" aria-hidden="true">
-        <span>Scroll</span>
-        <span className="hero__scrollline" />
-      </div>
     </section>
   )
 }

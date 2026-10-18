@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useRef, useState } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { projectsByCategory } from '../data/store'
 import { thumbHiFor, thumbFallbackFor } from '../data/media'
@@ -121,9 +121,18 @@ function Panel({ category, projects, active, dimmed, index, onHover, onLeave, on
 
 export default function Work({ categories, projects, onOpenCategory }) {
   const [hover, setHover] = useState(null)
+  // the two reels slide in from opposite sides, tilted, and lock together
+  // as the section reaches the middle of the screen
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'center center'] })
+  const xL = useTransform(scrollYProgress, [0, 1], ['-22vw', '0vw'])
+  const xR = useTransform(scrollYProgress, [0, 1], ['22vw', '0vw'])
+  const rL = useTransform(scrollYProgress, [0, 1], [-7, 0])
+  const rR = useTransform(scrollYProgress, [0, 1], [7, 0])
+  const sc = useTransform(scrollYProgress, [0, 1], [0.82, 1])
 
   return (
-    <section className="work section" id="work">
+    <section className="work section" id="work" ref={ref}>
       <div className="container">
         <Reveal>
           <div className="work__head">
@@ -136,8 +145,12 @@ export default function Work({ categories, projects, onOpenCategory }) {
 
         <div className="work__panels">
           {categories.map((cat, i) => (
-            <Panel
+            <motion.div
               key={cat.id}
+              className="work__slot"
+              style={{ x: i % 2 ? xR : xL, rotate: i % 2 ? rR : rL, scale: sc }}
+            >
+            <Panel
               category={cat}
               index={i}
               projects={projectsByCategory(projects, cat.id)}
@@ -147,6 +160,7 @@ export default function Work({ categories, projects, onOpenCategory }) {
               onLeave={() => setHover(null)}
               onOpen={onOpenCategory}
             />
+            </motion.div>
           ))}
         </div>
       </div>

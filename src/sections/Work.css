@@ -340,3 +340,17 @@
     flex-grow: 1;
   }
 }
+
+/* scroll-driven slot around each panel: carries the flex sizing and the
+   perspective the panel's pointer tilt needs */
+.work__slot {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  perspective: 1600px;
+  will-change: transform;
+}
+.work__slot > .panel { flex: 1 1 100%; }
+@media (max-width: 720px) {
+  .work__slot { flex-basis: auto; }
+}
