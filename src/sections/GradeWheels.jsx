@@ -112,13 +112,20 @@ export default function GradeWheels({ comparisons }) {
     glRef.current = { gl, loc, texA: gl.createTexture(), texB: gl.createTexture(), ready: false, aspect: 16 / 9 }
     const size = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-      canvas.width = Math.round(window.innerWidth * dpr)
-      canvas.height = Math.round(window.innerHeight * dpr)
+      // size to the canvas box, not the window: on phones the frame is a
+      // 16:9 band, not the full portrait screen
+      canvas.width = Math.round((canvas.clientWidth || window.innerWidth) * dpr)
+      canvas.height = Math.round((canvas.clientHeight || window.innerHeight) * dpr)
       state.current.dirty = true
     }
     size()
     window.addEventListener('resize', size)
-    return () => window.removeEventListener('resize', size)
+    const ro = window.ResizeObserver ? new ResizeObserver(size) : null
+    ro?.observe(canvas)
+    return () => {
+      window.removeEventListener('resize', size)
+      ro?.disconnect()
+    }
   }, [])
 
   // ── load the chosen pair ──
@@ -252,11 +259,13 @@ export default function GradeWheels({ comparisons }) {
   return (
     <section className="gw" id="grade" ref={ref}>
       <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
+        <div className="gw__frame">
         <div className="gw__fallback" aria-hidden="true">
           <img src={pair.before} alt="" />
           <img className="gw__fb-out" src={pair.after} alt="" />
         </div>
         <canvas className="gw__gl" ref={canvasRef} aria-hidden="true" />
+        </div>
         <div className="gw__scrim" aria-hidden="true" />
 
         <div className="gw__copy">

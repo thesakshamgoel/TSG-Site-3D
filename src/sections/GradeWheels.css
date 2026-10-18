@@ -12,6 +12,12 @@
   background: #090807;
   --mix: 0;
 }
+/* the picture box: full-bleed on wide screens, a 16:9 band on phones */
+.gw__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
 .gw__gl,
 .gw__fallback,
 .gw__fallback img {
@@ -145,15 +151,60 @@
 .gw__scenes button:hover { opacity: 0.9; }
 .gw__scenes button[aria-checked='true'] { opacity: 1; box-shadow: inset 0 0 0 2px var(--gold); }
 
+/* Phones (portrait): never crop the grade. The stage stacks into three bands
+   (copy, the whole 16:9 frame edge to edge, the wheels), so the picture is
+   shown complete and nothing sits on top of it. */
 @media (max-width: 720px) {
-  .gw__copy { top: 84px; right: 20px; width: auto; }
-  .gw__step { font-size: 1.7rem; }
-  .gw__h { font-size: 2.3rem; }
-  .gw__note { font-size: 0.92rem; }
-  .gw__scrim { width: 100%; background: linear-gradient(to bottom, rgba(7, 5, 3, 0.85), transparent 45%); }
-  /* leave room for the fixed mobile tab bar */
-  .gw__panel { left: 14px; right: 14px; width: auto; bottom: 86px; padding: 12px; gap: 10px; }
-  .gw .wheel__ring { width: 22vw; }
+  .gw__stage {
+    --copy-top: 74px;
+    --copy-h: 116px;
+    --frame-top: calc(var(--copy-top) + var(--copy-h));
+    background: #070605;
+  }
+  .gw__scrim { display: none; }
+  .gw__copy { top: var(--copy-top); left: 16px; right: 16px; width: auto; height: var(--copy-h); }
+  .gw__step { font-size: 1.55rem; line-height: 1.12; }
+  .gw__h { font-size: 2.1rem; }
+  .gw__note { margin-top: 8px; font-size: 0.9rem; }
+  .gw__frame {
+    inset: auto 0 auto 0;
+    top: var(--frame-top);
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  /* panel sits under the picture, clear of the fixed tab bar */
+  .gw__panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    top: calc(var(--frame-top) + 100vw * 9 / 16 + 14px);
+    bottom: auto;
+    padding: 12px;
+    gap: 10px;
+  }
+  .gw .wheel__ring { width: min(22vw, 96px); }
   .gw .wheel__val { display: none; }
   .gw__mode { width: 100%; }
+}
+/* compact phones (e.g. 360 x 640): tighter copy band, smaller wheels */
+@media (max-width: 720px) and (max-height: 720px) {
+  .gw__stage { --copy-top: 64px; --copy-h: 92px; }
+  .gw__step { font-size: 1.3rem; }
+  .gw__h { font-size: 1.75rem; }
+  .gw__note { font-size: 0.82rem; }
+  .gw .wheel__ring { width: 17vw; }
+  .gw__panel { padding: 10px; gap: 8px; }
+  .gw__scenes button { aspect-ratio: 16 / 8; }
+}
+/* phones held sideways: the screen is already landscape, go full-bleed but
+   keep the panel compact so the frame stays visible */
+@media (max-width: 920px) and (orientation: landscape) and (max-height: 500px) {
+  .gw__copy { top: 60px; width: 42vw; }
+  .gw__step { font-size: 1.3rem; }
+  .gw__h { font-size: 1.8rem; }
+  .gw__note { display: none; }
+  .gw__panel { width: 46vw; right: 12px; bottom: 12px; padding: 10px; gap: 8px; }
+  .gw .wheel__ring { width: 9vw; }
+  .gw .wheel__val, .gw__scenes { display: none; }
 }
