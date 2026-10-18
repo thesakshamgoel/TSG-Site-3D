@@ -60,6 +60,17 @@ const FS = [
   'float vg=smoothstep(1.25,.35,length(v-.5)*1.4);gl_FragColor=vec4(o*mix(.82,1.,vg),1.);}',
 ].join('')
 
+// The scene picker uses 320px copies of the seeded pairs instead of the 4K
+// masters. The frame keeps the masters: they are already tightly compressed.
+// Console-added URLs are used as given.
+const SEED = /^\/beforeafter\/(ba-\d+-(?:before|after))\.jpg$/
+const frameSrc = (u) => u
+const thumbSrc = (u) => (SEED.test(u) ? u.replace(SEED, '/beforeafter/thumb/$1.jpg') : u)
+
+const HOLD_MS = 2600 // how long a finished grade holds before the next scene
+const GRADE_MS = 3600 // how long the automatic grade of the next scene takes
+const REDUCED = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 function loadImg(src) {
   return new Promise((res, rej) => {
     const i = new Image()
@@ -79,7 +90,12 @@ export default function GradeWheels({ comparisons }) {
   const finalRef = useRef(null)
   const wheelRefs = useRef({})
   const modeRef = useRef(null)
-  const state = useRef({ p: 0, user: false, u: { lift: [0, 0, 0], gamma: [0, 0, 0], gain: [0, 0, 0] }, hold: 0, dirty: true })
+  const scenesRef = useRef(null)
+  const state = useRef({
+    p: 0, user: false, u: { lift: [0, 0, 0], gamma: [0, 0, 0], gain: [0, 0, 0] }, hold: 0, dirty: true,
+    scene: 0, readyScene: -1, inView: false, last: null,
+    auto: { on: false, phase: 'idle', t0: 0, target: -1 },
+  })
   const glRef = useRef(null)
   const [scene, setScene] = useState(0)
   const [user, setUser] = useState(false)
@@ -134,7 +150,8 @@ export default function GradeWheels({ comparisons }) {
     const pair = pairs[scene]
     if (!G || !pair) return
     let live = true
-    Promise.all([loadImg(pair.before), loadImg(pair.after)]).then(([a, b]) => {
+    state.current.scene = scene
+    Promise.all([loadImg(frameSrc(pair.before)), loadImg(frameSrc(pair.after))]).then(([a, b]) => {
       if (!live) return
       const { gl } = G
       ;[[G.texA, 0, a], [G.texB, 1, b]].forEach(([tex, unit, img]) => {
@@ -148,6 +165,7 @@ export default function GradeWheels({ comparisons }) {
       })
       G.aspect = a.naturalWidth / a.naturalHeight
       G.ready = true
+      state.current.readyScene = scene
       setHasGL(true)
       state.current.dirty = true
     }).catch(() => {})
@@ -155,27 +173,74 @@ export default function GradeWheels({ comparisons }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, pairs.length])
 
+  // only auto-advance while the stage is actually on screen
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el || !window.IntersectionObserver) { state.current.inView = true; return }
+    const io = new IntersectionObserver(([e]) => { state.current.inView = e.isIntersecting; state.current.dirty = true }, { threshold: 0.6 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => { state.current.scene = scene }, [scene])
+
   // ── render loop: only draws when progress or input changed ──
+  const nPairs = pairs.length
   useEffect(() => {
     const S = state.current
     const unsub = scrollYProgress.on('change', (v) => { S.p = v; S.dirty = true })
     S.p = scrollYProgress.get()
     let raf
+    // once a scene is fully graded and the visitor has stopped on it, hold,
+    // then load the next scene and grade it automatically
+    const runAuto = (now) => {
+      const A = S.auto
+      const eligible = !S.user && !S.hold && S.inView && S.p >= 0.8 && !document.hidden && !REDUCED && nPairs > 1
+      if (!eligible) {
+        if (A.on) { A.on = false; A.phase = 'idle'; S.dirty = true }
+        return
+      }
+      if (!A.on) { A.on = true; A.phase = 'hold'; A.t0 = now }
+      if (A.phase === 'hold' && now - A.t0 > HOLD_MS) {
+        A.target = (S.scene + 1) % nPairs
+        A.phase = 'load'
+        setScene(A.target)
+      } else if (A.phase === 'load' && (S.readyScene === A.target || !glRef.current)) {
+        A.phase = 'grade'
+        A.t0 = now
+      } else if (A.phase === 'grade' && now - A.t0 > GRADE_MS) {
+        A.phase = 'hold'
+        A.t0 = now
+      }
+      S.dirty = true
+    }
+    // the progress the grade is drawn at: scroll, or the automatic run
+    const progressNow = (now) => {
+      const A = S.auto
+      if (A.on && A.phase === 'grade') return 0.06 + smooth((now - A.t0) / GRADE_MS) * 0.74
+      return S.p
+    }
+    let pe = 0
     const effective = () => {
-      if (!S.user) return gradeAt(S.p)
+      if (!S.user) return gradeAt(pe)
       const b = KEYS[3]
       const add = (a, u) => [a[0] + u[0], a[1] + u[1], a[2] + u[2]]
       return { lift: add(b.lift, S.u.lift), gamma: add(b.gamma, S.u.gamma), gain: add(b.gain, S.u.gain), con: b.con, sat: b.sat, mix: 0 }
     }
-    const frame = () => {
+    const frame = (now) => {
       raf = requestAnimationFrame(frame)
+      runAuto(now)
       if (!S.dirty) return
       S.dirty = false
+      pe = progressNow(now)
       const s = effective()
-      // copy
-      STEPS.forEach((st, i) => { const n = stepRefs.current[i]; if (n) n.style.opacity = S.user ? 0 : stepOpacity(S.p, st[0], st[1], i) })
+      S.last = s
+      // the hold timer fills the active scene thumbnail
+      const A = S.auto
+      scenesRef.current?.style.setProperty('--t', A.on && A.phase === 'hold' ? clamp01((now - A.t0) / HOLD_MS).toFixed(3) : '0')
+      // copy follows whichever progress is drawing the grade
+      STEPS.forEach((st, i) => { const n = stepRefs.current[i]; if (n) n.style.opacity = S.user ? 0 : stepOpacity(pe, st[0], st[1], i) })
       if (finalRef.current) {
-        const o = S.user ? 1 : smooth((S.p - 0.7) / 0.05)
+        const o = S.user ? 1 : smooth((pe - 0.7) / 0.05)
         finalRef.current.style.opacity = o
         finalRef.current.style.transform = `translateY(${(1 - o) * 20}px)`
       }
@@ -192,7 +257,9 @@ export default function GradeWheels({ comparisons }) {
         W.vals.forEach((n, k) => { if (n) n.textContent = (w === 'lift' && v[k] > 0 ? '+' : '') + v[k].toFixed(3) })
       })
       if (modeRef.current) {
-        modeRef.current.textContent = S.user ? 'Your grade' : s.mix >= 0.999 ? 'Final grade' : s.mix > 0.001 ? 'Dissolving to the final grade' : 'Scroll is grading'
+        const auto = S.auto.on && S.auto.phase !== 'hold'
+        const t = S.user ? 'Your grade' : auto ? 'Grading the next scene' : s.mix >= 0.999 ? 'Final grade' : s.mix > 0.001 ? 'Dissolving to the final grade' : 'Scroll is grading'
+        if (modeRef.current.textContent !== t) modeRef.current.textContent = t
       }
       stageRef.current?.style.setProperty('--mix', S.hold ? 0 : s.mix.toFixed(3))
       const G = glRef.current
@@ -212,13 +279,12 @@ export default function GradeWheels({ comparisons }) {
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf); unsub() }
-  }, [scrollYProgress])
+  }, [scrollYProgress, nPairs])
 
   // ── wheel input ──
   const goUser = () => { if (!state.current.user) { state.current.user = true; setUser(true) } }
-  const dragAt = (w, e, ring) => {
-    const r = ring.getBoundingClientRect(), R = (r.width / 2) * 0.86
-    let x = (e.clientX - r.left - r.width / 2) / R, y = -(e.clientY - r.top - r.height / 2) / R
+  // set the user offset so the wheel shows the puck at normalised (x, y)
+  const setPuck = (w, x, y) => {
     const len = Math.hypot(x, y)
     if (len > 1) { x /= len; y /= len }
     const base = KEYS[3][w], bd = w === 'lift' ? base : [base[0] - 1, base[1] - 1, base[2] - 1]
@@ -226,15 +292,37 @@ export default function GradeWheels({ comparisons }) {
     state.current.u[w] = [want[0] - have[0], want[1] - have[1], want[2] - have[2]]
     state.current.dirty = true
   }
+  // Only the puck is grabbable, and only a deliberate drag counts: taps and
+  // vertical swipes anywhere else on a wheel scroll the page as normal.
   const onWheelDown = (w) => (e) => {
+    if (!e.target.closest('.wheel__puck')) return
     e.preventDefault()
     const ring = e.currentTarget
-    goUser()
-    dragAt(w, e, ring)
-    const move = (ev) => dragAt(w, ev, ring)
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+    const R = (ring.getBoundingClientRect().width / 2) * 0.86
+    const last = state.current.last
+    const v = last ? last[w] : KEYS[0][w]
+    const d = w === 'lift' ? v : [v[0] - 1, v[1] - 1, v[2] - 1]
+    const xy = toXY(d)
+    const sx = xy[0] / WSCALE, sy = xy[1] / WSCALE
+    const x0 = e.clientX, y0 = e.clientY
+    let dragging = false
+    const move = (ev) => {
+      const dx = ev.clientX - x0, dy = ev.clientY - y0
+      if (!dragging) {
+        if (Math.hypot(dx, dy) < 6) return
+        dragging = true
+        goUser()
+      }
+      setPuck(w, sx + dx / R, sy - dy / R)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
   }
   const onWheelKey = (w) => (e) => {
     const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]
@@ -261,8 +349,8 @@ export default function GradeWheels({ comparisons }) {
       <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
         <div className="gw__frame">
         <div className="gw__fallback" aria-hidden="true">
-          <img src={pair.before} alt="" />
-          <img className="gw__fb-out" src={pair.after} alt="" />
+          <img src={frameSrc(pair.before)} alt="" decoding="async" />
+          <img className="gw__fb-out" src={frameSrc(pair.after)} alt="" decoding="async" />
         </div>
         <canvas className="gw__gl" ref={canvasRef} aria-hidden="true" />
         </div>
@@ -314,7 +402,7 @@ export default function GradeWheels({ comparisons }) {
             </button>
             {user && <button type="button" className="gw__chip" onClick={reset}>Back to his grade</button>}
           </div>
-          <div className="gw__scenes" role="radiogroup" aria-label="Choose a scene">
+          <div className="gw__scenes" role="radiogroup" aria-label="Choose a scene" ref={scenesRef}>
             {pairs.map((c, i) => (
               <button
                 key={c.id || i}
@@ -322,8 +410,8 @@ export default function GradeWheels({ comparisons }) {
                 role="radio"
                 aria-checked={i === scene}
                 aria-label={c.title}
-                style={{ backgroundImage: `url(${c.after})` }}
-                onClick={() => setScene(i)}
+                style={{ backgroundImage: `url(${thumbSrc(c.after)})` }}
+                onClick={() => { state.current.auto.on = false; state.current.auto.phase = 'idle'; setScene(i) }}
               />
             ))}
           </div>

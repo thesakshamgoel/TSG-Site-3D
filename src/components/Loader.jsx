@@ -16,7 +16,7 @@ export default function Loader({ onDone, name = 'Saksham Goel' }) {
   const startRef = useRef(null)
 
   useEffect(() => {
-    const DURATION = 2800
+    const DURATION = 1400
     const step = (ts) => {
       if (startRef.current == null) startRef.current = ts
       const t = Math.min((ts - startRef.current) / DURATION, 1)
@@ -37,7 +37,7 @@ export default function Loader({ onDone, name = 'Saksham Goel' }) {
       {!exiting && (
         <motion.div
           className="loader"
-          exit={{ opacity: 0, transition: { duration: 0.9, ease } }}
+          exit={{ opacity: 0, transition: { duration: 0.7, ease } }}
         >
           <div className="loader__canvas">
             <LoaderReel progressRef={progressRef} />
@@ -46,11 +46,11 @@ export default function Loader({ onDone, name = 'Saksham Goel' }) {
           {/* film-strip gate */}
           <motion.div
             className="loader__strip loader__strip--top"
-            exit={{ y: '-100%', transition: { duration: 0.95, ease } }}
+            exit={{ y: '-100%', transition: { duration: 0.7, ease } }}
           />
           <motion.div
             className="loader__strip loader__strip--bottom"
-            exit={{ y: '100%', transition: { duration: 0.95, ease } }}
+            exit={{ y: '100%', transition: { duration: 0.7, ease } }}
           />
 
           {/* HUD */}

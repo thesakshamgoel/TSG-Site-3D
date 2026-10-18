@@ -77,8 +77,8 @@
   position: absolute;
   right: clamp(20px, 4vw, 60px);
   bottom: clamp(24px, 5vh, 56px);
-  width: min(560px, calc(100vw - 40px));
-  padding: 18px 18px 16px;
+  width: min(440px, calc(100vw - 40px));
+  padding: 14px 14px 12px;
   border-radius: 14px;
   background: rgba(14, 11, 8, 0.86);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 50px -20px rgba(0, 0, 0, 0.9);
@@ -89,17 +89,16 @@
 .gw .wheel { display: grid; justify-items: center; gap: 6px; }
 .gw .wheel__ring {
   position: relative;
-  width: min(120px, 24vw);
+  width: min(84px, 18vw);
   aspect-ratio: 1;
   border-radius: 50%;
   background:
     radial-gradient(circle, rgba(20, 16, 12, 0) 0 0%, rgba(20, 16, 12, 0.92) 64%, #14100c 70%),
     conic-gradient(from 90deg, #f45 0deg, #fd4 60deg, #4e6 120deg, #4ef 180deg, #46f 240deg, #e4f 300deg, #f45 360deg);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0 4px #17120d, 0 0 0 5px rgba(255, 255, 255, 0.06);
-  cursor: grab;
-  touch-action: none;
+  /* the ring itself never captures a gesture: swipes over it scroll the page */
+  touch-action: pan-y;
 }
-.gw .wheel__ring:active { cursor: grabbing; }
 .gw .wheel__ring::before,
 .gw .wheel__ring::after { content: ''; position: absolute; background: rgba(255, 255, 255, 0.12); }
 .gw .wheel__ring::before { left: 50%; top: 14%; bottom: 14%; width: 1px; }
@@ -114,6 +113,16 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 0 2px #0b0907, 0 2px 6px rgba(0, 0, 0, 0.6);
+  cursor: grab;
+  touch-action: none;
+}
+.gw .wheel__puck:active { cursor: grabbing; }
+/* comfortable invisible grab area around the small puck */
+.gw .wheel__puck::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
 }
 .gw .wheel__name { margin: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 .gw .wheel__val { margin: 0; display: flex; gap: 6px; font-family: var(--font-mono, monospace); font-size: 0.66rem; font-variant-numeric: tabular-nums; color: var(--text-dim); }
@@ -149,7 +158,20 @@
   transition: opacity 0.16s ease, box-shadow 0.16s ease;
 }
 .gw__scenes button:hover { opacity: 0.9; }
+.gw__scenes button { position: relative; overflow: hidden; }
 .gw__scenes button[aria-checked='true'] { opacity: 1; box-shadow: inset 0 0 0 2px var(--gold); }
+/* hold timer before the next scene is graded automatically */
+.gw__scenes button[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--gold);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--t, 0));
+}
 
 /* Phones (portrait): never crop the grade. The stage stacks into three bands
    (copy, the whole 16:9 frame edge to edge, the wheels), so the picture is
@@ -183,7 +205,7 @@
     padding: 12px;
     gap: 10px;
   }
-  .gw .wheel__ring { width: min(22vw, 96px); }
+  .gw .wheel__ring { width: min(15vw, 64px); }
   .gw .wheel__val { display: none; }
   .gw__mode { width: 100%; }
 }
@@ -193,7 +215,7 @@
   .gw__step { font-size: 1.3rem; }
   .gw__h { font-size: 1.75rem; }
   .gw__note { font-size: 0.82rem; }
-  .gw .wheel__ring { width: 17vw; }
+  .gw .wheel__ring { width: 13vw; }
   .gw__panel { padding: 10px; gap: 8px; }
   .gw__scenes button { aspect-ratio: 16 / 8; }
 }
