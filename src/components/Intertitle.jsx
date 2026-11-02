@@ -12,9 +12,9 @@ export default function Intertitle({ no, title }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const o = useTransform(p, [0.15, 0.4, 0.62, 0.85], [0, 1, 1, 0])
-  const y = useTransform(p, [0.15, 0.4, 0.62, 0.85], [36, 0, 0, -36])
-  const rule = useTransform(p, [0.2, 0.45], [0, 1])
+  const o = useTransform(p, [0.05, 0.35, 0.7, 0.95], [0, 1, 1, 0])
+  const y = useTransform(p, [0.05, 0.35], [20, 0])
+  const rule = useTransform(p, [0.1, 0.4], [0, 1])
   return (
     <div className="itt" ref={ref}>
       <motion.div className="itt__card" style={reduced ? undefined : { opacity: o, y }}>

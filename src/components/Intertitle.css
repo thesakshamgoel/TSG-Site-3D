@@ -1,10 +1,10 @@
 .itt {
   position: relative;
   z-index: 3;
-  height: 70vh;
+  padding-block: clamp(48px, 9vh, 96px);
   display: grid;
   place-items: center;
-  padding: 0 clamp(16px, 5vw, 80px);
+  padding-inline: clamp(16px, 5vw, 80px);
 }
 .itt__card {
   display: grid;
@@ -27,7 +27,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(2.6rem, 7vw, 6rem);
+  font-size: clamp(2rem, 4.6vw, 3.6rem);
   letter-spacing: -0.02em;
   line-height: 1;
   color: #fff;
@@ -41,6 +41,5 @@
 .itt__rule--l { transform-origin: 100% 50%; }
 .itt__rule--r { transform-origin: 0 50%; }
 @media (max-width: 560px) {
-  .itt { height: 50vh; }
   .itt__rule { display: none; }
 }

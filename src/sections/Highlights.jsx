@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring, useTransform, useVelocity } from 'framer-motion'
 import { thumbHiFor, thumbFallbackFor, isVimeo } from '../data/media'
 import { useImgFallback } from '../hooks/useImgFallback'
+import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import './Highlights.css'
 
@@ -28,6 +29,9 @@ function Screen({ s, i, cursor, live, onOpen }) {
   const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
   const [shown, setShown] = useState(false)
   const dim = useTransform(cursor, (c) => Math.min(0.7, Math.abs(c - i) * 0.6))
+  // black bars baked into the poster are cropped away before the rails go round it
+  const bars = useLetterbox(thumb.broken ? '' : thumb.src)
+  const vis = 1 - bars.top - bars.bottom
   const frameRef = useRef(null)
 
   useEffect(() => {
@@ -58,13 +62,15 @@ function Screen({ s, i, cursor, live, onOpen }) {
   return (
     <div className="hl__screen" style={{ '--i': i }}>
       <button type="button" className="hl__frame" onClick={() => onOpen(s)} aria-label={`Watch ${s.title} with sound`}>
+        <span className="hl__gate">
         {!thumb.broken ? (
-          <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
+          <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" style={letterboxCrop(bars)} />
         ) : (
           <span className="hl__ph">{s.title}</span>
         )}
         {live && (
           <iframe
+            style={vis < 0.995 ? { scale: String(1.08 / vis) } : undefined}
             className={`hl__video ${shown ? 'is-on' : ''}`}
             src={bgSrc(s)}
             title=""
@@ -75,10 +81,9 @@ function Screen({ s, i, cursor, live, onOpen }) {
             onLoad={onFrameLoad}
           />
         )}
-        <span className="hl__rail hl__rail--t" aria-hidden="true" />
-        <span className="hl__rail hl__rail--b" aria-hidden="true">
-          <span className="hl__edge">TSG {String(i + 1).padStart(2, '0')} · {s.title.toUpperCase()}</span>
         </span>
+        <span className="hl__rail hl__rail--t" aria-hidden="true" />
+        <span className="hl__rail hl__rail--b" aria-hidden="true" />
         <motion.span className="hl__dim" style={{ opacity: dim }} />
       </button>
     </div>

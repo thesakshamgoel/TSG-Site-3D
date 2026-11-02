@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { thumbHiFor } from '../data/media'
+import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
 import { emailEnabled, sendEmail } from '../data/email'
 import { toast } from '../components/Toast'
 import { firebaseEnabled } from '../firebase/config'
@@ -213,17 +214,14 @@ function SubLine({ r, i, cur, film, reduced }) {
   const zoom = useTransform(cur, (c) => 1.08 - 0.08 * clamp01(c - i + 1))
   // films overlap through the change, so the screen never flashes black
   const filmO = useTransform(cur, (c) => 1 - smooth(0.5, 0.95, Math.abs(c - i)))
+  const src = film ? thumbHiFor(film) : ''
+  const bars = useLetterbox(src)
   return (
     <>
     {film && (
-      <motion.img
-        className="subs__film"
-        src={thumbHiFor(film)}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        style={reduced ? undefined : { opacity: filmO, scale: zoom }}
-      />
+      <motion.span className="subs__film" style={reduced ? undefined : { opacity: filmO, scale: zoom }}>
+        <img src={src} alt="" loading="lazy" decoding="async" style={letterboxCrop(bars)} />
+      </motion.span>
     )}
     <motion.figure className="subs__line" style={reduced ? undefined : { opacity: o, y }}>
       <blockquote>{r.quote}</blockquote>

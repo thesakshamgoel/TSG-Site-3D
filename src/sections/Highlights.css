@@ -35,9 +35,9 @@
   top: 46%;
   width: var(--W);
   /* a frame of film: 16:9 picture plus a sprocket rail above and below */
-  aspect-ratio: 16 / 11;
+  aspect-ratio: 16 / 10;
   margin-left: calc(var(--W) / -2);
-  margin-top: calc(var(--W) * -11 / 32);
+  margin-top: calc(var(--W) * -10 / 32);
   transform: rotateY(calc(var(--i) * 34deg)) translateZ(var(--R));
   backface-visibility: hidden;
 }
@@ -57,14 +57,19 @@
 }
 .hl__frame:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }
 /* the picture sits in the gate between the two rails */
-.hl__poster {
+.hl__gate {
   position: absolute;
   left: 0;
   right: 0;
-  top: 9%;
-  bottom: 9%;
+  top: 5%;
+  bottom: 5%;
+  overflow: hidden;
+}
+.hl__poster {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 82%;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -72,31 +77,19 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 9%;
-  background: radial-gradient(closest-side, #000 0 62%, transparent 70%) 0 50% / calc(var(--W) / 22) 52% repeat-x, #141210;
+  height: 5%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.07) 0 55%, transparent 65%) 0 50% / calc(var(--W) / 30) 46% repeat-x, #0c0b0a;
   pointer-events: none;
 }
-.hl__rail--t { top: 0; border-bottom: 1px solid rgba(233, 184, 114, 0.18); }
-.hl__rail--b { bottom: 0; border-top: 1px solid rgba(233, 184, 114, 0.18); }
-.hl__edge {
-  position: absolute;
-  right: 3%;
-  bottom: 4%;
-  font-family: var(--font-mono, monospace);
-  font-size: clamp(0.5rem, 0.62vw, 0.68rem);
-  letter-spacing: 0.18em;
-  color: rgba(233, 184, 114, 0.55);
-  background: #141210;
-  padding: 0 6px;
-}
+.hl__rail--t { top: 0; }
+.hl__rail--b { bottom: 0; }
 /* cover-fit the player to the gate, slightly overscanned so YouTube's chrome never shows */
 .hl__video {
   position: absolute;
-  left: 0;
-  top: 9%;
+  inset: 0;
   width: 100%;
-  height: 82%;
-  scale: 1.22;
+  height: 100%;
+  scale: 1.08;
   border: 0;
   pointer-events: none;
   opacity: 0;
