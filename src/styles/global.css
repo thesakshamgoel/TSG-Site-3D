@@ -42,6 +42,9 @@ html.lenis body {
 }
 
 html {
+  /* keep the scrollbar's space reserved, so unlocking the scroll after the
+     loader never shifts the page sideways */
+  scrollbar-gutter: stable;
   /* clamp any stray sub-pixel / third-party-widget horizontal overflow.
      `clip` (not `hidden`) so position: sticky pinned sections still work */
   overflow-x: clip;
@@ -250,6 +253,9 @@ img {
 
 @media (prefers-reduced-motion: reduce) {
   html {
+  /* keep the scrollbar's space reserved, so unlocking the scroll after the
+     loader never shifts the page sideways */
+  scrollbar-gutter: stable;
     scroll-behavior: auto;
   }
   * {

@@ -328,15 +328,7 @@
 }
 
 /* ── hero motion ───────────────────────────────────────────────────────── */
-/* star drift behind the hero: the same field the reel's tunnel grows from */
-.hero__stars {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-}
+
 
 /* name letters flip up out of a bottom-only mask (overflow:hidden would
    shave italic overhangs and descenders) */

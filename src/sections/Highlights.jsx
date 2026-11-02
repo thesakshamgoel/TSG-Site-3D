@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
+import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring, useTransform, useVelocity } from 'framer-motion'
 import { thumbHiFor, thumbFallbackFor, isVimeo } from '../data/media'
 import { useImgFallback } from '../hooks/useImgFallback'
 import { useReducedMotion } from '../hooks/useReducedMotion'
@@ -13,73 +13,26 @@ function bgSrc(s) {
   return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&start=20&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
 }
 
-const clamp01 = (v) => Math.min(1, Math.max(0, v))
-const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
+const STEP = 34 // degrees between films on the ring
 
 /**
- * Highlighted work as a row of cinema screens in 3D.
+ * Highlighted work on a ring of screens in 3D.
  *
- * Scroll moves a "cursor" along the row. Each film waits angled in the depth
- * to the right, swings round to face you and opens to fill the screen, holds
- * there (its film plays silently), then swings away to the left as the next
- * arrives. The cursor eases into each film so every one gets a real hold.
- * Transform and opacity only, so the whole move stays on the compositor.
+ * The films sit around a cylinder; scroll turns the cylinder, so only one
+ * element moves per frame (cheap and smooth). The perspective responds to how
+ * you scroll: a fast scroll tilts the ring and pulls the camera back a little,
+ * and it settles flat when you stop. The film facing you plays silently once
+ * you rest on it; its title sits in plain 2D over the scene.
  */
-function Char({ ch, k, len, open, reduced }) {
-  const a = 0.35 + (k / Math.max(len, 1)) * 0.4
-  const y = useTransform(open, [a, a + 0.25], ['105%', '0%'])
-  if (ch === ' ') return <span className="hl__sp"> </span>
-  return (
-    <span className="hl__ch">
-      <motion.span style={reduced ? undefined : { y }}>{ch}</motion.span>
-    </span>
-  )
-}
-
-function Screen({ s, i, n, cursor, onOpen, reduced }) {
+function Screen({ s, i, cursor, live, onOpen }) {
   const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
-  const [live, setLive] = useState(false)
   const [shown, setShown] = useState(false)
-  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
-
-  // t: where this film sits relative to the cursor. 0 = facing you, full screen;
-  // positive = still to come (right, deep), negative = already passed (left)
-  const t = useTransform(cursor, (c) => i - c)
-  const open = useTransform(t, (v) => 1 - smooth(0, 0.24, Math.abs(v)))
-  const scale = useTransform(open, (o) => 0.5 + 0.5 * o)
-  const x = useTransform(t, (v) => `${(Math.sign(v) * smooth(0.06, 1.1, Math.abs(v)) * 60).toFixed(3)}vw`)
-  const z = useTransform(t, (v) => -smooth(0, 1.2, Math.abs(v)) * 620)
-  const rotateY = useTransform(t, (v) => -Math.sign(v) * smooth(0.04, 0.9, Math.abs(v)) * 40)
-  const opacity = useTransform(t, (v) => 1 - smooth(1.15, 1.7, Math.abs(v)))
-  const dim = useTransform(t, (v) => smooth(0.12, 0.8, Math.abs(v)) * 0.55)
-  const zIndex = useTransform(t, (v) => 100 - Math.round(Math.abs(v) * 10))
-  const metaO = useTransform(open, [0.55, 1], [0, 1])
-  const metaY = useTransform(open, [0.55, 1], [28, 0])
-  const inner = useTransform(open, [0, 1], [1.16, 1])
-
-  // play only while this film is the open one and the visitor has rested on it
-  const wantRef = useRef(false)
-  const timerRef = useRef(null)
-  const decide = () => {
-    // desktop only: phones keep the poster (YouTube forces its own controls
-    // over mobile embeds, and a silent stream costs their data)
-    const on = !reduced && wide && open.get() > 0.97
-    wantRef.current = on
-    clearTimeout(timerRef.current)
-    if (!on) {
-      if (live) { setLive(false); setShown(false) }
-      return
-    }
-    if (!live) timerRef.current = setTimeout(() => { if (wantRef.current) setLive(true) }, 450)
-  }
-  useEffect(() => () => clearTimeout(timerRef.current), [])
-  useMotionValueEvent(open, 'change', decide)
-
-  // reveal the player only once it is really playing; films that refuse
-  // embedding keep their poster instead of showing YouTube's error card
+  const dim = useTransform(cursor, (c) => Math.min(0.7, Math.abs(c - i) * 0.6))
   const frameRef = useRef(null)
+
   useEffect(() => {
-    if (!live || isVimeo(s)) return
+    if (!live) { setShown(false); return }
+    if (isVimeo(s)) return
     const onMsg = (e) => {
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return
       let d = e.data
@@ -103,120 +56,141 @@ function Screen({ s, i, n, cursor, onOpen, reduced }) {
   }
 
   return (
-    <motion.div
-      className="hl__screen"
-      style={reduced ? undefined : { x, z, rotateY, scale, opacity, zIndex }}
-    >
+    <div className="hl__screen" style={{ '--i': i }}>
       <button type="button" className="hl__frame" onClick={() => onOpen(s)} aria-label={`Watch ${s.title} with sound`}>
-        <motion.div className="hl__inner" style={reduced ? undefined : { scale: inner }}>
-          {!thumb.broken ? (
-            <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
-          ) : (
-            <div className="hl__ph"><span>{s.title}</span></div>
-          )}
-          {live && (
-            <iframe
-              className={`hl__video ${shown ? 'is-on' : ''}`}
-              src={bgSrc(s)}
-              title=""
-              tabIndex={-1}
-              aria-hidden="true"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              ref={frameRef}
-              onLoad={onFrameLoad}
-            />
-          )}
-        </motion.div>
-        <span className="hl__shade" />
-        <motion.span className="hl__dim" style={reduced ? undefined : { opacity: dim }} />
+        {!thumb.broken ? (
+          <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
+        ) : (
+          <span className="hl__ph">{s.title}</span>
+        )}
+        {live && (
+          <iframe
+            className={`hl__video ${shown ? 'is-on' : ''}`}
+            src={bgSrc(s)}
+            title=""
+            tabIndex={-1}
+            aria-hidden="true"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            ref={frameRef}
+            onLoad={onFrameLoad}
+          />
+        )}
+        <motion.span className="hl__dim" style={{ opacity: dim }} />
       </button>
-      <motion.div className="hl__meta" style={reduced ? undefined : { opacity: metaO, y: metaY }}>
-        <div className="hl__tags">
-          <span className="hl__count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
-          {s.award && <span className="hl__award">Award-winning</span>}
-          {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
-        </div>
-        <h3 className="hl__title" aria-label={s.title}>
-          <span aria-hidden="true">
-            {Array.from(s.title).map((ch, k, arr) => (
-              <Char key={k} ch={ch} k={k} len={arr.length} open={open} reduced={reduced} />
-            ))}
-          </span>
-        </h3>
-        <p className="hl__role">{s.role}</p>
-        <button type="button" className="hl__play" onClick={() => onOpen(s)}>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
-          Watch with sound
-        </button>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// a thumbnail on the rail: lights up while its film is facing you
-function RailItem({ s, i, cursor, onJump }) {
-  const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
-  const on = useTransform(cursor, (c) => 1 - smooth(0, 0.5, Math.abs(i - c)))
-  const o = useTransform(on, [0, 1], [0.45, 1])
-  const bar = useTransform(on, [0, 1], [0, 1])
-  return (
-    <motion.button type="button" className="hl__rail-item" style={{ opacity: o }} onClick={() => onJump(i)} aria-label={`Go to ${s.title}`}>
-      {!thumb.broken && <img src={thumb.src} alt="" onError={thumb.onError} loading="lazy" decoding="async" />}
-      <motion.span className="hl__rail-bar" style={{ scaleX: bar }} />
-    </motion.button>
+    </div>
   )
 }
 
 export default function Highlights({ projects, onOpenProject }) {
   const slides = (projects || []).slice(0, 4)
+  const n = slides.length
   const ref = useRef(null)
   const reduced = useReducedMotion()
-  const n = slides.length
-  const span = n - 1 + 0.9
-  // Lenis already smooths the scroll; no second smoother here (it only adds lag)
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // the cursor eases into each film, so each one holds the screen for a while
+
+  // the cursor: which film faces you. A soft hold at each film (the speed
+  // dips near it but never stops, so the scroll never feels stuck)
   const cursor = useTransform(p, (v) => {
-    const raw = -0.45 + v * span
-    const base = Math.floor(raw)
-    return base + smooth(0.22, 0.78, raw - base)
+    const raw = Math.min(n - 1, Math.max(0, (v - 0.06) / 0.88)) * (n - 1)
+    return raw - (Math.sin(2 * Math.PI * raw) / (2 * Math.PI)) * 0.75
   })
-  const headO = useTransform(p, [0, 0.07], [1, 0])
-  const headY = useTransform(p, [0, 0.07], [0, -50])
-  const railO = useTransform(p, [0.02, 0.08, 0.94, 1], [0, 1, 1, 0])
+  const turn = useTransform(cursor, (c) => -c * STEP)
+
+  // perspective that answers the scroll: tilt and pull back while moving fast
+  const vel = useVelocity(cursor)
+  const speed = useSpring(vel, { stiffness: 120, damping: 26, mass: 0.6 })
+  const tilt = useTransform(speed, (v) => Math.max(-9, Math.min(9, v * 5)))
+  const pull = useTransform(speed, (v) => -Math.min(260, Math.abs(v) * 160))
+
+  const [active, setActive] = useState(0)
+  const [live, setLive] = useState(-1)
+  const timer = useRef(null)
+  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
+  useMotionValueEvent(cursor, 'change', (c) => {
+    const a = Math.round(c)
+    setActive(a)
+    // play the facing film once the visitor rests on it (desktop only)
+    clearTimeout(timer.current)
+    setLive(-1)
+    if (!reduced && wide && Math.abs(c - a) < 0.04) timer.current = setTimeout(() => setLive(a), 600)
+  })
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const headO = useTransform(p, [0, 0.05], [1, 0])
+  const headY = useTransform(p, [0, 0.05], [0, -40])
 
   const jump = (i) => {
     const el = ref.current
     if (!el) return
-    // invert the cursor: hold point of film i sits at raw = i (+0.5 inside its ease)
-    const v = (i + 0.45) / span
+    const v = 0.06 + (i / Math.max(1, n - 1)) * 0.88
     const top = el.getBoundingClientRect().top + window.scrollY
     const y = top + v * (el.offsetHeight - window.innerHeight)
-    if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.2 })
+    if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.4 })
     else window.scrollTo({ top: y, behavior: 'smooth' })
   }
 
   if (!n) return null
+  const s = slides[active] || slides[0]
 
   return (
-    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(span + 1) * 100}vh` }}>
+    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n * 0.85 + 1) * 100}vh` }}>
       <div className="hl__pin">
-        <div className="hl__stage">
-          {slides.map((s, i) => (
-            <Screen key={s.id} s={s} i={i} n={n} cursor={cursor} onOpen={onOpenProject} reduced={reduced} />
-          ))}
-        </div>
         <motion.h2 className="hl__head" style={reduced ? undefined : { opacity: headO, y: headY }}>
           <span className="slate">Featured</span>
           Highlighted work
         </motion.h2>
-        {!reduced && (
-          <motion.div className="hl__rail" style={{ opacity: railO }}>
-            {slides.map((s, i) => (
-              <RailItem key={s.id} s={s} i={i} cursor={cursor} onJump={jump} />
-            ))}
+
+        <div className="hl__stage">
+          <motion.div className="hl__camera" style={reduced ? undefined : { rotateX: tilt, z: pull }}>
+            <div className="hl__origin">
+              <motion.div className="hl__ring" style={reduced ? undefined : { rotateY: turn }}>
+                {slides.map((sl, i) => (
+                  <Screen key={sl.id} s={sl} i={i} cursor={cursor} live={live === i} onOpen={onOpenProject} />
+                ))}
+              </motion.div>
+            </div>
           </motion.div>
-        )}
+        </div>
+
+        <div className="hl__meta">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={s.id}
+              className="hl__meta-in"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <div className="hl__tags">
+                <span className="hl__count">{String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
+                {s.award && <span className="hl__award">Award-winning</span>}
+                {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
+              </div>
+              <h3 className="hl__title">{s.title}</h3>
+              <p className="hl__role">{s.role}</p>
+            </motion.div>
+          </AnimatePresence>
+          <div className="hl__actions">
+            <button type="button" className="hl__play" onClick={() => onOpenProject(s)}>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+              Watch with sound
+            </button>
+            <div className="hl__dots" role="tablist" aria-label="Highlighted films">
+              {slides.map((sl, i) => (
+                <button
+                  key={sl.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === active}
+                  aria-label={sl.title}
+                  className={i === active ? 'is-on' : ''}
+                  onClick={() => jump(i)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )

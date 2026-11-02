@@ -35,9 +35,9 @@ const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t
 
 /**
  * The opener: the screen fades to black and the portrait is exposed out of
- * it, low-key and black and white, one soft light on the face. The role
- * lines and bio arrive once the exposure is up; at the end the black lifts
- * back to the page's backdrop.
+ * it, low-key and black and white, one soft light on the face. The name
+ * arrives once the exposure is up; at the end the black lifts back to the
+ * page's backdrop.
  */
 function PortraitIntro({ profile, reduced }) {
   const ref = useRef(null)
@@ -47,9 +47,6 @@ function PortraitIntro({ profile, reduced }) {
   const expose = useTransform(p, [0.25, 0.6], [0, 1])
   const scale = useTransform(p, [0.25, 0.75], [1.12, 1])
   const y = useTransform(p, [0.25, 1], ['4%', '-4%'])
-  const linesO = useTransform(p, [0.55, 0.68], [0, 1])
-  const linesX = useTransform(p, [0.55, 0.7], [24, 0])
-  const nlinesX = useTransform(linesX, (v) => -v)
   const bioO = useTransform(p, [0.66, 0.8], [0, 1])
   const bioY = useTransform(p, [0.66, 0.8], [16, 0])
   const src = profile.photoLowkey || '/photo-lowkey.jpg'
@@ -68,15 +65,9 @@ function PortraitIntro({ profile, reduced }) {
             <div className="ap__ph" aria-hidden="true" />
           )}
         </motion.div>
-        <motion.p className="ap__side ap__side--l" style={reduced ? undefined : { opacity: linesO, x: nlinesX }}>
-          Cinematographer
-        </motion.p>
-        <motion.p className="ap__side ap__side--r" style={reduced ? undefined : { opacity: linesO, x: linesX }}>
-          Colorist &amp; Designer
-        </motion.p>
         <motion.div className="ap__bio" style={reduced ? undefined : { opacity: bioO, y: bioY }}>
           <h2 className="ap__name">{profile.name}</h2>
-          {profile.bio && <p>{profile.bio}</p>}
+          <p>Cinematographer · Colorist · Designer</p>
         </motion.div>
       </div>
     </div>
@@ -104,7 +95,6 @@ function Credits({ experiences }) {
               {e.org} · {e.period}
               {e.highlight && <b> · {e.highlight}</b>}
             </span>
-            {e.detail && <span className="credits__detail">{e.detail}</span>}
           </motion.li>
         )
       })}
@@ -132,12 +122,11 @@ function CertFan({ certificates, onView, reduced }) {
 function CertPrint({ c, i, n, spread, onView, reduced }) {
   const [imgOk, setImgOk] = useState(true)
   const k = i - (n - 1) / 2
-  const x = useTransform(spread, (v) => `${(k * v * 104).toFixed(2)}%`)
+  const x = useTransform(spread, (v) => `${(k * v * 98).toFixed(2)}%`)
   const y = useTransform(spread, (v) => Math.abs(k) * v * 18 + (1 - v) * i * -6)
   const rotateZ = useTransform(spread, (v) => k * v * 4 + (1 - v) * (k * 3))
   const rotateY = useTransform(spread, (v) => -k * v * 10)
   const hasImg = c.image && imgOk
-  const capO = useTransform(spread, [0.85, 1], [0, 1])
   return (
     <motion.button
       type="button"
@@ -151,10 +140,10 @@ function CertPrint({ c, i, n, spread, onView, reduced }) {
       ) : (
         <span className="certfan__blank" />
       )}
-      <motion.span className="certfan__cap" style={reduced ? undefined : { opacity: capO }}>
+      <span className="certfan__cap">
         <b>{c.title}</b>
         <span>{c.issuer} · {c.year}</span>
-      </motion.span>
+      </span>
     </motion.button>
   )
 }
@@ -497,12 +486,12 @@ export default function About({
 
       <div className="container">
         <div className="about__block">
-          <span className="slate">Experience</span>
+          <h3 className="about__h">Experience</h3>
           <Credits experiences={experiences} />
         </div>
 
         <div className="about__block">
-          <span className="slate">Credentials</span>
+          <h3 className="about__h">Credentials</h3>
           <CertFan
             certificates={certificates}
             reduced={reduced}
@@ -519,23 +508,7 @@ export default function About({
             <div className="contact__intro">
               <RollIn text="Let's roll." />
               <p>Available for cinematography, colour &amp; design work worldwide.</p>
-              {gated ? (
-                <button type="button" className="contact__locked" onClick={doSignIn}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                  >
-                    <rect x="4" y="10" width="16" height="11" rx="2.5" />
-                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                  </svg>
-                  Sign in to view email &amp; phone
-                </button>
-              ) : (
+              {!gated && (
                 <>
                   <a href={`mailto:${profile.email}`} className="contact__email">
                     {profile.email}

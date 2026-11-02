@@ -50,20 +50,6 @@
   display: block;
 }
 .ap__ph { background: #0b0b0d; }
-.ap__side {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  margin: 0;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.78rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  will-change: transform, opacity;
-}
-.ap__side--l { left: clamp(16px, 7vw, 120px); }
-.ap__side--r { right: clamp(16px, 7vw, 120px); }
 .ap__bio {
   position: absolute;
   z-index: 2;
@@ -93,12 +79,21 @@
   text-shadow: 0 2px 16px #000;
 }
 
-/* blocks below the opener */
+/* blocks below the opener: one heading, one idea, lots of air */
 .about__block {
-  padding-top: clamp(80px, 14vh, 140px);
+  padding-top: clamp(120px, 20vh, 220px);
   display: grid;
   justify-items: center;
-  gap: 28px;
+  gap: clamp(40px, 7vh, 72px);
+}
+.about__h {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #fff;
 }
 
 /* ── experience as end credits ───────────────────────────────────────── */
@@ -107,9 +102,9 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: clamp(44px, 8vh, 72px);
+  gap: clamp(56px, 10vh, 96px);
   text-align: center;
-  max-width: 44rem;
+  max-width: 52rem;
 }
 .credits__item {
   display: grid;
@@ -126,35 +121,28 @@
 .credits__title {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  letter-spacing: -0.03em;
-  line-height: 1.02;
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  letter-spacing: -0.035em;
+  line-height: 1;
   color: #fff;
   text-wrap: balance;
 }
 .credits__meta {
-  font-size: 0.92rem;
+  font-size: 1rem;
   color: var(--text-dim);
 }
 .credits__meta b { color: var(--gold); font-weight: 500; }
-.credits__detail {
-  max-width: 34rem;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--text-dim);
-}
-
 /* ── credentials: prints fanning across the table ────────────────────── */
 .certfan {
   position: relative;
   width: 100%;
-  height: clamp(300px, 46vh, 420px);
+  height: clamp(360px, 56vh, 520px);
   display: grid;
   place-items: center;
 }
 .certfan__print {
   position: absolute;
-  width: clamp(150px, 17vw, 230px);
+  width: clamp(180px, 18vw, 270px);
   padding: 0;
   border: 0;
   background: none;
@@ -180,9 +168,14 @@
   display: grid;
   gap: 2px;
   text-align: center;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+/* captions only for the print you point at or focus */
+.certfan__print:hover .certfan__cap,
+.certfan__print:focus-visible .certfan__cap { opacity: 1 !important; }
 .certfan__cap b { font-weight: 500; }
 .certfan__cap span {
   font-size: 0.68rem;
@@ -243,8 +236,8 @@
 }
 .subs__line blockquote {
   margin: 0;
-  font-size: clamp(1rem, 1.9vw, 1.4rem);
-  line-height: 1.45;
+  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+  line-height: 1.4;
   color: #fff;
   text-shadow: 0 2px 4px #000;
 }
@@ -259,7 +252,7 @@
 .subs__line figcaption span { color: var(--text-dim); margin-left: 8px; }
 
 /* chapter heading (contact) */
-.chapter { margin-top: clamp(80px, 14vh, 140px); }
+.chapter { margin-top: clamp(120px, 20vh, 220px); }
 .chapter__head {
   display: flex;
   align-items: baseline;
@@ -312,7 +305,8 @@
 }
 .contact__intro h4 {
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  letter-spacing: -0.03em;
   color: #fff;
 }
 .contact__intro p {
@@ -380,24 +374,6 @@
 }
 
 /* masked email/phone — click to sign in */
-.contact__locked {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  width: fit-content;
-  padding: 10px 15px;
-  border-radius: 10px;
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
-}
-.contact__locked:hover {
-  color: var(--gold);
-  border-color: var(--gold);
-}
 
 /* "Signed in as …" row above the forms */
 .contact__signed {
@@ -557,13 +533,11 @@
   .contact { grid-template-columns: 1fr; gap: 28px; }
 }
 @media (max-width: 720px) {
-  .ap__side { top: auto; left: 0 !important; right: 0 !important; text-align: center; font-size: 0.7rem; }
-  .ap__side--l { bottom: calc(100% - 19vh); }
-  .ap__side--r { bottom: calc(100% - 22vh); }
   .ap__photo { width: 96vw; }
   .ap__bio p { font-size: 0.92rem; }
   .certfan { height: auto; display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; justify-content: flex-start; padding: 8px 4px 16px; }
-  .certfan__print { position: relative; flex: 0 0 62vw; transform: none !important; scroll-snap-align: center; }
+  .certfan__print { position: relative; flex: 0 0 72vw; transform: none !important; scroll-snap-align: center; }
+  .certfan__cap { opacity: 1 !important; }
   .subs__screen { aspect-ratio: 4 / 5; }
   .cform input, .cform select, .cform textarea { font-size: 16px; }
 }
@@ -576,7 +550,7 @@
   .ap { height: auto; }
   .ap__pin { position: relative; height: auto; padding: 120px 0 60px; gap: 24px; }
   .ap__black { display: none; }
-  .ap__side, .ap__bio, .ap__slate { position: static; translate: none; }
+  .ap__bio, .ap__slate { position: static; translate: none; }
   .subs { height: auto !important; }
   .subs__pin { position: relative; height: auto; padding-block: 60px; }
   .subs__line { position: relative; left: auto; bottom: auto; translate: none; margin: 24px auto; }

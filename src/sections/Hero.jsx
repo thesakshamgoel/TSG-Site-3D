@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useMagnetic } from '../hooks/useMagnetic'
 import { useReducedMotion } from '../hooks/useReducedMotion'
-import StarTunnel from '../components/StarTunnel'
 import LogoMark from '../components/LogoMark'
 import './Hero.css'
 
@@ -69,8 +68,6 @@ export default function Hero({ profile, onExplore, ready = true, logoHidden = fa
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18])
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
   const reduced = useReducedMotion()
-  // the star drift is the same field that becomes the reel's tunnel below
-  const starsO = useTransform(scrollYProgress, [0, 1], [0.55, 0.9])
   // depth on the way out: each layer leaves at its own speed
   const yLogo = useTransform(scrollYProgress, [0, 1], [0, -200])
   const yName = useTransform(scrollYProgress, [0, 1], [0, -90])
@@ -83,7 +80,6 @@ export default function Hero({ profile, onExplore, ready = true, logoHidden = fa
 
   return (
     <section className="hero section" id="hero" ref={ref}>
-      <StarTunnel className="hero__stars" intensity={starsO} speed={reduced ? () => 0.0008 : undefined} reduced={reduced} />
       <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
         <motion.div className="hero__layer hero__layer--1" style={{ y: yLogo }}>

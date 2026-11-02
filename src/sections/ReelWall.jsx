@@ -1,7 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { thumbFor } from '../data/media'
-import StarTunnel from '../components/StarTunnel'
 import { LITE } from '../perf'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import './ReelWall.css'
@@ -72,7 +71,6 @@ export default function ReelWall({ projects, onOpenProject }) {
   // arrival: 0 while the section rises over the hero, 1 when it pins
   const { scrollYProgress: e } = useScroll({ target: ref, offset: ['start end', 'start start'] })
 
-  const stars = useTransform([e, p], ([a, b]) => Math.min(1, Math.max(0, (a - 0.2) / 0.6)) * (1 - Math.max(0, (b - 0.9) / 0.1)))
   const spaceO = useTransform(e, [0.55, 1], [0, 1])
   const headY = useTransform(e, [0.5, 1], [80, 0])
   const headScale = useTransform(p, [0, 0.5, 1], [0.92, 1.06, 1.5])
@@ -83,7 +81,6 @@ export default function ReelWall({ projects, onOpenProject }) {
   return (
     <section className="rw" id="reelwall" ref={ref}>
       <div className="rw__pin" data-opaque>
-        <StarTunnel className="rw__stars" intensity={stars} reduced={reduced} />
         <motion.div className="rw__space" style={reduced ? undefined : { opacity: spaceO }}>
           {films.map((f, i) => (
             <Frame key={f.p.id} p={p} f={f} i={i} total={total} onOpen={onOpenProject} reduced={reduced} />

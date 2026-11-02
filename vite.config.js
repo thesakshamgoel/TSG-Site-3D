@@ -13,8 +13,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          three: ['three'],
-          r3f: ['@react-three/fiber', '@react-three/drei'],
           motion: ['framer-motion'],
           // separate chunk: downloads in parallel and stays cached across deploys
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],

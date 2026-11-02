@@ -22,16 +22,25 @@ import { thumbFor } from './data/media'
 import { firebaseEnabled } from './firebase/config'
 import { watchOwner } from './firebase/auth'
 import { useLenis } from './hooks/useLenis'
-import { LITE } from './perf'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
-import FrameLines from './sections/FrameLines'
 import FilmDivider from './components/FilmDivider'
+import StarTunnel from './components/StarTunnel'
 import './App.css'
 
 // Code-split the heavy bits so the hero content paints first.
-const Scene3D = lazy(() => import('./three/Scene3D'))
 const DevConsole = lazy(() => import('./console/DevConsole'))
+
+// stars are 0.6 bright over the hero, full while the films wall is pinned,
+// and fade out as the wall leaves the screen
+function pageStars() {
+  const el = document.getElementById('reelwall')
+  if (!el) return 0.6
+  const r = el.getBoundingClientRect(), H = window.innerHeight
+  const arrive = Math.min(1, Math.max(0, 1 - r.top / H))
+  const leave = Math.min(1, Math.max(0, r.bottom / H))
+  return (0.6 + 0.4 * arrive) * leave
+}
 
 export default function App() {
   const data = usePortfolio()
@@ -39,13 +48,6 @@ export default function App() {
   // loader; logoLanded: the loader's mark has landed on the hero logo
   const [loaded, setLoaded] = useState(false)
   const [logoLanded, setLogoLanded] = useState(false)
-  // the 3D background boots a moment after the hero's intro, not on top of it
-  const [scene, setScene] = useState(false)
-  useEffect(() => {
-    if (!loaded) return
-    const t = setTimeout(() => setScene(true), 1400)
-    return () => clearTimeout(t)
-  }, [loaded])
   const [lightbox, setLightbox] = useState(null)
   const [galleryCat, setGalleryCat] = useState(null)
   const [galleryOrigin, setGalleryOrigin] = useState({ x: 50, y: 50 })
@@ -78,7 +80,6 @@ export default function App() {
       { id: 'top', label: 'Intro' },
       { id: 'reelwall', label: 'The reel' },
       { id: 'highlights', label: 'Featured' },
-      { id: 'frames', label: 'Stills' },
       { id: 'grade', label: 'The grade' },
       { id: 'work', label: 'Work' },
       { id: 'about', label: 'About' },
@@ -189,14 +190,10 @@ export default function App() {
       {loaded && <FilmHUD />}
       {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
-      {/* the 3D background starts after the loader, so the two never compete */}
-      {/* lite devices skip the 3D background entirely; the ambient glow stays */}
-      {scene && !LITE && (
-        <Suspense fallback={null}>
-          <Scene3D />
-        </Suspense>
-      )}
       <div className="aurora" aria-hidden="true" />
+      {/* one star field for the hero and the films wall: fixed, so it never
+          scrolls away or restarts between the two */}
+      <StarTunnel className="page-stars" intensity={pageStars} />
 
       <div id="top" className="app">
         <Nav
@@ -220,9 +217,7 @@ export default function App() {
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <FilmDivider reel={2} label="Stills" />
-
-          <FrameLines stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
+          <FilmDivider reel={2} label="The grade" />
 
           <GradeWheels comparisons={data.comparisons} onOpenImage={(img) => setLightbox(img)} />
 
