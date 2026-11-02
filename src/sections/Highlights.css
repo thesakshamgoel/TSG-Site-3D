@@ -2,19 +2,27 @@
   position: relative;
   z-index: 3;
 }
+/* transparent: the page's fixed backdrop shows through around the screens */
 .hl__pin {
   position: sticky;
   top: 0;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: #060507;
 }
-.hl__slide {
+.hl__stage {
   position: absolute;
   inset: 0;
-  will-change: transform;
-  transform-origin: 50% 100%;
+  perspective: 1500px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+.hl__screen {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 .hl__frame {
   position: absolute;
@@ -27,17 +35,14 @@
   background: #0b0b0e;
   overflow: hidden;
   cursor: pointer;
-  transform-origin: 50% 50%;
-  will-change: transform;
-  /* a print, not a sharp-edged rectangle */
-  border-radius: 28px;
-  box-shadow: inset 0 0 0 1px rgba(233, 184, 114, 0.22), 0 40px 90px -30px rgba(0, 0, 0, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 50px 120px -40px rgba(0, 0, 0, 0.95);
 }
+.hl__frame:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }
 .hl__inner {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transform-origin: 50% 50%;
   will-change: transform;
 }
 .hl__inner img {
@@ -74,13 +79,13 @@
 .hl__shade {
   position: absolute;
   inset: 0;
-  background: radial-gradient(70% 60% at 12% 100%, rgba(5, 5, 6, 0.88), transparent 70%);
+  background: radial-gradient(70% 60% at 12% 100%, rgba(5, 5, 6, 0.85), transparent 70%);
   pointer-events: none;
 }
 .hl__dim {
   position: absolute;
   inset: 0;
-  background: #050506;
+  background: #060507;
   opacity: 0;
   pointer-events: none;
 }
@@ -88,14 +93,16 @@
   position: absolute;
   z-index: 2;
   left: clamp(20px, 5vw, 80px);
-  bottom: clamp(36px, 9vh, 100px);
+  bottom: clamp(110px, 16vh, 170px);
   right: 20px;
   text-align: left;
+  pointer-events: none;
 }
+.hl__meta .hl__play { pointer-events: auto; }
 .hl__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 14px;
 }
 .hl__tags span {
@@ -107,16 +114,31 @@
   opacity: 0.85;
 }
 .hl__tags .hl__award { color: var(--gold); opacity: 1; }
+.hl__count {
+  color: var(--gold) !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums;
+}
 .hl__title {
   font-family: var(--font-display);
-  font-style: italic;
   font-weight: 400;
-  font-size: clamp(3.4rem, 11vw, 11rem);
-  line-height: 0.9;
+  font-size: clamp(3.2rem, 10vw, 10rem);
+  line-height: 0.92;
   letter-spacing: -0.045em;
   color: #fff;
   text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
 }
+/* title letters rise out of a bottom-only mask (descenders stay whole) */
+.hl__title > span { display: inline; }
+.hl__ch {
+  display: inline-block;
+  vertical-align: top;
+  padding: 0.18em 0.06em 0.3em;
+  margin: -0.18em -0.06em -0.3em;
+  clip-path: inset(-1em -1em 0 -1em);
+}
+.hl__ch > span { display: inline-block; will-change: transform; }
+.hl__sp { display: inline-block; width: 0.22em; }
 .hl__role {
   margin-top: 14px;
   font-size: 1.05rem;
@@ -126,7 +148,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 20px;
+  min-height: 44px;
   padding: 12px 20px;
   border-radius: 100px;
   border: 0;
@@ -135,81 +158,79 @@
   font-weight: 600;
   font-size: 0.92rem;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
-.hl__play:hover { transform: translateY(-2px); }
+.hl__play:active { transform: scale(0.97); }
 .hl__head {
   position: absolute;
-  top: clamp(80px, 10vh, 120px);
-  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
+  top: clamp(84px, 11vh, 124px);
   left: 0;
   right: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   text-align: center;
   font-family: var(--font-display);
   font-weight: 500;
   font-size: clamp(2rem, 5vw, 3.7rem);
   letter-spacing: -0.02em;
-  z-index: 20;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
+  z-index: 200;
   pointer-events: none;
 }
-.hl__head em { color: var(--gold); }
-@media (max-width: 720px) {
-  .hl__title { font-size: 3.2rem; }
-  .hl__shade { background: linear-gradient(to top, rgba(5, 5, 6, 0.9), transparent 60%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hl__pin { position: relative; height: auto; }
-  .hl__slide { position: relative; height: 80vh; margin-bottom: 16px; }
-  .hl__head { position: relative; top: auto; padding: 100px 0 30px; }
-}
 
-/* slow push-in while a film holds the screen */
-/* (the slow push-in was removed: a constant animation under the scroll
-   animation cost smoothness) */
-.hl__poster { transform-origin: 50% 45%; }
-@keyframes hl-kb {
-  from { transform: scale(1); }
-  to { transform: scale(1.08); }
-}
-.hl__count {
-  color: var(--gold) !important;
-  opacity: 1 !important;
-  font-variant-numeric: tabular-nums;
-}
-/* title letters rise out of a mask */
-.hl__title > span { display: inline; }
-.hl__ch {
-  display: inline-block;
-  vertical-align: top;
-  /* clip only the bottom edge (letters rise from below it) and leave room
-     for italic overhangs, the Q's tail and the dots: overflow:hidden cut them */
-  padding: 0.18em 0.12em 0.3em;
-  margin: -0.18em -0.12em -0.3em;
-  clip-path: inset(-1em -1em 0 -1em);
-}
-.hl__ch > span { display: inline-block; will-change: transform; }
-.hl__sp { display: inline-block; width: 0.22em; }
-@media (prefers-reduced-motion: reduce) {
-  .hl__poster { animation: none; }
-}
-
-/* film-strip rails with sprocket holes along the print's long edges */
+/* the rail: one thumbnail per film, the active one lit with a gold bar */
 .hl__rail {
+  position: absolute;
+  z-index: 210;
+  left: 50%;
+  bottom: clamp(24px, 4vh, 40px);
+  translate: -50% 0;
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(10, 9, 8, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.hl__rail-item {
+  position: relative;
+  width: clamp(64px, 7vw, 96px);
+  aspect-ratio: 16 / 9;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hl__rail-item:active { transform: scale(0.96); }
+.hl__rail-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hl__rail-bar {
   position: absolute;
   left: 0;
   right: 0;
-  height: clamp(26px, 4.4vh, 40px);
-  z-index: 3;
-  pointer-events: none;
-  background:
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.16) 0 60%, transparent 66%) 0 50% / 34px 58% repeat-x,
-    linear-gradient(#070605, #070605);
-  will-change: transform;
+  bottom: 0;
+  height: 2px;
+  background: var(--gold);
+  transform-origin: 0 50%;
 }
-.hl__rail--t { top: 0; box-shadow: 0 1px 0 rgba(233, 184, 114, 0.25); }
-.hl__rail--b { bottom: 0; box-shadow: 0 -1px 0 rgba(233, 184, 114, 0.25); }
+
 @media (max-width: 720px) {
-  .hl__frame { border-radius: 18px; }
-  .hl__rail { height: 22px; background-size: 26px 56%, auto; }
+  .hl__title { font-size: 3rem; }
+  .hl__shade { background: linear-gradient(to top, rgba(5, 5, 6, 0.9), transparent 60%); }
+  .hl__meta { bottom: 104px; }
+  .hl__frame { border-radius: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hl__pin { position: relative; height: auto; overflow: visible; }
+  .hl__stage { position: relative; perspective: none; display: grid; gap: 16px; }
+  .hl__screen { position: relative; height: 80vh; }
+  .hl__head { position: relative; top: auto; padding: 100px 0 30px; }
 }

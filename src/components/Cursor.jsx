@@ -3,16 +3,13 @@ import './Cursor.css'
 
 /**
  * Custom cursor: a small pointer arrow with a tiny camera riding at its
- * corner, plus a soft glow that trails the pointer so the site reacts to
- * where the mouse is. The arrow tip is the exact click point and follows
- * the mouse with no lag. Disabled on touch / coarse pointers and when the
+ * corner. The arrow tip is the exact click point and follows the mouse with
+ * no lag. Disabled on touch / coarse pointers and when the
  * user prefers reduced motion (falls back to the native cursor).
  */
 export default function Cursor() {
   const dotRef = useRef(null)
-  const glowRef = useRef(null)
   const [enabled, setEnabled] = useState(false)
-  const [hot, setHot] = useState(false) // over an interactive element
 
   useEffect(() => {
     const fine =
@@ -25,12 +22,11 @@ export default function Cursor() {
 
     const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
     const pos = { ...target }
-    const glow = { ...target }
 
     const onMove = (e) => {
       target.x = e.clientX
       target.y = e.clientY
-      // expose pointer position to the whole page for ambient glow + parallax
+      // expose pointer position to the page for parallax
       document.documentElement.style.setProperty('--px', `${e.clientX}px`)
       document.documentElement.style.setProperty('--py', `${e.clientY}px`)
       document.documentElement.style.setProperty(
@@ -43,23 +39,19 @@ export default function Cursor() {
       )
 
       const interactive = e.target.closest(
-        'a, button, [role="button"], [role="slider"], [role="tab"], [tabindex]:not([tabindex="-1"]), label, summary, input, select, textarea, .card, .workcard, .film, .rw__frame, .fr__frame, .hl__frame'
+        'a, button, [role="button"], [role="slider"], [role="tab"], [tabindex]:not([tabindex="-1"]), label, summary, input, select, textarea, .card, .workcard, .film, .rw__frame, .fl__still, .hl__frame, .certfan__print'
       )
-      setHot(!!interactive)
+      dotRef.current?.classList.toggle('is-hot', !!interactive)
     }
 
     let raf
     const loop = () => {
-      // the arrow sits exactly on the pointer; only the glow trails behind
+      // the arrow sits exactly on the pointer
       pos.x = target.x
       pos.y = target.y
-      glow.x += (target.x - glow.x) * 0.12
-      glow.y += (target.y - glow.y) * 0.12
       if (dotRef.current)
         // the arrow tip is drawn at (2, 2) inside the svg: that is the hotspot
         dotRef.current.style.transform = `translate(${pos.x - 2}px, ${pos.y - 2}px)`
-      if (glowRef.current)
-        glowRef.current.style.transform = `translate(${glow.x}px, ${glow.y}px) translate(-50%, -50%)`
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -90,12 +82,7 @@ export default function Cursor() {
 
   return (
     <>
-      <div ref={glowRef} className="cursor-glow" aria-hidden="true" />
-      <div
-        ref={dotRef}
-        className={`cursor-cam ${hot ? 'is-hot' : ''}`}
-        aria-hidden="true"
-      >
+      <div ref={dotRef} className="cursor-cam" aria-hidden="true">
         <svg viewBox="0 0 30 30" width="30" height="30">
           {/* pointer arrow: the tip at (2, 2) is the click point */}
           <path

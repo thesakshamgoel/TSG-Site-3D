@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useScroll } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { useScrollDamp } from '../hooks/useScrollDamp'
 import './GradeWheels.css'
 
@@ -182,6 +182,11 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   const [hasGL, setHasGL] = useState(false)
   const [focus, setFocus] = useState(-1)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // the stage dissolves into the page backdrop as it arrives and as it leaves,
+  // so the picture never enters or exits as a hard-edged rectangle
+  const { scrollYProgress: enter } = useScroll({ target: ref, offset: ['start end', 'start start'] })
+  const { scrollYProgress: exit } = useScroll({ target: ref, offset: ['end end', 'end start'] })
+  const stageO = useTransform([enter, exit], ([a, b]) => Math.min(Math.min(1, a * 1.4), 1 - Math.min(1, b * 1.6)))
   // half-speed scroll while inside, so the grade and each frame get time (no locking)
   useScrollDamp(ref, 0.5)
 
@@ -558,8 +563,8 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   const countWord = ['', 'One scene', 'Two scenes', 'Three scenes', 'Four scenes', 'Five scenes', 'Six scenes'][n]
 
   return (
-    <section className="gw seam-top seam-bottom" id="grade" ref={ref}>
-      <div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef}>
+    <section className="gw" id="grade" ref={ref}>
+      <motion.div data-opaque className={`gw__stage ${hasGL ? 'has-gl' : ''} ${user ? 'is-user' : ''}`} ref={stageRef} style={{ opacity: stageO }}>
         <div
           className="gw__frame"
           ref={frameRef}
@@ -646,7 +651,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
             {user && <button type="button" className="gw__chip" onClick={reset}>Back to his grade</button>}
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

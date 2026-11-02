@@ -337,44 +337,7 @@
   z-index: 0;
   pointer-events: none;
 }
-/* a soft projector-light sweep crossing the frame now and then */
-.hero__sweep {
-  position: absolute;
-  top: -20%;
-  bottom: -20%;
-  left: 0;
-  width: 34vw;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(100deg, transparent, rgba(255, 226, 170, 0.07) 45%, rgba(255, 226, 170, 0.11) 50%, rgba(255, 226, 170, 0.07) 55%, transparent);
-  transform: translateX(-60vw) skewX(-14deg);
-  animation: hero-sweep 9s cubic-bezier(0.45, 0, 0.25, 1) 1.6s infinite;
-  will-change: transform;
-}
-@keyframes hero-sweep {
-  0% { transform: translateX(-60vw) skewX(-14deg); }
-  45%, 100% { transform: translateX(130vw) skewX(-14deg); }
-}
-/* the logo with a slow gold halo turning behind it */
-.hero__logo-wrap {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  margin-bottom: 22px;
-}
-.hero__logo-wrap .hero__logo { margin-bottom: 0; position: relative; z-index: 1; }
-.hero__halo {
-  position: absolute;
-  width: 135%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0deg, rgba(233, 184, 114, 0.28) 70deg, transparent 140deg, transparent 200deg, rgba(233, 184, 114, 0.18) 260deg, transparent 330deg);
-  -webkit-mask: radial-gradient(circle, transparent 54%, #000 56%, #000 64%, transparent 67%);
-  mask: radial-gradient(circle, transparent 54%, #000 56%, #000 64%, transparent 67%);
-  animation: hero-halo 14s linear infinite;
-  will-change: transform;
-}
-@keyframes hero-halo { to { transform: rotate(360deg); } }
+
 /* name letters flip up out of a bottom-only mask (overflow:hidden would
    shave italic overhangs and descenders) */
 .hero__word-mask {
@@ -392,13 +355,6 @@
   transform-origin: 50% 100%;
   will-change: transform;
 }
-@media (prefers-reduced-motion: reduce) {
-  .hero__sweep, .hero__halo { animation: none; }
-  .hero__sweep { display: none; }
-}
-
-/* the old halo ring is retired: the logo animates itself now */
-.hero__halo { display: none; }
 /* hidden while the loader's mark flies in to take its place */
 .hero__logo.is-hidden { visibility: hidden; }
 .hero__logo.logomark {

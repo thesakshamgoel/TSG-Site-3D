@@ -3,16 +3,15 @@
   z-index: 2;
 }
 
-/* slow animated gradient wash over the 3D scene */
+/* One fixed backdrop for the whole page: the ground colour, a faint warm
+   key from the top and the 3D star space. Sections stay transparent over it,
+   so scrolling never shows a seam where one section's ground meets the next. */
 .aurora {
   position: fixed;
   inset: -20%;
   z-index: 1;
   pointer-events: none;
-  background:
-    radial-gradient(38% 38% at 22% 28%, rgba(233, 184, 114, 0.12), transparent 60%),
-    radial-gradient(40% 40% at 80% 62%, rgba(35, 199, 199, 0.08), transparent 60%),
-    radial-gradient(46% 46% at 52% 92%, rgba(124, 108, 255, 0.07), transparent 60%);
+  background: radial-gradient(42% 40% at 50% 18%, rgba(233, 184, 114, 0.07), transparent 70%);
   animation: aurora-drift 26s ease-in-out infinite alternate;
 }
 @keyframes aurora-drift {
@@ -59,7 +58,7 @@ main {
   /* opacity only: a 3D tilt + blur on the whole (very tall) page made the
      hero's entrance stutter, and its final transform kept the page on one
      giant composited layer forever */
-  animation: site-in 0.6s ease-out both;
+  animation: site-in 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
 }
 @keyframes site-in {
   from { opacity: 0; }
@@ -75,28 +74,6 @@ main {
   }
 }
 
-/* Soft seams: a dark full-screen section fades into its neighbour over a
-   third of a screen instead of meeting it at a hard line. The feather sits
-   just outside the section edge and scrolls with it. */
-.seam-top::before,
-.seam-bottom::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 36vh;
-  pointer-events: none;
-  z-index: 4;
-}
-.seam-top::before {
-  bottom: 100%;
-  background: linear-gradient(to bottom, transparent, var(--seam, #060507) 92%);
-}
-.seam-bottom::after {
-  top: 100%;
-  background: linear-gradient(to top, transparent, var(--seam, #060507) 92%);
-}
-
 /* the 3D background fades in when it boots, never pops */
 .scene3d { animation: scene-in 1.6s ease-out both; }
 @keyframes scene-in { from { opacity: 0; } to { opacity: 1; } }
@@ -104,4 +81,3 @@ main {
 /* lite devices: no full-screen ambient motion layers */
 .lite .aurora { animation: none; }
 .lite body::after, html.lite body::after { display: none; }
-.lite .hero__sweep { display: none; }

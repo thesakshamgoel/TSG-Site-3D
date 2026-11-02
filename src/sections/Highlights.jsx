@@ -13,16 +13,21 @@ function bgSrc(s) {
   return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&start=20&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
 }
 
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
+
 /**
- * One featured film per screen. Each arrives as a small frame rising from the
- * bottom, then opens out to fill the viewport (transform-only, so it stays on
- * the compositor) while the one beneath sinks back. Once open, the film itself
- * starts playing silently behind the title.
+ * Highlighted work as a row of cinema screens in 3D.
+ *
+ * Scroll moves a "cursor" along the row. Each film waits angled in the depth
+ * to the right, swings round to face you and opens to fill the screen, holds
+ * there (its film plays silently), then swings away to the left as the next
+ * arrives. The cursor eases into each film so every one gets a real hold.
+ * Transform and opacity only, so the whole move stays on the compositor.
  */
-// one letter of the title, rising out of a mask in sequence once the frame is open
 function Char({ ch, k, len, open, reduced }) {
-  const a = 0.62 + (k / Math.max(len, 1)) * 0.22
-  const y = useTransform(open, [a, a + 0.14], ['105%', '0%'])
+  const a = 0.35 + (k / Math.max(len, 1)) * 0.4
+  const y = useTransform(open, [a, a + 0.25], ['105%', '0%'])
   if (ch === ' ') return <span className="hl__sp"> </span>
   return (
     <span className="hl__ch">
@@ -31,64 +36,47 @@ function Char({ ch, k, len, open, reduced }) {
   )
 }
 
-function Slide({ s, i, n, p, onOpen, reduced }) {
+function Screen({ s, i, n, cursor, onOpen, reduced }) {
   const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
   const [live, setLive] = useState(false)
   const [shown, setShown] = useState(false)
   const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
-  const t = useTransform(p, (v) => Math.min(1, Math.max(0, v * (n + 0.4) - i + (i === 0 ? 0.45 : 0))))
-  // the frame comes up tilted back, like a print lifted onto the light table
-  const tilt = useTransform(t, [0, 0.45], [26, 0])
-  const open = useTransform(t, [0.3, 0.85], [0, 1])
-  // frame window grows from 50% x 62% of the screen to full-bleed; the inner
-  // layer counter-scales so the picture is cropped, never squashed
-  // an even scale (a smaller print of the same frame), so the rounded corners
-  // and film-strip rails keep their shape; the picture settles from a slight zoom
-  const fs = useTransform(open, (o) => 0.56 + 0.44 * o)
-  const zoom = useTransform(open, [0, 1], [1.18, 1])
-  // the sprocket rails sit on the print, then slide away as it fills the screen
-  const railT = useTransform(open, [0.78, 1], ['0%', '-105%'])
-  const railB = useTransform(open, [0.78, 1], ['0%', '105%'])
-  // 0 until the next slide starts rising, 1 once it has fully covered this one
-  const after = useTransform(p, (v) => (i === n - 1 ? 0 : Math.min(1, Math.max(0, (v * (n + 0.4) - i - 1) / 0.5))))
-  const sink = useTransform(after, [0, 1], [1, 0.9])
-  // one vertical track: rise in from below, then drift up as the next takes over
-  // the first card starts lower so it sits clear of the section heading
-  const y = useTransform([t, after, open], ([tt, a, o]) =>
-    i === 0
-      ? `${(-6 * a + 16 * (1 - o)).toFixed(3)}vh`
-      : a > 0
-        ? `${(-6 * a).toFixed(3)}vh`
-        : `${(100 * (1 - Math.min(1, tt / 0.45))).toFixed(3)}vh`
-  )
-  const dim = useTransform(after, [0, 1], [0, 0.75])
-  // the title arrives with the open frame and leaves as soon as the next one takes over
-  const metaO = useTransform([open, after], ([o, a]) => Math.min(1, Math.max(0, (o - 0.72) / 0.28)) * (1 - Math.min(1, a * 3)))
-  const metaY = useTransform(open, [0.72, 1], [40, 0])
 
-  // play only while this slide is the open one, and only once the visitor
-  // has rested on it: building the YouTube player mid-scroll stalled frames
+  // t: where this film sits relative to the cursor. 0 = facing you, full screen;
+  // positive = still to come (right, deep), negative = already passed (left)
+  const t = useTransform(cursor, (c) => i - c)
+  const open = useTransform(t, (v) => 1 - smooth(0, 0.24, Math.abs(v)))
+  const scale = useTransform(open, (o) => 0.5 + 0.5 * o)
+  const x = useTransform(t, (v) => `${(Math.sign(v) * smooth(0.06, 1.1, Math.abs(v)) * 60).toFixed(3)}vw`)
+  const z = useTransform(t, (v) => -smooth(0, 1.2, Math.abs(v)) * 620)
+  const rotateY = useTransform(t, (v) => -Math.sign(v) * smooth(0.04, 0.9, Math.abs(v)) * 40)
+  const opacity = useTransform(t, (v) => 1 - smooth(1.15, 1.7, Math.abs(v)))
+  const dim = useTransform(t, (v) => smooth(0.12, 0.8, Math.abs(v)) * 0.55)
+  const zIndex = useTransform(t, (v) => 100 - Math.round(Math.abs(v) * 10))
+  const metaO = useTransform(open, [0.55, 1], [0, 1])
+  const metaY = useTransform(open, [0.55, 1], [28, 0])
+  const inner = useTransform(open, [0, 1], [1.16, 1])
+
+  // play only while this film is the open one and the visitor has rested on it
   const wantRef = useRef(false)
   const timerRef = useRef(null)
   const decide = () => {
-    // desktop only: phones get the poster (YouTube forces its own controls
-    // over mobile embeds, and a silent background stream costs their data)
-    const on = !reduced && wide && open.get() > 0.96 && after.get() < 0.6
+    // desktop only: phones keep the poster (YouTube forces its own controls
+    // over mobile embeds, and a silent stream costs their data)
+    const on = !reduced && wide && open.get() > 0.97
     wantRef.current = on
     clearTimeout(timerRef.current)
     if (!on) {
       if (live) { setLive(false); setShown(false) }
       return
     }
-    if (!live) timerRef.current = setTimeout(() => { if (wantRef.current) setLive(true) }, 500)
+    if (!live) timerRef.current = setTimeout(() => { if (wantRef.current) setLive(true) }, 450)
   }
   useEffect(() => () => clearTimeout(timerRef.current), [])
   useMotionValueEvent(open, 'change', decide)
-  useMotionValueEvent(after, 'change', decide)
 
-  // Reveal the player only once it reports that it is really playing. Some
-  // films do not allow embedding; those keep their poster instead of showing
-  // YouTube's error card.
+  // reveal the player only once it is really playing; films that refuse
+  // embedding keep their poster instead of showing YouTube's error card
   const frameRef = useRef(null)
   useEffect(() => {
     if (!live || isVimeo(s)) return
@@ -98,8 +86,6 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
       try { d = typeof d === 'string' ? JSON.parse(d) : d } catch { return }
       const st = d?.event === 'infoDelivery' ? d.info?.playerState : d?.event === 'onStateChange' ? d.info : undefined
       if (st === 1) setShown(true)
-      // loop by hand: the playlist trick YouTube needs for loop=1 also shows
-      // previous / next buttons over the film
       if (st === 0) {
         const cmd = (func, args = []) =>
           frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*')
@@ -113,23 +99,16 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   }, [live, s])
   const onFrameLoad = () => {
     if (isVimeo(s)) { setTimeout(() => setShown(true), 1200); return }
-    // subscribe to the player's state events
     frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: s.id }), '*')
   }
 
   return (
     <motion.div
-      className="hl__slide"
-      style={reduced ? undefined : { y, rotateX: i === 0 ? 0 : tilt, scale: sink, zIndex: i + 1, transformPerspective: 1600 }}
+      className="hl__screen"
+      style={reduced ? undefined : { x, z, rotateY, scale, opacity, zIndex }}
     >
-      <motion.button
-        type="button"
-        className="hl__frame"
-        style={reduced ? undefined : { scale: fs }}
-        onClick={() => onOpen(s)}
-        aria-label={`Watch ${s.title} with sound`}
-      >
-        <motion.div className="hl__inner" style={reduced ? undefined : { scale: zoom }}>
+      <button type="button" className="hl__frame" onClick={() => onOpen(s)} aria-label={`Watch ${s.title} with sound`}>
+        <motion.div className="hl__inner" style={reduced ? undefined : { scale: inner }}>
           {!thumb.broken ? (
             <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" />
           ) : (
@@ -149,14 +128,12 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
           )}
         </motion.div>
         <span className="hl__shade" />
-        <motion.span className="hl__rail hl__rail--t" style={reduced ? undefined : { y: railT }} aria-hidden="true" />
-        <motion.span className="hl__rail hl__rail--b" style={reduced ? undefined : { y: railB }} aria-hidden="true" />
         <motion.span className="hl__dim" style={reduced ? undefined : { opacity: dim }} />
-      </motion.button>
+      </button>
       <motion.div className="hl__meta" style={reduced ? undefined : { opacity: metaO, y: metaY }}>
         <div className="hl__tags">
           <span className="hl__count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
-          {s.award && <span className="hl__award">★ Award-winning</span>}
+          {s.award && <span className="hl__award">Award-winning</span>}
           {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
         </div>
         <h3 className="hl__title" aria-label={s.title}>
@@ -176,28 +153,70 @@ function Slide({ s, i, n, p, onOpen, reduced }) {
   )
 }
 
+// a thumbnail on the rail: lights up while its film is facing you
+function RailItem({ s, i, cursor, onJump }) {
+  const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
+  const on = useTransform(cursor, (c) => 1 - smooth(0, 0.5, Math.abs(i - c)))
+  const o = useTransform(on, [0, 1], [0.45, 1])
+  const bar = useTransform(on, [0, 1], [0, 1])
+  return (
+    <motion.button type="button" className="hl__rail-item" style={{ opacity: o }} onClick={() => onJump(i)} aria-label={`Go to ${s.title}`}>
+      {!thumb.broken && <img src={thumb.src} alt="" onError={thumb.onError} loading="lazy" decoding="async" />}
+      <motion.span className="hl__rail-bar" style={{ scaleX: bar }} />
+    </motion.button>
+  )
+}
+
 export default function Highlights({ projects, onOpenProject }) {
   const slides = (projects || []).slice(0, 4)
   const ref = useRef(null)
   const reduced = useReducedMotion()
-  // no spring here: Lenis already smooths the scroll, a second smoother only adds lag
-  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // the heading leaves as the first film opens beneath it
-  const headO = useTransform(p, [0, 0.09], [1, 0])
-  const headY = useTransform(p, [0, 0.09], [0, -60])
-
-  if (!slides.length) return null
   const n = slides.length
+  const span = n - 1 + 0.9
+  // Lenis already smooths the scroll; no second smoother here (it only adds lag)
+  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // the cursor eases into each film, so each one holds the screen for a while
+  const cursor = useTransform(p, (v) => {
+    const raw = -0.45 + v * span
+    const base = Math.floor(raw)
+    return base + smooth(0.22, 0.78, raw - base)
+  })
+  const headO = useTransform(p, [0, 0.07], [1, 0])
+  const headY = useTransform(p, [0, 0.07], [0, -50])
+  const railO = useTransform(p, [0.02, 0.08, 0.94, 1], [0, 1, 1, 0])
+
+  const jump = (i) => {
+    const el = ref.current
+    if (!el) return
+    // invert the cursor: hold point of film i sits at raw = i (+0.5 inside its ease)
+    const v = (i + 0.45) / span
+    const top = el.getBoundingClientRect().top + window.scrollY
+    const y = top + v * (el.offsetHeight - window.innerHeight)
+    if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.2 })
+    else window.scrollTo({ top: y, behavior: 'smooth' })
+  }
+
+  if (!n) return null
 
   return (
-    <section className="hl seam-bottom" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n + 0.4) * 100}vh` }}>
-      <div className="hl__pin" data-opaque>
-        {slides.map((s, i) => (
-          <Slide key={s.id} s={s} i={i} n={n} p={p} onOpen={onOpenProject} reduced={reduced} />
-        ))}
+    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(span + 1) * 100}vh` }}>
+      <div className="hl__pin">
+        <div className="hl__stage">
+          {slides.map((s, i) => (
+            <Screen key={s.id} s={s} i={i} n={n} cursor={cursor} onOpen={onOpenProject} reduced={reduced} />
+          ))}
+        </div>
         <motion.h2 className="hl__head" style={reduced ? undefined : { opacity: headO, y: headY }}>
-          Highlighted <em>work.</em>
+          <span className="slate">Featured</span>
+          Highlighted work
         </motion.h2>
+        {!reduced && (
+          <motion.div className="hl__rail" style={{ opacity: railO }}>
+            {slides.map((s, i) => (
+              <RailItem key={s.id} s={s} i={i} cursor={cursor} onJump={jump} />
+            ))}
+          </motion.div>
+        )}
       </div>
     </section>
   )

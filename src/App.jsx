@@ -25,9 +25,8 @@ import { useLenis } from './hooks/useLenis'
 import { LITE } from './perf'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
-import Marquee from './sections/Marquee'
-import FramesReel from './sections/FramesReel'
-import Waveform from './components/Waveform'
+import FrameLines from './sections/FrameLines'
+import FilmDivider from './components/FilmDivider'
 import './App.css'
 
 // Code-split the heavy bits so the hero content paints first.
@@ -74,8 +73,6 @@ export default function App() {
     () => data.projects.filter((p) => p.category === 'film').slice(0, 14).map((p) => thumbFor(p)),
     [data.projects]
   )
-  // the one text divider carries the whole trail
-  const marqueeC = useMemo(() => ['Light', 'Story', 'Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
   const progressSections = useMemo(
     () => [
       { id: 'top', label: 'Intro' },
@@ -223,21 +220,19 @@ export default function App() {
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <Waveform variant="bars" />
+          <FilmDivider reel={2} label="Stills" />
 
-          <FramesReel stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
+          <FrameLines stills={data.stills} onOpenImage={(img) => setLightbox(img)} />
 
           <GradeWheels comparisons={data.comparisons} onOpenImage={(img) => setLightbox(img)} />
 
-          <Marquee words={marqueeC} reverse />
+          <FilmDivider reel={3} label="The work" />
 
           <Work
             categories={data.categories}
             projects={data.projects}
             onOpenCategory={openCategory}
           />
-
-          <Waveform variant="dots" />
 
           <About
             profile={data.profile}

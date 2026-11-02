@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import { emailEnabled, sendEmail } from '../data/email'
 import { toast } from '../components/Toast'
 import { firebaseEnabled } from '../firebase/config'
@@ -12,7 +13,7 @@ function Chapter({ no, title, children }) {
     <div className="chapter">
       <Reveal>
         <div className="chapter__head">
-          <span className="chapter__no">{no}</span>
+          {no && <span className="chapter__no">{no}</span>}
           <h3 className="chapter__title">{title}</h3>
           <motion.span
             className="chapter__rule"
@@ -29,93 +30,132 @@ function Chapter({ no, title, children }) {
   )
 }
 
-function CertCard({ cert, onView, i = 0 }) {
-  const [imgOk, setImgOk] = useState(true)
-  const hasImg = cert.image && imgOk
-  return (
-    <motion.button
-      className={`cert glass ${hasImg ? 'cert--img' : ''}`}
-      onClick={() => hasImg && onView(cert)}
-      initial={{ opacity: 0, y: 40, rotateX: -24 }}
-      whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.8, delay: (i % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      style={{ transformPerspective: 900 }}
-    >
-      {hasImg && (
-        <div className="cert__scan">
-          <img src={cert.image} alt={cert.title} onError={() => setImgOk(false)} loading="lazy" />
-        </div>
-      )}
-      <div className="cert__row">
-        {!hasImg && <div className="cert__icon">🎖</div>}
-        <div>
-          <div className="cert__title">{cert.title}</div>
-          <div className="cert__meta">
-            {cert.issuer} · {cert.year}
-          </div>
-        </div>
-      </div>
-    </motion.button>
-  )
-}
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 
-// circular portrait inside a gold ring that draws itself as you scroll past,
-// with a soft glow and a comet riding the end of the line
-function PortraitOrb({ children }) {
+/**
+ * The opener: the screen fades to black and the portrait is exposed out of
+ * it, low-key and black and white, one soft light on the face. The role
+ * lines and bio arrive once the exposure is up; at the end the black lifts
+ * back to the page's backdrop.
+ */
+function PortraitIntro({ profile, reduced }) {
   const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 95%', 'end 25%'] })
-  const draw = useTransform(scrollYProgress, [0, 1], [0.04, 1])
-  const spin = useTransform(scrollYProgress, [0, 1], [-100, 160])
-  const glow = useTransform(scrollYProgress, [0, 0.5, 1], [0.35, 1, 0.75])
-  const cx = useTransform(draw, (d) => 50 + 47 * Math.cos(2 * Math.PI * d))
-  const cy = useTransform(draw, (d) => 50 + 47 * Math.sin(2 * Math.PI * d))
+  const [ok, setOk] = useState(true)
+  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start end', 'end end'] })
+  const black = useTransform(p, [0.05, 0.3, 0.9, 1], [0, 1, 1, 0])
+  const expose = useTransform(p, [0.25, 0.6], [0, 1])
+  const scale = useTransform(p, [0.25, 0.75], [1.12, 1])
+  const y = useTransform(p, [0.25, 1], ['4%', '-4%'])
+  const linesO = useTransform(p, [0.55, 0.68], [0, 1])
+  const linesX = useTransform(p, [0.55, 0.7], [24, 0])
+  const nlinesX = useTransform(linesX, (v) => -v)
+  const bioO = useTransform(p, [0.66, 0.8], [0, 1])
+  const bioY = useTransform(p, [0.66, 0.8], [16, 0])
+  const src = profile.photoLowkey || '/photo-lowkey.jpg'
   return (
-    <div className="about__orb" ref={ref}>
-      <motion.svg className="about__ring" viewBox="0 0 100 100" style={{ rotate: spin }} aria-hidden="true">
-        <defs>
-          <filter id="aboutRingGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="1.4" />
-          </filter>
-        </defs>
-        <circle cx="50" cy="50" r="47" className="about__ring-base" />
-        <motion.circle cx="50" cy="50" r="47" className="about__ring-glow" filter="url(#aboutRingGlow)" style={{ pathLength: draw, opacity: glow }} />
-        <motion.circle cx="50" cy="50" r="47" className="about__ring-line" style={{ pathLength: draw }} />
-        <motion.circle r="1.6" className="about__comet" filter="url(#aboutRingGlow)" style={{ cx, cy }} />
-        <motion.circle r="0.9" className="about__comet" style={{ cx, cy }} />
-      </motion.svg>
-      {children}
+    <div className="ap" ref={ref}>
+      <div className="ap__pin">
+        <motion.div className="ap__black" style={reduced ? { opacity: 1 } : { opacity: black }} aria-hidden="true" />
+        <span className="slate ap__slate">End credits</span>
+        <motion.div className="ap__photo" style={reduced ? undefined : { opacity: expose, scale, y }}>
+          {ok ? (
+            <picture>
+              <source srcSet={src.replace(/\.jpg$/, '.webp')} type="image/webp" />
+              <img src={src} alt={`Portrait of ${profile.name}`} onError={() => setOk(false)} decoding="async" />
+            </picture>
+          ) : (
+            <div className="ap__ph" aria-hidden="true" />
+          )}
+        </motion.div>
+        <motion.p className="ap__side ap__side--l" style={reduced ? undefined : { opacity: linesO, x: nlinesX }}>
+          Cinematographer
+        </motion.p>
+        <motion.p className="ap__side ap__side--r" style={reduced ? undefined : { opacity: linesO, x: linesX }}>
+          Colorist &amp; Designer
+        </motion.p>
+        <motion.div className="ap__bio" style={reduced ? undefined : { opacity: bioO, y: bioY }}>
+          <h2 className="ap__name">{profile.name}</h2>
+          {profile.bio && <p>{profile.bio}</p>}
+        </motion.div>
+      </div>
     </div>
   )
 }
 
-// timeline whose gold line draws down with the scroll, entries sliding in
-function Timeline({ experiences }) {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 80%', 'end 55%'] })
+// experience as end credits: the role in small caps, the project large
+function Credits({ experiences }) {
   return (
-    <ol className="timeline" ref={ref}>
-      <motion.span className="timeline__draw" style={{ scaleY: scrollYProgress }} aria-hidden="true" />
-      {experiences.map((e, i) => (
-        <motion.li
-          key={e.id}
-          className="timeline__item"
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <span className="timeline__dot" />
-          <div className="timeline__period timecode">{e.period}</div>
-          <div className="timeline__role">
-            {e.role}
-            {e.highlight && <span className="timeline__badge">★ {e.highlight}</span>}
-          </div>
-          <div className="timeline__org">{e.org}</div>
-          {e.detail && <p className="timeline__detail">{e.detail}</p>}
-        </motion.li>
-      ))}
+    <ol className="credits">
+      {experiences.map((e) => {
+        const [role, project] = e.role.split(/\s+—\s+/)
+        return (
+          <motion.li
+            key={e.id}
+            className="credits__item"
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-12% 0px' }}
+            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <span className="credits__role">{role}</span>
+            <span className="credits__title">{(project || role).replace(/["“”]/g, '')}</span>
+            <span className="credits__meta">
+              {e.org} · {e.period}
+              {e.highlight && <b> · {e.highlight}</b>}
+            </span>
+            {e.detail && <span className="credits__detail">{e.detail}</span>}
+          </motion.li>
+        )
+      })}
     </ol>
+  )
+}
+
+/**
+ * Credentials as a stack of prints that fans out across the table as you
+ * scroll, each tilting in 3D; tap one to see it full size.
+ */
+function CertFan({ certificates, onView, reduced }) {
+  const ref = useRef(null)
+  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start 85%', 'center 45%'] })
+  const spread = useTransform(p, [0, 1], [0, 1])
+  const n = certificates.length
+  return (
+    <div className="certfan" ref={ref}>
+      {certificates.map((c, i) => (
+        <CertPrint key={c.id} c={c} i={i} n={n} spread={spread} onView={onView} reduced={reduced} />
+      ))}
+    </div>
+  )
+}
+function CertPrint({ c, i, n, spread, onView, reduced }) {
+  const [imgOk, setImgOk] = useState(true)
+  const k = i - (n - 1) / 2
+  const x = useTransform(spread, (v) => `${(k * v * 104).toFixed(2)}%`)
+  const y = useTransform(spread, (v) => Math.abs(k) * v * 18 + (1 - v) * i * -6)
+  const rotateZ = useTransform(spread, (v) => k * v * 4 + (1 - v) * (k * 3))
+  const rotateY = useTransform(spread, (v) => -k * v * 10)
+  const hasImg = c.image && imgOk
+  const capO = useTransform(spread, [0.85, 1], [0, 1])
+  return (
+    <motion.button
+      type="button"
+      className="certfan__print"
+      style={reduced ? undefined : { x, y, rotateZ, rotateY, zIndex: n - Math.round(Math.abs(k)), transformPerspective: 1000 }}
+      onClick={() => hasImg && onView(c)}
+      aria-label={`${c.title}, ${c.issuer}, ${c.year}`}
+    >
+      {hasImg ? (
+        <img src={c.image} alt="" onError={() => setImgOk(false)} loading="lazy" />
+      ) : (
+        <span className="certfan__blank" />
+      )}
+      <motion.span className="certfan__cap" style={reduced ? undefined : { opacity: capO }}>
+        <b>{c.title}</b>
+        <span>{c.issuer} · {c.year}</span>
+      </motion.span>
+    </motion.button>
   )
 }
 
@@ -139,35 +179,43 @@ function RollIn({ text, as: Tag = 'h4', className }) {
   )
 }
 
-// reviews: staggered rise, and the columns drift at different speeds
-function Reviews({ reviews }) {
+/**
+ * Reviews as subtitles: a dark cinema screen, and each review arrives as the
+ * subtitle line along its bottom, one at a time as you scroll.
+ */
+function Subtitles({ reviews, reduced }) {
   const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const y0 = useTransform(scrollYProgress, [0, 1], [40, -40])
-  const y1 = useTransform(scrollYProgress, [0, 1], [90, -60])
-  const y2 = useTransform(scrollYProgress, [0, 1], [20, -20])
-  const ys = [y0, y1, y2]
+  const n = reviews.length
+  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  const cur = useTransform(p, (v) => {
+    const raw = v * (n - 1)
+    const base = Math.min(n - 1, Math.floor(raw))
+    return base >= n - 1 ? n - 1 : base + smooth(0.4, 0.6, raw - base)
+  })
   return (
-    <div className="reviews" id="reviews" ref={ref}>
-      {reviews.map((r, i) => (
-        <motion.div key={r.id} className="review__drift" style={{ y: ys[i % 3] }}>
-          <motion.figure
-            className="review glass"
-            initial={{ opacity: 0, y: 50, scale: 0.96 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.8, delay: (i % 3) * 0.1, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="review__quote">"</div>
-            <blockquote>{r.quote}</blockquote>
-            <figcaption>
-              <span className="review__name">{r.name}</span>
-              <span className="review__role">{r.role}</span>
-            </figcaption>
-          </motion.figure>
-        </motion.div>
-      ))}
+    <div className="subs" id="reviews" ref={ref} style={reduced ? undefined : { height: `${(n * 0.7 + 1) * 100}vh` }}>
+      <div className="subs__pin">
+        <h3 className="subs__head">Kind words</h3>
+        <div className="subs__screen">
+          <span className="subs__tc" aria-hidden="true">SUBTITLES · EN</span>
+          {reviews.map((r, i) => (
+            <SubLine key={r.id} r={r} i={i} cur={cur} reduced={reduced} />
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+function SubLine({ r, i, cur, reduced }) {
+  const o = useTransform(cur, (c) => 1 - smooth(0.2, 0.5, Math.abs(c - i)))
+  const y = useTransform(cur, (c) => (i - c) * 16)
+  return (
+    <motion.figure className="subs__line" style={reduced ? undefined : { opacity: o, y }}>
+      <blockquote>{r.quote}</blockquote>
+      <figcaption>
+        {r.name} <span>{r.role}</span>
+      </figcaption>
+    </motion.figure>
   )
 }
 
@@ -419,7 +467,7 @@ export default function About({
   contactReq,
   onViewImage,
 }) {
-  const [photoOk, setPhotoOk] = useState(true)
+  const reduced = useReducedMotion()
   const [formTab, setFormTab] = useState('project') // 'project' | 'review'
 
   // "Get in touch" (or any external request) can open a specific contact tab.
@@ -444,78 +492,29 @@ export default function About({
     }
   }
   return (
-    <section className="about section" id="about">
+    <section className="about" id="about">
+      <PortraitIntro profile={profile} reduced={reduced} />
+
       <div className="container">
-        <Reveal>
-          <div className="about__lead">
-            <div className="about__lead-text">
-              <span className="slate">End Credits</span>
-              <h2 className="section-title">
-                The person <span className="gradient-text">behind the lens.</span>
-              </h2>
-              <p className="section-sub">
-                Experience, credentials, kind words, and a way to start a
-                conversation.
-              </p>
-              {profile.bio && <p className="about__bio">{profile.bio}</p>}
-            </div>
-            <div className="about__portrait-wrap">
-              <PortraitOrb>
-              <motion.div
-                className="about__portrait"
-                initial={{ clipPath: 'circle(0% at 50% 50%)' }}
-                whileInView={{ clipPath: 'circle(50% at 50% 50%)' }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1] }}
-              >
-                {profile.photo && photoOk ? (
-                  <motion.img
-                    src={profile.photo}
-                    alt={profile.name}
-                    onError={() => setPhotoOk(false)}
-                    initial={{ scale: 1.3 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true, margin: '-60px' }}
-                    transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                ) : (
-                  <div className="about__portrait-ph">
-                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.4">
-                      <rect x="3" y="6" width="18" height="13" rx="3" />
-                      <circle cx="12" cy="12.5" r="3.3" />
-                      <path d="M8 6l1.4-2h5.2L16 6" />
-                    </svg>
-                    <span>Add your portrait</span>
-                    <span className="timecode">public/photo.jpg</span>
-                  </div>
-                )}
-              </motion.div>
-              </PortraitOrb>
-              <div className="about__portrait-card">
-                <strong>{profile.name}</strong>
-                <span>Filmmaker</span>
-              </div>
-            </div>
-          </div>
-        </Reveal>
+        <div className="about__block">
+          <span className="slate">Experience</span>
+          <Credits experiences={experiences} />
+        </div>
 
-        <Chapter no="01" title="Experience">
-          <Timeline experiences={experiences} />
-        </Chapter>
+        <div className="about__block">
+          <span className="slate">Credentials</span>
+          <CertFan
+            certificates={certificates}
+            reduced={reduced}
+            onView={(cert) => onViewImage?.({ title: cert.title, image: cert.image, mediaType: 'image' })}
+          />
+        </div>
+      </div>
 
-        <Chapter no="02" title="Credentials">
-          <div className="certs">
-            {certificates.map((c, i) => (
-              <CertCard key={c.id} i={i} cert={c} onView={(cert) => onViewImage?.({ title: cert.title, image: cert.image, mediaType: 'image' })} />
-            ))}
-          </div>
-        </Chapter>
+      <Subtitles reviews={reviews} reduced={reduced} />
 
-        <Chapter no="03" title="Reviews">
-          <Reviews reviews={reviews} />
-        </Chapter>
-
-        <Chapter no="04" title="Start a Project">
+      <div className="container">
+        <Chapter no="" title="Start a project">
           <div className="contact" id="contact">
             <div className="contact__intro">
               <RollIn text="Let's roll." />
@@ -554,7 +553,7 @@ export default function About({
               <div className="contact__actions">
                 {profile.cv && (
                   <a href={profile.cv} download className="btn">
-                    ⬇ Download CV
+                    Download CV
                   </a>
                 )}
                 {profile.instagram && (

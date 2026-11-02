@@ -81,9 +81,8 @@ export default function ReelWall({ projects, onOpenProject }) {
   const countText = useTransform(count, (v) => Math.round(v))
 
   return (
-    <section className="rw seam-top" id="reelwall" ref={ref}>
+    <section className="rw" id="reelwall" ref={ref}>
       <div className="rw__pin" data-opaque>
-        <div className="rw__ground" aria-hidden="true" />
         <StarTunnel className="rw__stars" intensity={stars} reduced={reduced} />
         <motion.div className="rw__space" style={reduced ? undefined : { opacity: spaceO }}>
           {films.map((f, i) => (

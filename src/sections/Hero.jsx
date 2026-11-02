@@ -84,7 +84,6 @@ export default function Hero({ profile, onExplore, ready = true, logoHidden = fa
   return (
     <section className="hero section" id="hero" ref={ref}>
       <StarTunnel className="hero__stars" intensity={starsO} speed={reduced ? () => 0.0008 : undefined} reduced={reduced} />
-      <span className="hero__sweep" aria-hidden="true" />
       <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
         <motion.div className="hero__layer hero__layer--1" style={{ y: yLogo }}>

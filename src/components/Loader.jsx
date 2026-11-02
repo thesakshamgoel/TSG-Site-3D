@@ -177,7 +177,7 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
       // the world around it settles into the hero
       starSpeed.current = 0.053 + (0.0025 - 0.053) * easeOut(span(0, 0.7, u))
       const lift = span(0.12, 0.72, u)
-      rootRef.current.style.backgroundColor = `rgba(5, 5, 6, ${(1 - easeInOut(lift)).toFixed(3)})`
+      rootRef.current.style.backgroundColor = `rgba(6, 5, 7, ${(1 - easeInOut(lift)).toFixed(3)})`
       if (starsRef.current) starsRef.current.style.opacity = (1 - span(0.35, 0.95, u)).toFixed(3)
       if (vignetteRef.current) vignetteRef.current.style.opacity = (1 - lift).toFixed(3)
       if (ringRef.current) ringRef.current.style.opacity = (1 - span(0, 0.4, u)).toFixed(3)

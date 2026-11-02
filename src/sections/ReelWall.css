@@ -9,15 +9,10 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  /* transparent while it arrives over the hero; .rw__ground fades the dark in */
+  /* transparent: the page's fixed backdrop shows through, so no seam */
   background: transparent;
 }
-.rw__ground {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(70% 60% at 50% 50%, rgba(233, 184, 114, 0.09), transparent 70%), #060507;
-  will-change: opacity;
-}
+
 .rw__stars {
   position: absolute;
   inset: 0;

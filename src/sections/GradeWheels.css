@@ -1,5 +1,4 @@
 .gw {
-  --seam: #090807;
   position: relative;
   z-index: 3;
   /* two phases: grade, then open each frame in turn */
@@ -11,7 +10,8 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: #090807;
+  background: #060507;
+  will-change: opacity;
   --mix: 0;
 }
 /* the picture box: full-bleed on wide screens, a 16:9 band on phones */

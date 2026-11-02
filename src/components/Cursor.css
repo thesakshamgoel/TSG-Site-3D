@@ -78,28 +78,8 @@ body.has-custom-cursor * {
   }
 }
 
-/* strong ambient glow that trails the pointer — the whole site lights up */
-.cursor-glow {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  width: 680px;
-  height: 680px;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    circle,
-    rgba(233, 184, 114, 0.16) 0%,
-    rgba(233, 184, 114, 0.06) 34%,
-    transparent 68%
-  );
-  will-change: transform;
-}
-
 /* no cursor while the loader plays */
-.loader ~ .cursor-cam,
-.loader ~ .cursor-glow { opacity: 0 !important; }
+.loader ~ .cursor-cam { opacity: 0 !important; }
 /* over anything clickable, the camera itself turns red */
 .cursor-cam.is-hot .cursor-cam__body rect,
 .cursor-cam.is-hot .cursor-cam__body path { fill: #ff3b3b; }
