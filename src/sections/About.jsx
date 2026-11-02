@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { thumbHiFor } from '../data/media'
 import { emailEnabled, sendEmail } from '../data/email'
 import { toast } from '../components/Toast'
 import { firebaseEnabled } from '../firebase/config'
@@ -74,26 +75,30 @@ function PortraitIntro({ profile, reduced }) {
   )
 }
 
-// experience as end credits: the role in small caps, the project large
+// experience as a filmography: year, project, role; the heading stays the
+// largest thing on screen and each row reads in one line
 function Credits({ experiences }) {
   return (
-    <ol className="credits">
+    <ol className="exp">
       {experiences.map((e) => {
         const [role, project] = e.role.split(/\s+—\s+/)
         return (
           <motion.li
             key={e.id}
-            className="credits__item"
-            initial={{ opacity: 0, y: 28 }}
+            className="exp__row"
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-12% 0px' }}
-            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+            viewport={{ once: true, margin: '-8% 0px' }}
+            transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
           >
-            <span className="credits__role">{role}</span>
-            <span className="credits__title">{(project || role).replace(/["“”]/g, '')}</span>
-            <span className="credits__meta">
-              {e.org} · {e.period}
-              {e.highlight && <b> · {e.highlight}</b>}
+            <span className="exp__year">{e.period}</span>
+            <span className="exp__main">
+              <span className="exp__title">{(project || role).replace(/["“”]/g, '')}</span>
+              <span className="exp__role">{project ? role : e.org}</span>
+            </span>
+            <span className="exp__org">
+              {project ? e.org : ''}
+              {e.highlight && <b>{e.highlight}</b>}
             </span>
           </motion.li>
         )
@@ -172,7 +177,14 @@ function RollIn({ text, as: Tag = 'h4', className }) {
  * Reviews as subtitles: a dark cinema screen, and each review arrives as the
  * subtitle line along its bottom, one at a time as you scroll.
  */
-function Subtitles({ reviews, reduced }) {
+// the film a review is about, matched by the title quoted in its role
+function filmFor(r, projects) {
+  const m = /["“]([^"”]+)["”]/.exec(r.role || '')
+  const t = (m ? m[1] : '').toLowerCase()
+  return t ? (projects || []).find((p) => (p.title || '').toLowerCase() === t) : null
+}
+
+function Subtitles({ reviews, projects, reduced }) {
   const ref = useRef(null)
   const n = reviews.length
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
@@ -188,23 +200,38 @@ function Subtitles({ reviews, reduced }) {
         <div className="subs__screen">
           <span className="subs__tc" aria-hidden="true">SUBTITLES · EN</span>
           {reviews.map((r, i) => (
-            <SubLine key={r.id} r={r} i={i} cur={cur} reduced={reduced} />
+            <SubLine key={r.id} r={r} i={i} cur={cur} film={filmFor(r, projects)} reduced={reduced} />
           ))}
         </div>
       </div>
     </div>
   )
 }
-function SubLine({ r, i, cur, reduced }) {
+function SubLine({ r, i, cur, film, reduced }) {
   const o = useTransform(cur, (c) => 1 - smooth(0.2, 0.5, Math.abs(c - i)))
   const y = useTransform(cur, (c) => (i - c) * 16)
+  const zoom = useTransform(cur, (c) => 1.08 - 0.08 * clamp01(c - i + 1))
+  // films overlap through the change, so the screen never flashes black
+  const filmO = useTransform(cur, (c) => 1 - smooth(0.5, 0.95, Math.abs(c - i)))
   return (
+    <>
+    {film && (
+      <motion.img
+        className="subs__film"
+        src={thumbHiFor(film)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        style={reduced ? undefined : { opacity: filmO, scale: zoom }}
+      />
+    )}
     <motion.figure className="subs__line" style={reduced ? undefined : { opacity: o, y }}>
       <blockquote>{r.quote}</blockquote>
       <figcaption>
         {r.name} <span>{r.role}</span>
       </figcaption>
     </motion.figure>
+    </>
   )
 }
 
@@ -450,6 +477,7 @@ function ReviewForm({ email, user }) {
 
 export default function About({
   profile,
+  projects,
   certificates,
   experiences,
   reviews,
@@ -485,7 +513,7 @@ export default function About({
       <PortraitIntro profile={profile} reduced={reduced} />
 
       <div className="container">
-        <div className="about__block">
+        <div className="about__block about__block--split">
           <h3 className="about__h">Experience</h3>
           <Credits experiences={experiences} />
         </div>
@@ -500,7 +528,7 @@ export default function About({
         </div>
       </div>
 
-      <Subtitles reviews={reviews} reduced={reduced} />
+      <Subtitles reviews={reviews} projects={projects} reduced={reduced} />
 
       <div className="container">
         <Chapter no="" title="Start a project">

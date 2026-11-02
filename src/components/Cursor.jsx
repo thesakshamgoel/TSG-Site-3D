@@ -26,17 +26,7 @@ export default function Cursor() {
     const onMove = (e) => {
       target.x = e.clientX
       target.y = e.clientY
-      // expose pointer position to the page for parallax
-      document.documentElement.style.setProperty('--px', `${e.clientX}px`)
-      document.documentElement.style.setProperty('--py', `${e.clientY}px`)
-      document.documentElement.style.setProperty(
-        '--pnx',
-        `${(e.clientX / window.innerWidth - 0.5) * 2}`
-      )
-      document.documentElement.style.setProperty(
-        '--pny',
-        `${(e.clientY / window.innerHeight - 0.5) * 2}`
-      )
+      dirty = true
 
       const interactive = e.target.closest(
         'a, button, [role="button"], [role="slider"], [role="tab"], [tabindex]:not([tabindex="-1"]), label, summary, input, select, textarea, .card, .workcard, .film, .rw__frame, .hl__frame, .certfan__print'
@@ -45,7 +35,19 @@ export default function Cursor() {
     }
 
     let raf
+    let dirty = false
+    const hero = () => document.getElementById('hero')
     const loop = () => {
+      // pointer parallax for the hero only, written on the hero itself so a
+      // mouse move restyles one section, not the whole page
+      if (dirty) {
+        dirty = false
+        const h = hero()
+        if (h && h.getBoundingClientRect().bottom > 0) {
+          h.style.setProperty('--pnx', ((target.x / window.innerWidth - 0.5) * 2).toFixed(3))
+          h.style.setProperty('--pny', ((target.y / window.innerHeight - 0.5) * 2).toFixed(3))
+        }
+      }
       // the arrow sits exactly on the pointer
       pos.x = target.x
       pos.y = target.y

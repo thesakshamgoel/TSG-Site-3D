@@ -24,7 +24,7 @@ import { watchOwner } from './firebase/auth'
 import { useLenis } from './hooks/useLenis'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
-import FilmDivider from './components/FilmDivider'
+import Intertitle from './components/Intertitle'
 import StarTunnel from './components/StarTunnel'
 import './App.css'
 
@@ -187,8 +187,8 @@ export default function App() {
       <Cursor />
       <ToastViewport />
       <ScreenGuard />
-      {loaded && <FilmHUD />}
-      {loaded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
+      {logoLanded && <FilmHUD />}
+      {logoLanded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
       <div className="aurora" aria-hidden="true" />
       {/* one star field for the hero and the films wall: fixed, so it never
@@ -202,7 +202,7 @@ export default function App() {
           onNavigate={navigate}
         />
 
-        <main className={loaded ? 'main--in' : 'main--pre'}>
+        <main>
           <Hero
             profile={data.profile}
             ready={loaded}
@@ -217,11 +217,11 @@ export default function App() {
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <FilmDivider reel={2} label="The grade" />
+          <Intertitle no="CHAPTER II" title="The grade" />
 
           <GradeWheels comparisons={data.comparisons} onOpenImage={(img) => setLightbox(img)} />
 
-          <FilmDivider reel={3} label="The work" />
+          <Intertitle no="CHAPTER III" title="The work" />
 
           <Work
             categories={data.categories}
@@ -231,6 +231,7 @@ export default function App() {
 
           <About
             profile={data.profile}
+            projects={data.projects}
             certificates={data.certificates}
             experiences={data.experiences}
             reviews={data.displayReviews}
@@ -244,7 +245,7 @@ export default function App() {
         <Footer profile={data.profile} onOpenConsole={() => setConsoleOpen(true)} />
       </div>
 
-      {loaded && <MobileTabBar galleryCat={galleryCat} onNavigate={navigate} />}
+      {logoLanded && <MobileTabBar galleryCat={galleryCat} onNavigate={navigate} />}
 
       <AnimatePresence>
         {galleryCat && (

@@ -99,7 +99,7 @@ export default function Hero({ profile, onExplore, ready = true, logoHidden = fa
         <motion.div className="hero__name-float hero__layer hero__layer--2" style={{ y: yName }}>
           <motion.h1
             aria-label={profile.name}
-            className="hero__name hero__breathe"
+            className="hero__name"
             initial={{ opacity: 0 }}
             animate={ready ? { opacity: 1 } : undefined}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -137,8 +137,8 @@ export default function Hero({ profile, onExplore, ready = true, logoHidden = fa
             <motion.span
               key={i}
               className="hero__tagword"
-              initial={reduced ? false : { opacity: 0, y: '0.6em', filter: 'blur(6px)' }}
-              animate={ready ? { opacity: 1, y: '0em', filter: 'blur(0px)' } : undefined}
+              initial={reduced ? false : { opacity: 0, y: '0.6em' }}
+              animate={ready ? { opacity: 1, y: '0em' } : undefined}
               transition={{ duration: 0.7, delay: 0.7 + i * 0.09, ease: [0.22, 1, 0.36, 1] }}
             >
               {w}

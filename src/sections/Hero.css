@@ -65,21 +65,6 @@
 }
 
 /* continuous, gentle text motion */
-.hero__breathe {
-  animation: breathe 7s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-    letter-spacing: -0.03em;
-  }
-  50% {
-    transform: translateY(-4px) scale(1.004);
-    letter-spacing: -0.028em;
-  }
-}
-
 /* pointer-parallax float — sits on a wrapper so it composes with the
    section tilt above and the breathe animation on the h1 itself */
 .hero__name-float {
@@ -308,7 +293,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero__reel-track,
-  .hero__breathe,
   .hero__logo,
   .hero__scrollline {
     animation: none;

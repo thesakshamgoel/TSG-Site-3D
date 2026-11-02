@@ -186,7 +186,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
   // so the picture never enters or exits as a hard-edged rectangle
   const { scrollYProgress: enter } = useScroll({ target: ref, offset: ['start end', 'start start'] })
   const { scrollYProgress: exit } = useScroll({ target: ref, offset: ['end end', 'end start'] })
-  const stageO = useTransform([enter, exit], ([a, b]) => Math.min(Math.min(1, a * 1.4), 1 - Math.min(1, b * 1.6)))
+  const stageO = useTransform([enter, exit], ([a, b]) => Math.min(a * a, 1 - Math.min(1, b * 1.6)))
   // half-speed scroll while inside, so the grade and each frame get time (no locking)
   useScrollDamp(ref, 0.5)
 

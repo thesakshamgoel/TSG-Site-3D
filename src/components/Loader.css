@@ -119,7 +119,6 @@
   height: 100%;
   overflow: visible;
   backface-visibility: hidden;
-  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.55));
 }
 
 /* the film-reel tunnel: frames on a ring flying toward the camera */

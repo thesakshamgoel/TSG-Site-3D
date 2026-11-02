@@ -50,30 +50,6 @@ main {
   z-index: 2;
 }
 
-/* the site "unfolds" out of the reel once the loader clears */
-.main--pre {
-  opacity: 0;
-}
-.main--in {
-  /* opacity only: a 3D tilt + blur on the whole (very tall) page made the
-     hero's entrance stutter, and its final transform kept the page on one
-     giant composited layer forever */
-  animation: site-in 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
-}
-@keyframes site-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .main--pre {
-    opacity: 1;
-  }
-  .main--in {
-    animation: none;
-  }
-}
-
 /* the shared star field behind the hero and the films wall */
 .page-stars {
   position: fixed;

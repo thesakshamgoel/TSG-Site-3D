@@ -42,6 +42,62 @@ function Frame({ p, f, i, total, onOpen, reduced }) {
   )
 }
 
+// faint line-art film props that drift through the same depth as the frames
+const PROPS = {
+  reel: (
+    <g fill="none" stroke="currentColor" strokeWidth="1.4">
+      <circle cx="50" cy="50" r="44" />
+      <circle cx="50" cy="50" r="7" />
+      {[0, 72, 144, 216, 288].map((a) => (
+        <circle key={a} cx={50 + Math.cos((a * Math.PI) / 180) * 25} cy={50 + Math.sin((a * Math.PI) / 180) * 25} r="10" />
+      ))}
+    </g>
+  ),
+  clapper: (
+    <g fill="none" stroke="currentColor" strokeWidth="1.4">
+      <rect x="12" y="40" width="76" height="48" rx="3" />
+      <path d="M12 40 L84 22 L88 34 L16 52" />
+      <path d="M30 35 L36 47 M48 30 L54 42 M66 26 L72 38" />
+    </g>
+  ),
+  lens: (
+    <g fill="none" stroke="currentColor" strokeWidth="1.4">
+      <circle cx="50" cy="50" r="40" />
+      <circle cx="50" cy="50" r="30" />
+      <circle cx="50" cy="50" r="18" />
+      <path d="M50 10 v8 M50 82 v8 M10 50 h8 M82 50 h8" />
+    </g>
+  ),
+  can: (
+    <g fill="none" stroke="currentColor" strokeWidth="1.4">
+      <ellipse cx="50" cy="38" rx="40" ry="12" />
+      <path d="M10 38 v24 a40 12 0 0 0 80 0 v-24" />
+    </g>
+  ),
+}
+const PROP_LIST = ['reel', 'lens', 'clapper', 'reel', 'can', 'lens', 'reel', 'clapper', 'can', 'reel']
+
+function Prop({ p, kind, i, total, reduced }) {
+  const z0 = -(i + 0.5) * GAP * 2.1 - LEAD
+  const x = (i % 2 ? 1 : -1) * (12 + rand(i, 7) * 38)
+  const y = (rand(i, 8) - 0.5) * 90
+  const z = useTransform(p, (v) => z0 + v * total * 1.05)
+  const transform = useTransform(z, (zz) => `translate3d(${x}vw, ${y}vh, ${Math.min(zz, 700)}px)`)
+  const opacity = useTransform(z, (zz) => {
+    const inn = Math.min(1, Math.max(0, (zz + 4400) / 1600))
+    const out = 1 - Math.min(1, Math.max(0, (zz - 300) / 320))
+    return inn * out * 0.32
+  })
+  if (reduced) return null
+  return (
+    <motion.span className="rw__prop" style={{ transform, opacity }} aria-hidden="true">
+      <svg viewBox="0 0 100 100" style={{ animationDuration: `${18 + rand(i, 9) * 16}s`, animationDirection: i % 2 ? 'reverse' : 'normal' }}>
+        {PROPS[kind]}
+      </svg>
+    </motion.span>
+  )
+}
+
 /**
  * The reel wall: every frame of his filmography hangs in depth inside a star
  * tunnel, and the scroll flies the camera through it. The section reveals
@@ -82,6 +138,9 @@ export default function ReelWall({ projects, onOpenProject }) {
     <section className="rw" id="reelwall" ref={ref}>
       <div className="rw__pin" data-opaque>
         <motion.div className="rw__space" style={reduced ? undefined : { opacity: spaceO }}>
+          {PROP_LIST.map((k, i) => (
+            <Prop key={i} p={p} kind={k} i={i} total={total} reduced={reduced} />
+          ))}
           {films.map((f, i) => (
             <Frame key={f.p.id} p={p} f={f} i={i} total={total} onOpen={onOpenProject} reduced={reduced} />
           ))}

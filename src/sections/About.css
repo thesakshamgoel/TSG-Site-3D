@@ -38,9 +38,11 @@
   width: min(86vh, 92vw);
   aspect-ratio: 1;
   will-change: transform, opacity;
-  /* the portrait's black meets the page's black with no edge */
-  -webkit-mask: radial-gradient(closest-side, #000 72%, transparent 100%);
-  mask: radial-gradient(closest-side, #000 72%, transparent 100%);
+  /* screen blend: the photo's black simply vanishes into whatever is behind
+     it, so there is no disc or square edge, only the lit face */
+  mix-blend-mode: screen;
+  -webkit-mask: radial-gradient(farthest-side, #000 55%, transparent 100%);
+  mask: radial-gradient(farthest-side, #000 55%, transparent 100%);
 }
 .ap__photo img,
 .ap__ph {
@@ -96,42 +98,74 @@
   color: #fff;
 }
 
-/* ── experience as end credits ───────────────────────────────────────── */
-.credits {
+/* ── experience: a filmography, heading beside it on wide screens ─────── */
+.about__block--split {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+@media (min-width: 900px) {
+  .about__block--split {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr);
+    align-items: start;
+    gap: 48px;
+  }
+  .about__block--split .about__h { position: sticky; top: 120px; }
+}
+.exp {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: clamp(56px, 10vh, 96px);
-  text-align: center;
-  max-width: 52rem;
 }
-.credits__item {
+.exp__row {
   display: grid;
-  gap: 8px;
-  justify-items: center;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 24px;
+  padding: 26px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
-.credits__role {
+.exp__row:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.exp__year {
   font-family: var(--font-mono, monospace);
-  font-size: 0.74rem;
-  letter-spacing: 0.22em;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.exp__main { display: grid; gap: 6px; min-width: 0; }
+.exp__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  line-height: 1.15;
+  color: #fff;
+}
+.exp__role {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+.exp__org {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+.exp__org b {
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
 }
-.credits__title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(2.4rem, 6vw, 4.6rem);
-  letter-spacing: -0.035em;
-  line-height: 1;
-  color: #fff;
-  text-wrap: balance;
+@media (max-width: 640px) {
+  .exp__row { grid-template-columns: 1fr; gap: 8px; padding: 22px 0; }
+  .exp__org { justify-items: start; text-align: left; }
 }
-.credits__meta {
-  font-size: 1rem;
-  color: var(--text-dim);
-}
-.credits__meta b { color: var(--gold); font-weight: 500; }
+
 /* ── credentials: prints fanning across the table ────────────────────── */
 .certfan {
   position: relative;
@@ -215,6 +249,25 @@
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 40px 100px -40px rgba(0, 0, 0, 0.9);
 }
+.subs__film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform, opacity;
+}
+/* a darker band where the subtitle sits, so it reads over any frame */
+.subs__screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.2));
+}
+.subs__line { z-index: 2; }
+.subs__tc { z-index: 2; }
 .subs__tc {
   position: absolute;
   top: 16px;

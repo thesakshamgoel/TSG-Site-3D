@@ -12,8 +12,8 @@
   --accent-2: #c8956a;
   --radius: 14px;
   --maxw: 1280px;
-  --font-display: 'Fraunces', 'Georgia', 'Times New Roman', serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  --font-display: 'Bodoni Moda', 'Didot', 'Georgia', serif;
+  --font-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
   /* live pointer position, normalized -1..1 (set by the cursor) */
   --pnx: 0;
@@ -28,7 +28,10 @@
 
 /* Lenis smooth-scroll base styles */
 html.lenis,
-html.lenis body {
+html.lenis /* no italics anywhere: emphasis is colour, not slant */
+em, i { font-style: normal; }
+
+body {
   height: auto;
 }
 .lenis.lenis-smooth {
@@ -273,8 +276,7 @@ img {
 }
 .js-reveal .section-title.is-in {
   opacity: 1;
-  transform: none;
-  filter: none;
+  transform: translateY(0);
 }
 @media (prefers-reduced-motion: reduce) {
   .js-reveal .section-title {

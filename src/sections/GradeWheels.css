@@ -12,6 +12,9 @@
   overflow: hidden;
   background: #060507;
   will-change: opacity;
+  /* the picture's top edge feathers into the page, so it never arrives as a hard line */
+  -webkit-mask: linear-gradient(to bottom, transparent, #000 9%);
+  mask: linear-gradient(to bottom, transparent, #000 9%);
   --mix: 0;
 }
 /* the picture box: full-bleed on wide screens, a 16:9 band on phones */
@@ -62,7 +65,7 @@
   text-wrap: balance;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
 }
-.gw__step b { font-weight: 500; font-style: italic; color: var(--gold); }
+.gw__step b { font-weight: 500; font-style: normal; color: var(--gold); }
 .gw__h {
   margin: 0;
   font-family: var(--font-display);
@@ -290,7 +293,7 @@
   bottom: clamp(24px, 5vh, 56px);
   margin: 0;
   font-family: var(--font-display);
-  font-style: italic;
+  font-style: normal;
   font-size: clamp(1.4rem, 2.6vw, 2.4rem);
   line-height: 1;
   color: #fff;

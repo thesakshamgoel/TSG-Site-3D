@@ -75,6 +75,10 @@ function Screen({ s, i, cursor, live, onOpen }) {
             onLoad={onFrameLoad}
           />
         )}
+        <span className="hl__rail hl__rail--t" aria-hidden="true" />
+        <span className="hl__rail hl__rail--b" aria-hidden="true">
+          <span className="hl__edge">TSG {String(i + 1).padStart(2, '0')} · {s.title.toUpperCase()}</span>
+        </span>
         <motion.span className="hl__dim" style={{ opacity: dim }} />
       </button>
     </div>
