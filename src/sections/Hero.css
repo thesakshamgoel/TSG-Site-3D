@@ -399,6 +399,8 @@
 
 /* the old halo ring is retired: the logo animates itself now */
 .hero__halo { display: none; }
+/* hidden while the loader's mark flies in to take its place */
+.hero__logo.is-hidden { visibility: hidden; }
 .hero__logo.logomark {
   width: clamp(150px, 17vw, 220px);
   height: auto;

@@ -29,6 +29,7 @@
   background: #0b0b0e var(--perf-h) repeat-x center;
   z-index: 3;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  will-change: transform;
 }
 .loader__strip--top {
   top: 0;
@@ -86,17 +87,39 @@
   width: 100%;
   height: 100%;
 }
-.loader__mark {
+.loader__fade {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(120px, 16vw, 200px);
-  will-change: transform, opacity;
+  inset: 0;
 }
-.loader__mark img {
+
+/* the mark: a 3D rig of three flat layers. Same width and aspect as the hero
+   logo, so at the end of the flight it sits exactly on top of it. */
+.lmark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  width: clamp(150px, 17vw, 220px);
+  aspect-ratio: 731.8 / 401;
+  transform-origin: 50% 50%;
+  perspective: 900px;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.lmark__rig {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.lmark__layer {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
-  filter: drop-shadow(0 10px 40px rgba(233, 184, 114, 0.35));
+  height: 100%;
+  overflow: visible;
+  backface-visibility: hidden;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.55));
 }
 
 /* the film-reel tunnel: frames on a ring flying toward the camera */

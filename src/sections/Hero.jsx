@@ -19,14 +19,14 @@ const REEL_LABELS = [
 
 // one letter of the name: flips up out of a mask on arrival, and drifts away
 // from the centre of the name as the hero scrolls out
-function NameChar({ ch, k, mid, delay, exit, reduced }) {
+function NameChar({ ch, k, mid, delay, exit, reduced, ready }) {
   const x = useTransform(exit, [0, 1], [0, (k - mid) * 16])
   return (
     <span className="hero__char-mask">
       <motion.span
         className="hero__char"
         initial={reduced ? false : { y: '70%', rotateX: -85, opacity: 0 }}
-        animate={{ y: '0%', rotateX: 0, opacity: 1 }}
+        animate={ready ? { y: '0%', rotateX: 0, opacity: 1 } : undefined}
         transition={{ duration: 0.95, delay, ease: [0.22, 1, 0.36, 1] }}
         style={reduced ? undefined : { x }}
       >
@@ -37,13 +37,13 @@ function NameChar({ ch, k, mid, delay, exit, reduced }) {
 }
 
 // counts a published figure up from zero ("100+" -> 0..100, then "+")
-function CountUp({ value, delay = 0.5 }) {
+function CountUp({ value, delay = 0.5, ready }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   useEffect(() => {
     const m = String(value).match(/^(\d+)(.*)$/)
     const el = ref.current
-    if (!m || !el || reduced) return
+    if (!m || !el || reduced || !ready) return
     const target = +m[1], suffix = m[2]
     let raf, t0 = null
     const step = (t) => {
@@ -56,11 +56,11 @@ function CountUp({ value, delay = 0.5 }) {
     el.textContent = '0'
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [value, delay, reduced])
+  }, [value, delay, reduced, ready])
   return <b ref={ref}>{value}</b>
 }
 
-export default function Hero({ profile, onExplore }) {
+export default function Hero({ profile, onExplore, ready = true, logoHidden = false }) {
   const magnet = useMagnetic(8)
   const nameWords = profile.name.split(' ')
   const ref = useRef(null)
@@ -88,13 +88,13 @@ export default function Hero({ profile, onExplore }) {
       <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
       <div className="container hero__inner">
         <motion.div className="hero__layer hero__layer--1" style={{ y: yLogo }}>
-          <LogoMark className="hero__logo" label={`${profile.name} logo`} />
+          <LogoMark className={`hero__logo${logoHidden ? ' is-hidden' : ''}`} label={`${profile.name} logo`} />
         </motion.div>
 
         <motion.span
           className="slate hero__slate"
           initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={ready ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.6, delay: 0.15 }}
         >
           Portfolio · Reel 2026
@@ -106,7 +106,7 @@ export default function Hero({ profile, onExplore }) {
             aria-label={profile.name}
             className="hero__name hero__breathe"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={ready ? { opacity: 1 } : undefined}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             {nameWords.map((word, i) => (
@@ -122,6 +122,7 @@ export default function Hero({ profile, onExplore }) {
                       delay={0.25 + k * 0.045}
                       exit={scrollYProgress}
                       reduced={reduced}
+                      ready={ready}
                     />
                   )
                 })}
@@ -134,7 +135,7 @@ export default function Hero({ profile, onExplore }) {
         <motion.p
           className="hero__tagline"
           initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={ready ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.7, delay: 0.18 }}
         >
           {profile.tagline.split(' ').map((w, i) => (
@@ -142,7 +143,7 @@ export default function Hero({ profile, onExplore }) {
               key={i}
               className="hero__tagword"
               initial={reduced ? false : { opacity: 0, y: '0.6em', filter: 'blur(6px)' }}
-              animate={{ opacity: 1, y: '0em', filter: 'blur(0px)' }}
+              animate={ready ? { opacity: 1, y: '0em', filter: 'blur(0px)' } : undefined}
               transition={{ duration: 0.7, delay: 0.7 + i * 0.09, ease: [0.22, 1, 0.36, 1] }}
             >
               {w}
@@ -154,7 +155,7 @@ export default function Hero({ profile, onExplore }) {
         <motion.p
           className="hero__intro"
           initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={ready ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.7, delay: 0.26 }}
         >
           {profile.intro}
@@ -167,12 +168,12 @@ export default function Hero({ profile, onExplore }) {
             className="hero__stats"
             aria-label="Track record"
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={ready ? { opacity: 1, y: 0 } : undefined}
             transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             {profile.stats.map((s) => (
               <div className="hero__stat" key={s.label}>
-                <CountUp value={s.value} />
+                <CountUp value={s.value} ready={ready} />
                 <span>{s.label}</span>
               </div>
             ))}
@@ -185,7 +186,7 @@ export default function Hero({ profile, onExplore }) {
         <motion.div
           className="hero__reel"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={ready ? { opacity: 1 } : undefined}
           transition={{ duration: 0.9, delay: 0.36 }}
           aria-hidden="true"
         >
@@ -206,7 +207,7 @@ export default function Hero({ profile, onExplore }) {
         <motion.div
           className="hero__cta"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={ready ? { opacity: 1 } : undefined}
           transition={{ duration: 0.7, delay: 0.46 }}
         >
           <button

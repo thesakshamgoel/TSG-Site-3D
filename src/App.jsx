@@ -36,7 +36,10 @@ const DevConsole = lazy(() => import('./console/DevConsole'))
 
 export default function App() {
   const data = usePortfolio()
+  // loaded: the hand-off has started and the page is revealed under the
+  // loader; logoLanded: the loader's mark has landed on the hero logo
   const [loaded, setLoaded] = useState(false)
+  const [logoLanded, setLogoLanded] = useState(false)
   // the 3D background boots a moment after the hero's intro, not on top of it
   const [scene, setScene] = useState(false)
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function App() {
     []
   )
   const paused = !!(galleryCat || lightbox || consoleOpen)
-  const { scrollToId, indexRef } = useLenis(loaded, paused)
+  const { scrollToId, indexRef } = useLenis(logoLanded, paused)
 
   // section titles reveal as they enter the viewport
   useEffect(() => {
@@ -108,8 +111,8 @@ export default function App() {
 
   // lock the page + custom scroll while the loader is up
   useEffect(() => {
-    document.documentElement.style.overflow = loaded ? '' : 'hidden'
-  }, [loaded])
+    document.documentElement.style.overflow = logoLanded ? '' : 'hidden'
+  }, [logoLanded])
 
   // flag the body so mobile-only layout (footer bottom-padding) can make room
   // for the fixed bottom tab bar
@@ -174,7 +177,14 @@ export default function App() {
 
   return (
     <>
-      {!loaded && <Loader name={data.profile.name} thumbs={loaderThumbs} onDone={() => setLoaded(true)} />}
+      {!logoLanded && (
+        <Loader
+          name={data.profile.name}
+          thumbs={loaderThumbs}
+          onReveal={() => setLoaded(true)}
+          onDone={() => setLogoLanded(true)}
+        />
+      )}
 
       <Cursor />
       <ToastViewport />
@@ -199,7 +209,12 @@ export default function App() {
         />
 
         <main className={loaded ? 'main--in' : 'main--pre'}>
-          <Hero profile={data.profile} onExplore={() => scrollToId('highlights')} />
+          <Hero
+            profile={data.profile}
+            ready={loaded}
+            logoHidden={!logoLanded}
+            onExplore={() => scrollToId('highlights')}
+          />
 
           <ReelWall projects={data.projects} onOpenProject={(p) => setLightbox(p)} />
 
