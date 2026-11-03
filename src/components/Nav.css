@@ -19,16 +19,11 @@
   gap: 24px;
   padding: 0 10px 0 16px !important;
   border-radius: 14px;
-  background: rgba(10, 9, 8, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(10, 9, 8, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   transition: background-color 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
-.nav--scrolled .nav__inner { background: rgba(10, 9, 8, 0.72); }
-@media (prefers-reduced-transparency: reduce) {
-  .nav__inner { background: #0c0b09; backdrop-filter: none; }
-}
+.nav--scrolled .nav__inner { background: rgba(10, 9, 8, 0.9); }
 
 .nav__brand {
   display: flex;

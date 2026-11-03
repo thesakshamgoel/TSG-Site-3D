@@ -27,14 +27,18 @@ export default function Cursor() {
       target.x = e.clientX
       target.y = e.clientY
       dirty = true
-
+      if (!raf) raf = requestAnimationFrame(loop)
+      // the hover test only needs redoing when the pointer enters a new element
+      if (e.target === lastEl) return
+      lastEl = e.target
       const interactive = e.target.closest(
         'a, button, [role="button"], [role="slider"], [role="tab"], [tabindex]:not([tabindex="-1"]), label, summary, input, select, textarea, .card, .workcard, .film, .rw__frame, .hl__frame, .certs2__print'
       )
       dotRef.current?.classList.toggle('is-hot', !!interactive)
     }
 
-    let raf
+    let raf = null
+    let lastEl = null
     let dirty = false
     const hero = () => document.getElementById('hero')
     const loop = () => {
@@ -54,9 +58,9 @@ export default function Cursor() {
       if (dotRef.current)
         // the arrow tip is drawn at (2, 2) inside the svg: that is the hotspot
         dotRef.current.style.transform = `translate(${pos.x - 2}px, ${pos.y - 2}px)`
-      raf = requestAnimationFrame(loop)
+      // no standing loop: one frame per pointer move, nothing while it rests
+      raf = null
     }
-    raf = requestAnimationFrame(loop)
 
     const onDown = () => dotRef.current?.classList.add('is-down')
     const onUp = () => dotRef.current?.classList.remove('is-down')
@@ -70,7 +74,7 @@ export default function Cursor() {
     document.addEventListener('mouseenter', onEnter)
 
     return () => {
-      cancelAnimationFrame(raf)
+      if (raf) cancelAnimationFrame(raf)
       document.body.classList.remove('has-custom-cursor')
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mousedown', onDown)

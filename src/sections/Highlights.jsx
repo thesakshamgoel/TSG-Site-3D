@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring, useTransform, useVelocity } from 'framer-motion'
+import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
 import { thumbMidFor, thumbFallbackFor, isVimeo } from '../data/media'
 import { useConsent } from '../components/consent'
 import { useImgFallback } from '../hooks/useImgFallback'
@@ -16,21 +16,26 @@ function bgSrc(s) {
   return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&start=20&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
 }
 
-const STEP = 34 // degrees between films on the ring
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const smoothstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 
 /**
- * Highlighted work on a ring of screens in 3D.
- *
- * The films sit around a cylinder; scroll turns the cylinder, so only one
- * element moves per frame (cheap and smooth). The perspective responds to how
- * you scroll: a fast scroll tilts the ring and pulls the camera back a little,
- * and it settles flat when you stop. The film facing you plays silently once
- * you rest on it; its title sits in plain 2D over the scene.
+ * Highlighted work: one film at a time in a single frame. Scroll moves a
+ * cursor between films; each holds still for a while, then dissolves into the
+ * next. Only opacity and a slow scale move, so it stays on the compositor and
+ * runs the same at 60 and 120 Hz. The film playing silently behind the
+ * poster starts only after the page has been still, and stops the moment you
+ * scroll again.
  */
 function Screen({ s, i, cursor, live, onOpen }) {
   const thumb = useImgFallback(thumbMidFor(s), thumbFallbackFor(s), s.id)
   const [shown, setShown] = useState(false)
-  const dim = useTransform(cursor, (c) => Math.min(0.7, Math.abs(c - i) * 0.6))
+  // crossfade: the film is fully visible only while it holds; neighbours
+  // dissolve over it. Opacity and a slow scale are all that moves.
+  const d = useTransform(cursor, (c) => Math.abs(c - i))
+  const opacity = useTransform(d, (v) => 1 - smoothstep(0.15, 0.85, v))
+  const scale = useTransform(cursor, (c) => 1 + 0.045 * (1 - clamp01(1 - (c - i + 1) / 2)))
+  const z = useTransform(d, (v) => (v < 0.5 ? 2 : 1))
   // black bars baked into the poster are cropped away before the rails go round it
   const bars = useLetterbox(thumb.broken ? '' : thumb.src)
   const vis = 1 - bars.top - bars.bottom
@@ -62,9 +67,9 @@ function Screen({ s, i, cursor, live, onOpen }) {
   }
 
   return (
-    <div className="hl__screen" style={{ '--i': i }}>
+    <motion.div className="hl__screen" style={{ opacity, zIndex: z }}>
       <button type="button" className="hl__frame" onClick={() => onOpen(s)} aria-label={`Watch ${s.title} with sound`}>
-        <span className="hl__gate">
+        <motion.span className="hl__gate" style={{ scale }}>
         {!thumb.broken ? (
           <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" style={letterboxCrop(bars)} />
         ) : (
@@ -83,12 +88,11 @@ function Screen({ s, i, cursor, live, onOpen }) {
             onLoad={onFrameLoad}
           />
         )}
-        </span>
+        </motion.span>
         <span className="hl__rail hl__rail--t" aria-hidden="true" />
         <span className="hl__rail hl__rail--b" aria-hidden="true" />
-        <motion.span className="hl__dim" style={{ opacity: dim }} />
       </button>
-    </div>
+    </motion.div>
   )
 }
 
@@ -104,17 +108,13 @@ export default function Highlights({ projects, onOpenProject }) {
   // the cursor: which film faces you. A soft hold at each film (the speed
   // dips near it but never stops, so the scroll never feels stuck)
   const cursor = useTransform(p, (v) => {
-    const raw = Math.min(n - 1, Math.max(0, (v - 0.06) / 0.88)) * (n - 1)
-    return raw - (Math.sin(2 * Math.PI * raw) / (2 * Math.PI)) * 0.75
+    const raw = Math.min(n - 1, Math.max(0, (v - 0.05) / 0.9)) * (n - 1)
+    const base = Math.min(n - 2, Math.floor(raw))
+    const f = raw - base
+    // flat at each film (a real hold), eased glide in between
+    const e = f < 0.3 ? 0 : f > 0.7 ? 1 : (() => { const t = (f - 0.3) / 0.4; return t * t * t * (t * (t * 6 - 15) + 10) })()
+    return base + e
   })
-  const turn = useTransform(cursor, (c) => -c * STEP)
-
-  // perspective that answers the scroll: tilt and pull back while moving fast
-  const vel = useVelocity(cursor)
-  const speed = useSpring(vel, { stiffness: 120, damping: 26, mass: 0.6 })
-  const tilt = useTransform(speed, (v) => Math.max(-9, Math.min(9, v * 5)))
-  const pull = useTransform(speed, (v) => -Math.min(260, Math.abs(v) * 160))
-
   const [active, setActive] = useState(0)
   const [live, setLive] = useState(-1)
   const { media } = useConsent()
@@ -149,18 +149,36 @@ export default function Highlights({ projects, onOpenProject }) {
   const jump = (i) => {
     const el = ref.current
     if (!el) return
-    const v = 0.06 + (i / Math.max(1, n - 1)) * 0.88
+    const v = 0.05 + (i / Math.max(1, n - 1)) * 0.9
     const top = el.getBoundingClientRect().top + window.scrollY
     const y = top + v * (el.offsetHeight - window.innerHeight)
     if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.4 })
     else window.scrollTo({ top: y, behavior: 'smooth' })
   }
 
+  // Decode the posters while the page is idle, so the first scroll into this
+  // section does not stall on image decoding.
+  useEffect(() => {
+    const ric = window.requestIdleCallback || ((f) => setTimeout(f, 1500))
+    const id = ric(() => {
+      slides.forEach((sl) => {
+        const src = thumbMidFor(sl)
+        if (!src) return
+        const im = new Image()
+        im.decoding = 'async'
+        im.src = src
+        im.decode?.().catch(() => {})
+      })
+    })
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n])
+
   if (!n) return null
   const s = slides[active] || slides[0]
 
   return (
-    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n * 0.85 + 1) * 100}vh` }}>
+    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n * 1.05 + 1) * 100}vh` }}>
       <div className="hl__pin">
         <motion.h2 className="hl__head" style={reduced ? undefined : { opacity: headO, y: headY }}>
           <span className="slate">Featured</span>
@@ -168,15 +186,11 @@ export default function Highlights({ projects, onOpenProject }) {
         </motion.h2>
 
         <div className="hl__stage">
-          <motion.div className="hl__camera" style={reduced ? undefined : { rotateX: tilt, z: pull }}>
-            <div className="hl__origin">
-              <motion.div className="hl__ring" style={reduced ? undefined : { rotateY: turn }}>
-                {slides.map((sl, i) => (
-                  <Screen key={sl.id} s={sl} i={i} cursor={cursor} live={live === i} onOpen={onOpenProject} />
-                ))}
-              </motion.div>
-            </div>
-          </motion.div>
+          <div className="hl__view">
+            {slides.map((sl, i) => (
+              <Screen key={sl.id} s={sl} i={i} cursor={cursor} live={live === i} onOpen={onOpenProject} />
+            ))}
+          </div>
         </div>
 
         <div className="hl__meta">

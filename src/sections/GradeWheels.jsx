@@ -266,7 +266,19 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     if (!el || !window.IntersectionObserver) { state.current.inView = true; return }
     const io = new IntersectionObserver(([e]) => { state.current.inView = e.isIntersecting; state.current.dirty = true }, { threshold: 0.6 })
     io.observe(el)
-    return () => io.disconnect()
+    // "near": the section is within about one screen of the viewport. Away
+    // from it the stage is hidden (so the browser neither draws nor composites
+    // the full-screen WebGL canvas) and the render loop does nothing. This was
+    // costing more main-thread time than everything else on the page combined
+    // while scrolling through the sections above.
+    const sec = el.closest('section') || el
+    const near = new IntersectionObserver(([e]) => {
+      state.current.near = e.isIntersecting
+      el.style.visibility = e.isIntersecting ? '' : 'hidden'
+      if (e.isIntersecting) state.current.dirty = true
+    }, { rootMargin: '100% 0px 100% 0px' })
+    near.observe(sec)
+    return () => { io.disconnect(); near.disconnect() }
   }, [])
 
   // ── render loop: draws only while something is changing ──
@@ -290,6 +302,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     }
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
+      if (S.near === false) { lastT = 0; return }
       const dt = Math.min(64, lastT ? now - lastT : 16)
       lastT = now
       // frame-rate independent easing: same glide at 60 Hz and 120 Hz

@@ -1,9 +1,7 @@
 .hl {
   position: relative;
   z-index: 3;
-  /* card width and the ring's radius (34° between cards, a little air between them) */
-  --W: min(58vw, calc(50vh * 16 / 9));
-  --R: calc(var(--W) * 1.82);
+  --W: min(84vw, calc((100svh - 410px) * 16 / 10));
 }
 .hl__pin {
   position: sticky;
@@ -15,31 +13,20 @@
 .hl__stage {
   position: absolute;
   inset: 0;
-  perspective: 1600px;
-  perspective-origin: 50% 46%;
+  display: grid;
+  place-items: center;
+  padding: clamp(190px, 26vh, 250px) 0 clamp(150px, 20vh, 190px);
 }
-.hl__camera,
-.hl__origin,
-.hl__ring {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
+/* every film occupies the same spot; they dissolve into each other */
+.hl__view {
+  position: relative;
+  width: var(--W);
+  aspect-ratio: 16 / 10;
 }
-.hl__camera { will-change: transform; }
-.hl__origin { transform: translateZ(calc(var(--R) * -1)); }
-.hl__ring { will-change: transform; }
-
 .hl__screen {
   position: absolute;
-  left: 50%;
-  top: 46%;
-  width: var(--W);
-  /* a frame of film: 16:9 picture plus a sprocket rail above and below */
-  aspect-ratio: 16 / 10;
-  margin-left: calc(var(--W) / -2);
-  margin-top: calc(var(--W) * -10 / 32);
-  transform: rotateY(calc(var(--i) * 34deg)) translateZ(var(--R));
-  backface-visibility: hidden;
+  inset: 0;
+  will-change: opacity;
 }
 .hl__frame {
   position: absolute;
@@ -53,11 +40,12 @@
   overflow: hidden;
   cursor: pointer;
   border-radius: 6px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 40px 80px -30px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 .hl__frame:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }
 /* the picture sits in the gate between the two rails */
 .hl__gate {
+  will-change: transform;
   position: absolute;
   left: 0;
   right: 0;
@@ -104,12 +92,6 @@
   font-family: var(--font-display);
   font-size: 2rem;
   color: var(--text-dim);
-}
-.hl__dim {
-  position: absolute;
-  inset: 0;
-  background: #060507;
-  pointer-events: none;
 }
 
 .hl__head {
@@ -219,15 +201,14 @@
 .hl__dots button.is-on::after { background: var(--gold); }
 
 @media (max-width: 720px) {
-  .hl { --W: 84vw; --R: calc(var(--W) * 1.82); }
-  .hl__screen { top: 42%; }
+  .hl { --W: 92vw; }
   .hl__meta { bottom: 96px; }
   .hl__frame { border-radius: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hl__pin { position: relative; height: auto; overflow: visible; padding: 120px 0 40px; }
-  .hl__stage, .hl__camera, .hl__origin, .hl__ring { position: relative; inset: auto; transform: none; perspective: none; }
-  .hl__ring { display: grid; gap: 16px; justify-items: center; }
-  .hl__screen { position: relative; left: auto; top: auto; margin: 0; transform: none; }
+  .hl__stage { position: relative; inset: auto; padding: 0; }
+  .hl__view { aspect-ratio: auto; display: grid; gap: 16px; justify-items: center; }
+  .hl__screen { position: relative; inset: auto; width: var(--W); aspect-ratio: 16 / 10; opacity: 1 !important; }
   .hl__head, .hl__meta { position: relative; top: auto; bottom: auto; }
 }

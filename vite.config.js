@@ -2,6 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
+// The public address, used for the canonical link and the share image. The
+// deploy workflow sets it; this default keeps local builds working.
+process.env.VITE_SITE_URL ||= 'https://thesakshamgoel.github.io/TSG-Site-3D/'
+
 // GitHub Pages serves a project site from /<repo>/, so the deploy workflow
 // sets VITE_BASE. Locally and on a custom domain it stays '/'.
 export default defineConfig({

@@ -34,12 +34,26 @@ const DevConsole = lazy(() => import('./console/DevConsole'))
 
 // stars are 0.6 bright over the hero, full while the films wall is pinned,
 // and fade out as the wall leaves the screen
+// The wall's position is measured about once a second, never per frame, so
+// this adds no layout work to scrolling.
+const wall = { top: 0, h: 0, at: -1e9 }
 function pageStars() {
-  const el = document.getElementById('reelwall')
-  if (!el) return 0.6
-  const r = el.getBoundingClientRect(), H = window.innerHeight
-  const arrive = Math.min(1, Math.max(0, 1 - r.top / H))
-  const leave = Math.min(1, Math.max(0, r.bottom / H))
+  const now = performance.now()
+  if (now - wall.at > 1000) {
+    wall.at = now
+    const el = document.getElementById('reelwall')
+    if (el) {
+      let y = 0
+      for (let n = el; n; n = n.offsetParent) y += n.offsetTop
+      wall.top = y
+      wall.h = el.offsetHeight
+    }
+  }
+  if (!wall.h) return 0.6
+  const H = window.innerHeight
+  const top = wall.top - window.scrollY
+  const arrive = Math.min(1, Math.max(0, 1 - top / H))
+  const leave = Math.min(1, Math.max(0, (top + wall.h) / H))
   return (0.6 + 0.4 * arrive) * leave
 }
 
