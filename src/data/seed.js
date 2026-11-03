@@ -1,3 +1,4 @@
+import { asset } from './asset'
 /**
  * SEED DATA — the shared, public default content every visitor sees.
  * Edit this file (then redeploy) to change the baseline site for everyone.
@@ -140,7 +141,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'MUN',
     role: 'Graphic Design',
-    image: '/graphics/graphics/mun.jpg',
+    image: asset('/graphics/graphics/mun.jpg'),
     tags: ['Graphic'],
   },
   {
@@ -150,7 +151,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Solar',
     role: 'Graphic Design',
-    image: '/graphics/graphics/solar.jpg',
+    image: asset('/graphics/graphics/solar.jpg'),
     tags: ['Graphic'],
   },
   // Logos — real work, drop new files in public/graphics/logos/
@@ -161,7 +162,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Saksham Goel — Brand Mark',
     role: 'Personal Brand Identity',
-    image: '/graphics/logos/saksham-goel-mark.png',
+    image: asset('/graphics/logos/saksham-goel-mark.png'),
     tags: ['Logo', 'Brand Identity'],
   },
   {
@@ -171,7 +172,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Navigoin — Wordmark',
     role: 'Logo Design',
-    image: '/graphics/logos/navigoin-wordmark.png',
+    image: asset('/graphics/logos/navigoin-wordmark.png'),
     tags: ['Logo', 'Wordmark'],
   },
   {
@@ -181,7 +182,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Navigoin — Stacked',
     role: 'Logo Design',
-    image: '/graphics/logos/navigoin-wordmark-stacked.png',
+    image: asset('/graphics/logos/navigoin-wordmark-stacked.png'),
     tags: ['Logo', 'Wordmark'],
   },
   {
@@ -191,7 +192,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Navigoin — Gradient Mark',
     role: 'Logo Design',
-    image: '/graphics/logos/navigoin-gradient-mark.png',
+    image: asset('/graphics/logos/navigoin-gradient-mark.png'),
     tags: ['Logo', 'Icon'],
   },
   {
@@ -201,7 +202,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Navigoin — Pin Badge',
     role: 'Logo Design',
-    image: '/graphics/logos/navigoin-pin-badge.png',
+    image: asset('/graphics/logos/navigoin-pin-badge.png'),
     tags: ['Logo', 'Badge'],
   },
   {
@@ -211,7 +212,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: "Creator's Paradise",
     role: 'Logo Design',
-    image: '/graphics/logos/creators-paradise.jpg',
+    image: asset('/graphics/logos/creators-paradise.jpg'),
     tags: ['Logo'],
   },
   {
@@ -221,7 +222,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'RGC',
     role: 'Logo Design',
-    image: '/graphics/logos/rgc.jpg',
+    image: asset('/graphics/logos/rgc.jpg'),
     tags: ['Logo'],
   },
   {
@@ -231,7 +232,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Logo Collection',
     role: 'Logo Design',
-    image: '/graphics/logos/logo-collection.png',
+    image: asset('/graphics/logos/logo-collection.png'),
     tags: ['Logo'],
   },
   {
@@ -241,7 +242,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Logo — Colour Study',
     role: 'Logo Design',
-    image: '/graphics/logos/logo-clr.png',
+    image: asset('/graphics/logos/logo-clr.png'),
     tags: ['Logo'],
   },
   {
@@ -251,7 +252,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Logo — Detail',
     role: 'Logo Design',
-    image: '/graphics/logos/logo-detail.png',
+    image: asset('/graphics/logos/logo-detail.png'),
     tags: ['Logo'],
   },
   {
@@ -261,7 +262,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Logo Presentation',
     role: 'Logo Design',
-    image: '/graphics/logos/logo-presentation.png',
+    image: asset('/graphics/logos/logo-presentation.png'),
     tags: ['Logo'],
   },
   {
@@ -271,7 +272,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Pen Mark',
     role: 'Logo Design',
-    image: '/graphics/logos/pen-mark.webp',
+    image: asset('/graphics/logos/pen-mark.webp'),
     tags: ['Logo'],
   },
 
@@ -283,7 +284,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Studio',
     role: 'Photography',
-    image: '/graphics/images/studio.jpg',
+    image: asset('/graphics/images/studio.jpg'),
     tags: ['Image'],
   },
   {
@@ -293,7 +294,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Outdoor',
     role: 'Photography',
-    image: '/graphics/images/outdoor.jpg',
+    image: asset('/graphics/images/outdoor.jpg'),
     tags: ['Image'],
   },
   {
@@ -303,7 +304,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Spice',
     role: 'Photography',
-    image: '/graphics/images/spice.jpg',
+    image: asset('/graphics/images/spice.jpg'),
     tags: ['Image'],
   },
   {
@@ -313,7 +314,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Sheernia',
     role: 'Photography',
-    image: '/graphics/images/sheernia.jpg',
+    image: asset('/graphics/images/sheernia.jpg'),
     tags: ['Image'],
   },
   {
@@ -324,7 +325,7 @@ export const PROJECTS = [
     featured: true,
     title: 'Wolf Scenery',
     role: 'Photography',
-    image: '/graphics/images/wolf-scenery.jpg',
+    image: asset('/graphics/images/wolf-scenery.jpg'),
     tags: ['Image'],
   },
   {
@@ -334,7 +335,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'RGC Wallpaper',
     role: 'Photography',
-    image: '/graphics/images/rgc-wallpaper.jpg',
+    image: asset('/graphics/images/rgc-wallpaper.jpg'),
     tags: ['Image'],
   },
   {
@@ -344,7 +345,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Informative',
     role: 'Photography',
-    image: '/graphics/images/informative.jpg',
+    image: asset('/graphics/images/informative.jpg'),
     tags: ['Image'],
   },
   {
@@ -354,7 +355,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Image 02',
     role: 'Photography',
-    image: '/graphics/images/image-02.jpg',
+    image: asset('/graphics/images/image-02.jpg'),
     tags: ['Image'],
   },
   {
@@ -364,7 +365,7 @@ export const PROJECTS = [
     mediaType: 'image',
     title: 'Untitled 01',
     role: 'Photography',
-    image: '/graphics/images/untitled-01.jpg',
+    image: asset('/graphics/images/untitled-01.jpg'),
     tags: ['Image'],
   },
 ]
@@ -378,35 +379,35 @@ export const CERTIFICATES = [
     title: 'BSc. in Filmmaking',
     issuer: 'Whistling Woods International',
     year: '2025',
-    image: '/certificates/cert-5.svg',
+    image: asset('/certificates/cert-5.svg'),
   },
   {
     id: 'cert-freelance-colorist',
     title: 'Freelance Colorist',
     issuer: 'Online Course · Certificate of Completion',
     year: '2026',
-    image: '/certificates/cert-4.svg',
+    image: asset('/certificates/cert-4.svg'),
   },
   {
     id: 'cert-dolby-vision',
     title: 'Dolby Vision Essentials Training',
     issuer: 'Dolby Institute',
     year: '2025',
-    image: '/certificates/cert-3.svg',
+    image: asset('/certificates/cert-3.svg'),
   },
   {
     id: 'cert-bmd-grading',
     title: 'Color Grading with DaVinci Resolve 18',
     issuer: 'Blackmagic Design',
     year: '2023',
-    image: '/certificates/cert-1.svg',
+    image: asset('/certificates/cert-1.svg'),
   },
   {
     id: 'cert-bmd-intro',
     title: 'Introduction to DaVinci Resolve 18',
     issuer: 'Blackmagic Design',
     year: '2023',
-    image: '/certificates/cert-2.svg',
+    image: asset('/certificates/cert-2.svg'),
   },
 ]
 
@@ -414,11 +415,11 @@ export const CERTIFICATES = [
 // Latest stills for the home slideshow (max 5 shown). Drop your frames at
 // public/stills/still-1.jpg … still-5.jpg (any aspect; they're letterboxed).
 export const STILLS = [
-  { id: 'still-1', image: '/stills/still-1.jpg', title: 'Still 01' },
-  { id: 'still-2', image: '/stills/still-2.jpg', title: 'Still 02' },
-  { id: 'still-3', image: '/stills/still-3.jpg', title: 'Still 03' },
-  { id: 'still-4', image: '/stills/still-4.jpg', title: 'Still 04' },
-  { id: 'still-5', image: '/stills/still-5.jpg', title: 'Still 05' },
+  { id: 'still-1', image: asset('/stills/still-1.jpg'), title: 'Still 01' },
+  { id: 'still-2', image: asset('/stills/still-2.jpg'), title: 'Still 02' },
+  { id: 'still-3', image: asset('/stills/still-3.jpg'), title: 'Still 03' },
+  { id: 'still-4', image: asset('/stills/still-4.jpg'), title: 'Still 04' },
+  { id: 'still-5', image: asset('/stills/still-5.jpg'), title: 'Still 05' },
 ]
 
 // Before / After grading comparisons for the home slider (max 6 pairs = 12
@@ -426,12 +427,12 @@ export const STILLS = [
 // Drop your images at public/beforeafter/ (any names) or paste URLs — and edit
 // the whole set live from the developer console's "Before / After" tab.
 export const COMPARISONS = [
-  { id: 'ba-1', title: 'The Chawl', after: '/beforeafter/ba-1-after.jpg', before: '/beforeafter/ba-1-before.jpg' },
-  { id: 'ba-2', title: 'Night Street', after: '/beforeafter/ba-2-after.jpg', before: '/beforeafter/ba-2-before.jpg' },
-  { id: 'ba-3', title: 'The Living Room', after: '/beforeafter/ba-3-after.jpg', before: '/beforeafter/ba-3-before.jpg' },
-  { id: 'ba-4', title: 'The Gathering', after: '/beforeafter/ba-4-after.jpg', before: '/beforeafter/ba-4-before.jpg' },
-  { id: 'ba-5', title: 'The Bus', after: '/beforeafter/ba-5-after.jpg', before: '/beforeafter/ba-5-before.jpg' },
-  { id: 'ba-6', title: 'The Standoff', after: '/beforeafter/ba-6-after.jpg', before: '/beforeafter/ba-6-before.jpg' },
+  { id: 'ba-1', title: 'The Chawl', after: asset('/beforeafter/ba-1-after.jpg'), before: asset('/beforeafter/ba-1-before.jpg') },
+  { id: 'ba-2', title: 'Night Street', after: asset('/beforeafter/ba-2-after.jpg'), before: asset('/beforeafter/ba-2-before.jpg') },
+  { id: 'ba-3', title: 'The Living Room', after: asset('/beforeafter/ba-3-after.jpg'), before: asset('/beforeafter/ba-3-before.jpg') },
+  { id: 'ba-4', title: 'The Gathering', after: asset('/beforeafter/ba-4-after.jpg'), before: asset('/beforeafter/ba-4-before.jpg') },
+  { id: 'ba-5', title: 'The Bus', after: asset('/beforeafter/ba-5-after.jpg'), before: asset('/beforeafter/ba-5-before.jpg') },
+  { id: 'ba-6', title: 'The Standoff', after: asset('/beforeafter/ba-6-after.jpg'), before: asset('/beforeafter/ba-6-before.jpg') },
 ]
 
 export const EXPERIENCES = [
@@ -512,8 +513,12 @@ export const PROFILE = {
   instagram: 'https://www.instagram.com/thesakshamgoel/',
   instagramHandle: 'thesakshamgoel',
   // Drop your portrait at public/photo.jpg and your CV at public/cv.pdf.
-  photo: '/photo.jpg',
-  cv: '/cv.pdf',
+  photo: asset('/photo.jpg'),
+  // add your CV at public/cv.pdf and set this to asset('/cv.pdf') to show the button
+  cv: '',
+  // paste your full LinkedIn and YouTube channel URLs to show them in the footer
+  linkedin: '',
+  youtube: '',
   // Live Instagram feed (auto-updating, HTTPS-friendly). Set ONE of these:
   //  • Elfsight → paste the app id (the part after "elfsight-app-"):
   instagramElfsight: '343c9ac1-ca33-48c1-b53f-6e51556d5d15',
@@ -522,8 +527,4 @@ export const PROFILE = {
   //  • SnapWidget / any iframe widget → iframe src URL:
   instagramWidget: '',
   // (LightWidget's FREE tier blocks HTTPS, so it can't be used on a live site.)
-  socials: [
-    { label: 'Instagram', url: 'https://www.instagram.com/thesakshamgoel/' },
-    { label: 'YouTube', url: 'https://youtube.com' },
-  ],
 }

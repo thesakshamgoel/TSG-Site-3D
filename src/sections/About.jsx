@@ -9,6 +9,7 @@ import { toast } from '../components/Toast'
 import { firebaseEnabled } from '../firebase/config'
 import { watchUser, signInVisitor, signOutUser } from '../firebase/auth'
 import './About.css'
+import { asset } from '../data/asset'
 
 function Chapter({ no, title, children }) {
   return (
@@ -36,40 +37,33 @@ const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 
 /**
- * The opener: the screen fades to black and the portrait is exposed out of
- * it, low-key and black and white, one soft light on the face. The name
- * arrives once the exposure is up; at the end the black lifts back to the
- * page's backdrop.
+ * The opener: the portrait is exposed out of the page's own dark, low-key and
+ * black and white, one soft light on the face. It has real transparency, so
+ * there is no black shape of its own: it fades in, holds, and fades back out
+ * into the page as you scroll on.
  */
 function PortraitIntro({ profile, reduced }) {
   const ref = useRef(null)
   const [ok, setOk] = useState(true)
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start end', 'end end'] })
-  const black = useTransform(p, [0.05, 0.3, 0.9, 1], [0, 1, 1, 0])
-  const expose = useTransform(p, [0.25, 0.6], [0, 1])
-  const scale = useTransform(p, [0.25, 0.75], [1.12, 1])
-  const y = useTransform(p, [0.25, 1], ['4%', '-4%'])
-  const bioO = useTransform(p, [0.66, 0.8], [0, 1])
-  const bioY = useTransform(p, [0.66, 0.8], [16, 0])
-  const src = profile.photoLowkey || '/photo-lowkey.jpg'
+  const expose = useTransform(p, [0.18, 0.5, 0.8, 0.98], [0, 1, 1, 0])
+  const scale = useTransform(p, [0.18, 0.8], [1.08, 1])
+  const bioO = useTransform(p, [0.5, 0.64, 0.8, 0.95], [0, 1, 1, 0])
+  const bioY = useTransform(p, [0.5, 0.64], [14, 0])
+  const src = profile.photoLowkey || asset('/photo-lowkey.webp')
   return (
     <div className="ap" ref={ref}>
       <div className="ap__pin">
-        <motion.div className="ap__black" style={reduced ? { opacity: 1 } : { opacity: black }} aria-hidden="true" />
-        <span className="slate ap__slate">End credits</span>
-        <motion.div className="ap__photo" style={reduced ? undefined : { opacity: expose, scale, y }}>
+        <motion.div className="ap__photo" style={reduced ? undefined : { opacity: expose, scale }}>
           {ok ? (
-            <picture>
-              <source srcSet={src.replace(/\.jpg$/, '.webp')} type="image/webp" />
-              <img src={src} alt={`Portrait of ${profile.name}`} onError={() => setOk(false)} decoding="async" />
-            </picture>
+            <img src={src} alt={`Portrait of ${profile.name}`} onError={() => setOk(false)} decoding="async" />
           ) : (
             <div className="ap__ph" aria-hidden="true" />
           )}
         </motion.div>
         <motion.div className="ap__bio" style={reduced ? undefined : { opacity: bioO, y: bioY }}>
           <h2 className="ap__name">{profile.name}</h2>
-          <p>Cinematographer · Colorist · Designer</p>
+          <p>Cinematographer, colorist and designer</p>
         </motion.div>
       </div>
     </div>
@@ -109,48 +103,46 @@ function Credits({ experiences }) {
 }
 
 /**
- * Credentials as a stack of prints that fans out across the table as you
- * scroll, each tilting in 3D; tap one to see it full size.
+ * Credentials: large prints in a grid, each with its caption underneath.
+ * Tap or click one to see it full size.
  */
-function CertFan({ certificates, onView, reduced }) {
-  const ref = useRef(null)
-  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start 85%', 'center 45%'] })
-  const spread = useTransform(p, [0, 1], [0, 1])
-  const n = certificates.length
+function CertGrid({ certificates, onView }) {
   return (
-    <div className="certfan" ref={ref}>
+    <ul className="certs2">
       {certificates.map((c, i) => (
-        <CertPrint key={c.id} c={c} i={i} n={n} spread={spread} onView={onView} reduced={reduced} />
+        <CertPrint key={c.id} c={c} i={i} onView={onView} />
       ))}
-    </div>
+    </ul>
   )
 }
-function CertPrint({ c, i, n, spread, onView, reduced }) {
+function CertPrint({ c, i, onView }) {
   const [imgOk, setImgOk] = useState(true)
-  const k = i - (n - 1) / 2
-  const x = useTransform(spread, (v) => `${(k * v * 98).toFixed(2)}%`)
-  const y = useTransform(spread, (v) => Math.abs(k) * v * 18 + (1 - v) * i * -6)
-  const rotateZ = useTransform(spread, (v) => k * v * 4 + (1 - v) * (k * 3))
-  const rotateY = useTransform(spread, (v) => -k * v * 10)
   const hasImg = c.image && imgOk
   return (
-    <motion.button
-      type="button"
-      className="certfan__print"
-      style={reduced ? undefined : { x, y, rotateZ, rotateY, zIndex: n - Math.round(Math.abs(k)), transformPerspective: 1000 }}
-      onClick={() => hasImg && onView(c)}
-      aria-label={`${c.title}, ${c.issuer}, ${c.year}`}
+    <motion.li
+      className="certs2__item"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-8% 0px' }}
+      transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.23, 1, 0.32, 1] }}
     >
-      {hasImg ? (
-        <img src={c.image} alt="" onError={() => setImgOk(false)} loading="lazy" />
-      ) : (
-        <span className="certfan__blank" />
-      )}
-      <span className="certfan__cap">
+      <button
+        type="button"
+        className="certs2__print"
+        onClick={() => hasImg && onView(c)}
+        aria-label={`View ${c.title}, ${c.issuer}, ${c.year}`}
+      >
+        {hasImg ? (
+          <img src={c.image} alt="" onError={() => setImgOk(false)} loading="lazy" decoding="async" />
+        ) : (
+          <span className="certs2__blank" />
+        )}
+      </button>
+      <div className="certs2__cap">
         <b>{c.title}</b>
         <span>{c.issuer} · {c.year}</span>
-      </span>
-    </motion.button>
+      </div>
+    </motion.li>
   )
 }
 
@@ -511,16 +503,15 @@ export default function About({
       <PortraitIntro profile={profile} reduced={reduced} />
 
       <div className="container">
-        <div className="about__block about__block--split">
+        <div className="about__block">
           <h3 className="about__h">Experience</h3>
           <Credits experiences={experiences} />
         </div>
 
         <div className="about__block">
           <h3 className="about__h">Credentials</h3>
-          <CertFan
+          <CertGrid
             certificates={certificates}
-            reduced={reduced}
             onView={(cert) => onViewImage?.({ title: cert.title, image: cert.image, mediaType: 'image' })}
           />
         </div>

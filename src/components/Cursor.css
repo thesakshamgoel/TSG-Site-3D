@@ -10,7 +10,7 @@ body.has-custom-cursor * {
   left: 0;
   z-index: 2000;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1);
   will-change: transform;
 }
 .cursor-cam.is-hidden {
@@ -27,7 +27,7 @@ body.has-custom-cursor * {
   fill: #0d0b09;
   stroke: var(--gold);
   stroke-width: 1.4;
-  transition: fill 0.2s ease, stroke 0.2s ease;
+  transition: fill 0.2s cubic-bezier(0.23, 1, 0.32, 1), stroke 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .cursor-cam__body rect,
 .cursor-cam__body path {
@@ -85,4 +85,4 @@ body.has-custom-cursor * {
 .cursor-cam.is-hot .cursor-cam__body path { fill: #ff3b3b; }
 .cursor-cam.is-hot .cursor-lens { fill: #2a0d0d; stroke: #2a0d0d; }
 .cursor-cam.is-hot .cursor-rec { fill: #ffd2d2; }
-.cursor-cam__body rect, .cursor-cam__body path { transition: fill 0.18s ease; }
+.cursor-cam__body rect, .cursor-cam__body path { transition: fill 0.18s cubic-bezier(0.23, 1, 0.32, 1); }

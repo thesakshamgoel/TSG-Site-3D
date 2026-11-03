@@ -76,7 +76,7 @@
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s cubic-bezier(0.23, 1, 0.32, 1), color 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .toast__close:hover {
   background: rgba(255, 255, 255, 0.14);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import AuthPortal from './AuthPortal'
 import './Nav.css'
+import { asset } from '../data/asset'
 
 // small line icons, drawn on a 20px grid at 1.5px so they sit with the text
 const ICONS = {
@@ -55,7 +56,7 @@ export default function Nav({ name, onOpenConsole, onNavigate }) {
     <header className={`nav ${scrolled ? 'nav--scrolled' : ''}`}>
       <div className="nav__inner container">
         <a href="#top" className="nav__brand" onClick={(e) => go(e, 'top')}>
-          <img className="nav__logo" src="/logo.svg" alt={name} />
+          <img className="nav__logo" src={asset('/logo.svg')} alt={name} />
           <span className="nav__name">TSG Studios</span>
         </a>
 

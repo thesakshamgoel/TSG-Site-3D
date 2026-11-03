@@ -51,7 +51,7 @@
   border-radius: 6px;
   background: rgba(243, 236, 225, 0.35);
   cursor: pointer;
-  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1), margin 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.25s ease;
+  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1), margin 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.25s cubic-bezier(0.23, 1, 0.32, 1);
 }
 /* generous invisible hit area */
 .sprog__node::before {
@@ -87,7 +87,7 @@
   opacity: 0;
   transform: translate(6px, -50%);
   pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .sprog__node:hover .sprog__label,
 .sprog__node:focus-visible .sprog__label,

@@ -2,7 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
+// GitHub Pages serves a project site from /<repo>/, so the deploy workflow
+// sets VITE_BASE. Locally and on a custom domain it stays '/'.
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -10,6 +13,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1400,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

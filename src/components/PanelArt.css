@@ -104,7 +104,7 @@
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-10px) rotate(60deg); }
 }
-.panel .part { opacity: 0.78; transition: opacity 0.4s ease; }
+.panel .part { opacity: 0.78; transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
 .panel:hover .part, .panel.is-active .part { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .part * { animation: none !important; }

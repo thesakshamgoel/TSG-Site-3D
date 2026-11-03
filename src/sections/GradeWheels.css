@@ -147,7 +147,7 @@
   padding: 0 14px;
   font-size: 0.8rem;
   font-weight: 500;
-  transition: border-color 0.16s ease;
+  transition: border-color 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gw__chip:hover { border-color: var(--gold); }
 .gw__scenes { display: flex; gap: 6px; }
@@ -160,7 +160,7 @@
   background: center / cover no-repeat;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   opacity: 0.6;
-  transition: opacity 0.16s ease, box-shadow 0.16s ease;
+  transition: opacity 0.16s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gw__scenes button:hover { opacity: 0.9; }
 .gw__scenes button { position: relative; overflow: hidden; }
@@ -281,7 +281,7 @@
   color: rgba(243, 236, 225, 0.7);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
   will-change: transform;
-  transition: color 0.25s ease, font-size 0.25s ease;
+  transition: color 0.25s cubic-bezier(0.23, 1, 0.32, 1), font-size 0.25s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gw__tag.is-on { color: var(--gold); font-size: 0.9rem; }
 .gw__stage.has-gl .gw__tags { display: block; }

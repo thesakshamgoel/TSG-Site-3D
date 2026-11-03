@@ -1,3 +1,4 @@
+import { asset } from './asset'
 /**
  * Media helpers — one place that knows how to turn a project into a thumbnail
  * and an embed URL, for both YouTube and Vimeo. Used everywhere so adding a
@@ -45,6 +46,13 @@ export function thumbFor(p) {
 // which goes soft at full-screen. Drop more in public/highlights/<id>.jpg.
 const HIRES = new Set(['iRlNM-tP0UA', 'yv9y7f4v6Yc', 'zZ2kurHSgzI', 'eiPDl-pBDK0', '_HE3d1wNVfA', 'rQFBpsqHCCM'])
 
+/** mid-size frame (1280px) for cards that never fill a 4K screen */
+export function thumbMidFor(p) {
+  if (p && !p.thumb && p.mediaType !== 'image' && !isVimeo(p) && p.youtubeId && HIRES.has(p.youtubeId))
+    return asset(`/highlights/sm/${p.youtubeId}.jpg`)
+  return thumbHiFor(p)
+}
+
 export function thumbHiFor(p) {
   if (!p) return ''
   if (p.thumb) return p.thumb
@@ -53,8 +61,8 @@ export function thumbHiFor(p) {
   if (p.youtubeId && HIRES.has(p.youtubeId))
     // phones get the 1280px copy; the 2560px one is for large screens
     return typeof window !== 'undefined' && window.innerWidth <= 900
-      ? `/highlights/sm/${p.youtubeId}.jpg`
-      : `/highlights/${p.youtubeId}.jpg`
+      ? asset(`/highlights/sm/${p.youtubeId}.jpg`)
+      : asset(`/highlights/${p.youtubeId}.jpg`)
   if (p.youtubeId) return `https://i.ytimg.com/vi/${p.youtubeId}/maxresdefault.jpg`
   return ''
 }

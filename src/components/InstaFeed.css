@@ -74,7 +74,7 @@
   max-width: 760px;
   margin: 0 auto;
   border-radius: var(--radius);
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   flex-wrap: wrap;
 }
 .insta__card:hover {
@@ -145,3 +145,29 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+/* feed switched off until the visitor allows embeds */
+.insta__card--off {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 24px 28px;
+}
+.insta__off-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.insta__btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: none;
+  color: var(--text);
+  font: 500 0.9rem/1 var(--font-sans);
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.insta__btn:active { transform: scale(0.97); }
+.insta__btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }

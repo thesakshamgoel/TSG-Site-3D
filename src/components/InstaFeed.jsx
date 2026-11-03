@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useConsent, setConsent } from './consent'
 import './InstaFeed.css'
 
 /**
@@ -9,6 +10,7 @@ import './InstaFeed.css'
  */
 export default function InstaFeed({ profile }) {
   const handle = profile.instagramHandle || 'instagram'
+  const { media } = useConsent()
 
   // Load the right widget script once. Behold uses a web component; iframe
   // widgets (SnapWidget / LightWidget-paid) need no script but LightWidget's
@@ -23,8 +25,9 @@ export default function InstaFeed({ profile }) {
     return () => io.disconnect()
   }, [])
   useEffect(() => {
-    // third-party widget scripts load only when the feed is about to be seen
-    if (!near) return
+    // third-party widget scripts load only when the visitor has allowed them
+    // and the feed is about to be seen
+    if (!near || !media) return
     if (profile.instagramElfsight && !document.querySelector('script[data-elfsight]')) {
       const s = document.createElement('script')
       s.src = 'https://elfsightcdn.com/platform.js'
@@ -51,19 +54,30 @@ export default function InstaFeed({ profile }) {
       s.setAttribute('data-lightwidget', '1')
       document.body.appendChild(s)
     }
-  }, [profile.instagramElfsight, profile.instagramBehold, profile.instagramWidget, near])
+  }, [profile.instagramElfsight, profile.instagramBehold, profile.instagramWidget, near, media])
 
   return (
     <section className="insta section" id="insta">
       <div className="container">
         <div className="insta__head">
-          <span className="slate">On the Grid</span>
+          <span className="slate">Instagram</span>
           <h2 className="section-title">
             Latest from <span className="gradient-text">@{handle}</span>
           </h2>
         </div>
 
-        {profile.instagramElfsight ? (
+        {!media ? (
+          <div className="insta__card glass insta__card--off">
+            <div className="insta__card-text">
+              <strong>The Instagram feed is off</strong>
+              <span>It loads content from Instagram, so it stays off until you allow embeds.</span>
+            </div>
+            <div className="insta__off-actions">
+              <button type="button" className="insta__btn" onClick={() => setConsent(true)}>Allow embeds</button>
+              <a className="insta__btn" href={profile.instagram} target="_blank" rel="noopener noreferrer">Open @{handle}</a>
+            </div>
+          </div>
+        ) : profile.instagramElfsight ? (
           <div className="insta__widget insta__widget--elfsight">
             <span className="perf-row insta__perf" aria-hidden="true" />
             <div
@@ -116,9 +130,9 @@ export default function InstaFeed({ profile }) {
             </div>
             <div className="insta__card-text">
               <strong>Follow @{handle}</strong>
-              <span>Behind-the-scenes, frames &amp; reels — updated daily.</span>
+              <span>Films, frames and reels.</span>
             </div>
-            <span className="insta__go">Open Instagram →</span>
+            <span className="insta__go">Open Instagram</span>
           </a>
         )}
       </div>

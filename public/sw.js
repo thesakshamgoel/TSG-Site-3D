@@ -13,10 +13,11 @@
  *    The cached copy is only the offline fallback.
  *  • Everything cross-origin (YouTube, Firebase, fonts CDN): left to the network.
  */
-const VERSION = 'sg-v2' // bump to force every device to drop its old cache
+const VERSION = 'sg-v3' // bump to force every device to drop its old cache
 const SHELL = `${VERSION}-shell`
 const ASSETS = `${VERSION}-assets`
-const SHELL_URLS = ['/', '/index.html', '/favicon.svg', '/manifest.webmanifest']
+const BASE = new URL('./', self.location).pathname
+const SHELL_URLS = [BASE, BASE + 'index.html', BASE + 'favicon.svg', BASE + 'manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -52,10 +53,10 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((res) => {
           const copy = res.clone()
-          caches.open(SHELL).then((c) => c.put('/', copy)).catch(() => {})
+          caches.open(SHELL).then((c) => c.put(BASE, copy)).catch(() => {})
           return res
         })
-        .catch(() => caches.match('/').then((r) => r || caches.match('/index.html')))
+        .catch(() => caches.match(BASE).then((r) => r || caches.match(BASE + 'index.html')))
     )
     return
   }

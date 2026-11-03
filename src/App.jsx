@@ -10,7 +10,6 @@ import Lightbox from './components/Lightbox'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ToastViewport from './components/Toast'
-import ScreenGuard from './components/ScreenGuard'
 import FilmHUD from './components/FilmHUD'
 import InstaFeed from './components/InstaFeed'
 import ScrollProgress from './components/ScrollProgress'
@@ -25,6 +24,8 @@ import { useLenis } from './hooks/useLenis'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
 import Intertitle from './components/Intertitle'
+import ConsentBar from './components/ConsentBar'
+import LegalDialog from './components/LegalDialog'
 import StarTunnel from './components/StarTunnel'
 import './App.css'
 
@@ -86,7 +87,17 @@ export default function App() {
     ],
     []
   )
-  const paused = !!(galleryCat || lightbox || consoleOpen)
+  // privacy notice / terms: open from the footer or a #privacy / #terms link
+  const [legal, setLegal] = useState(() => (/^#(privacy|terms)$/.test(window.location.hash) ? window.location.hash.slice(1) : null))
+  const openLegal = useCallback((page) => {
+    setLegal(page)
+    try { history.replaceState(null, '', `#${page}`) } catch {}
+  }, [])
+  const closeLegal = useCallback(() => {
+    setLegal(null)
+    try { history.replaceState(null, '', window.location.pathname + window.location.search) } catch {}
+  }, [])
+  const paused = !!(galleryCat || lightbox || consoleOpen || legal)
   const { scrollToId, indexRef } = useLenis(logoLanded, paused)
 
   // section titles reveal as they enter the viewport
@@ -186,7 +197,6 @@ export default function App() {
 
       <Cursor />
       <ToastViewport />
-      <ScreenGuard />
       {logoLanded && <FilmHUD />}
       {logoLanded && <ScrollProgress sections={progressSections} onNavigate={navigate} />}
 
@@ -242,7 +252,7 @@ export default function App() {
           <InstaFeed profile={data.profile} />
         </main>
 
-        <Footer profile={data.profile} onOpenConsole={() => setConsoleOpen(true)} />
+        <Footer profile={data.profile} onOpenConsole={() => setConsoleOpen(true)} onOpenLegal={openLegal} />
       </div>
 
       {logoLanded && <MobileTabBar galleryCat={galleryCat} onNavigate={navigate} />}
@@ -262,6 +272,9 @@ export default function App() {
       </AnimatePresence>
 
       {lightbox && <Lightbox project={lightbox} onClose={() => setLightbox(null)} />}
+
+      {legal && <LegalDialog page={legal} onClose={closeLegal} onSwitch={openLegal} />}
+      <ConsentBar onOpenLegal={openLegal} />
 
       {consoleOpen &&
         (consoleAuthed ? (

@@ -13,16 +13,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 58px;
+  height: 60px;
   max-width: 1180px;
   margin: 0 auto;
+  gap: 24px;
   padding: 0 10px 0 16px !important;
   border-radius: 14px;
   background: rgba(10, 9, 8, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .nav--scrolled .nav__inner { background: rgba(10, 9, 8, 0.72); }
 @media (prefers-reduced-transparency: reduce) {
@@ -32,11 +33,12 @@
 .nav__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
+  padding: 4px 10px 4px 2px;
   font-weight: 600;
 }
 .nav__logo {
-  height: 34px;
+  height: 32px;
   width: auto;
   display: block;
 }
@@ -56,13 +58,13 @@
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 0 14px;
-  border-radius: 10px;
+  padding: 0 16px;
+  border-radius: 100px;
   font-size: 0.88rem;
   font-weight: 500;
   letter-spacing: 0.005em;
   color: var(--text-dim);
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition: color 0.2s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 @media (hover: hover) and (pointer: fine) {
   .nav__links a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
@@ -82,7 +84,7 @@
 .nav__right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .nav__cta {
@@ -97,7 +99,7 @@
   color: var(--gold);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s cubic-bezier(0.23, 1, 0.32, 1), transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), background 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .nav__cta:hover {
   border-color: var(--gold);
@@ -139,7 +141,7 @@
   color: var(--gold);
   font-weight: 600;
   letter-spacing: 0.02em;
-  transition: color 0.35s ease, border-color 0.35s ease, transform 0.18s ease;
+  transition: color 0.35s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.35s cubic-bezier(0.23, 1, 0.32, 1), transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .nav__cta::before {
   content: '';

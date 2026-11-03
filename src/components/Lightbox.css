@@ -32,7 +32,7 @@
   color: #fff;
   font-size: 1rem;
   backdrop-filter: blur(6px);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s cubic-bezier(0.23, 1, 0.32, 1), transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .lb__close:hover {
   background: var(--gold);

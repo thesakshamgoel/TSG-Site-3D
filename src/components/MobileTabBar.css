@@ -82,7 +82,7 @@
     -webkit-appearance: none;
     appearance: none;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.2s ease, transform 0.12s ease;
+    transition: color 0.2s cubic-bezier(0.23, 1, 0.32, 1), transform 0.12s cubic-bezier(0.23, 1, 0.32, 1);
   }
   .mtab__btn:active {
     transform: scale(0.92);

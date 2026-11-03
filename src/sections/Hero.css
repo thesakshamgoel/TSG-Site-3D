@@ -39,7 +39,7 @@
   /* slight 3D focus toward the pointer */
   transform: perspective(1200px) rotateX(calc(var(--pny) * -1.6deg))
     rotateY(calc(var(--pnx) * 1.6deg));
-  transition: transform 0.35s ease-out;
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
   transform-style: preserve-3d;
 }
 
@@ -69,7 +69,7 @@
    section tilt above and the breathe animation on the h1 itself */
 .hero__name-float {
   transform: translate(calc(var(--pnx) * 6px), calc(var(--pny) * 4px));
-  transition: transform 0.3s ease-out;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .hero__name {

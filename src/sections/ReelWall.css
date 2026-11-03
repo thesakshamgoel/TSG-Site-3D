@@ -58,7 +58,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.3s ease;
+  transition: filter 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   filter: saturate(0.95) brightness(0.92);
 }
 .rw__frame:hover img { filter: saturate(1.15) brightness(1.08); }
@@ -72,7 +72,7 @@
   color: #fff;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .rw__frame:hover .rw__cap { opacity: 1; }
 .rw__head {

@@ -39,7 +39,7 @@
   font-weight: 600;
 }
 .gallery__backarrow {
-  transition: transform 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gallery__back:hover .gallery__backarrow {
   transform: translateX(-5px);
@@ -71,7 +71,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s cubic-bezier(0.23, 1, 0.32, 1), transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gallery__x:hover {
   background: var(--gold);
@@ -130,8 +130,8 @@
   color: var(--text-dim);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease,
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition: color 0.2s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.2s cubic-bezier(0.23, 1, 0.32, 1), background 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .gallery__filters button span {
   font-family: var(--font-mono);

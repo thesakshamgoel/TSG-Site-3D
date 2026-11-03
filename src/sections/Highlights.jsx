@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring, useTransform, useVelocity } from 'framer-motion'
-import { thumbHiFor, thumbFallbackFor, isVimeo } from '../data/media'
+import { thumbMidFor, thumbFallbackFor, isVimeo } from '../data/media'
+import { useConsent } from '../components/consent'
 import { useImgFallback } from '../hooks/useImgFallback'
 import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useScrollDamp } from '../hooks/useScrollDamp'
 import './Highlights.css'
 
 // Muted, chrome-less background loop of the actual film. Far sharper than any
@@ -26,7 +28,7 @@ const STEP = 34 // degrees between films on the ring
  * you rest on it; its title sits in plain 2D over the scene.
  */
 function Screen({ s, i, cursor, live, onOpen }) {
-  const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
+  const thumb = useImgFallback(thumbMidFor(s), thumbFallbackFor(s), s.id)
   const [shown, setShown] = useState(false)
   const dim = useTransform(cursor, (c) => Math.min(0.7, Math.abs(c - i) * 0.6))
   // black bars baked into the poster are cropped away before the rails go round it
@@ -96,6 +98,8 @@ export default function Highlights({ projects, onOpenProject }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // a touch slower inside the ring, so each film gets time on screen
+  useScrollDamp(ref, 0.8)
 
   // the cursor: which film faces you. A soft hold at each film (the speed
   // dips near it but never stops, so the scroll never feels stuck)
@@ -113,15 +117,29 @@ export default function Highlights({ projects, onOpenProject }) {
 
   const [active, setActive] = useState(0)
   const [live, setLive] = useState(-1)
+  const { media } = useConsent()
   const timer = useRef(null)
+  const rest = useRef({ at: 0, live: -1, last: 0 })
   const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
+  // The film plays only once the page has been still for a moment, and stops
+  // the instant the ring really moves: a video player starting or stopping in
+  // the middle of a scroll is what made it jerk. Tiny drift from the scroll
+  // easing settling does not count as movement.
   useMotionValueEvent(cursor, 'change', (c) => {
     const a = Math.round(c)
-    setActive(a)
-    // play the facing film once the visitor rests on it (desktop only)
+    setActive((prev) => (prev === a ? prev : a))
+    const r = rest.current
+    if (r.live !== -1) {
+      if (Math.abs(c - r.at) > 0.012) { r.live = -1; setLive(-1) }
+      else return
+    }
+    if (Math.abs(c - r.last) < 0.0015 && timer.current) { r.last = c; return }
+    r.last = c
     clearTimeout(timer.current)
-    setLive(-1)
-    if (!reduced && wide && Math.abs(c - a) < 0.04) timer.current = setTimeout(() => setLive(a), 600)
+    timer.current = null
+    if (!reduced && wide && media && Math.abs(c - a) < 0.03) {
+      timer.current = setTimeout(() => { r.at = c; r.live = a; setLive(a) }, 900)
+    }
   })
   useEffect(() => () => clearTimeout(timer.current), [])
 

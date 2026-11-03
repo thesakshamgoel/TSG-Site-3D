@@ -15,6 +15,7 @@ import {
 } from '../data/store'
 import { thumbFor, thumbHiFor, parseVideoInput } from '../data/media'
 import './DevConsole.css'
+import { asset } from '../data/asset'
 
 // ── ★ Featured: the films in the home "Highlighted work" reel ────────────
 const KINDS = [
@@ -776,7 +777,7 @@ export default function DevConsole({ data, onClose }) {
                       <input
                         value={c.after || ''}
                         onChange={(e) => baSet(idx, 'after', e.target.value)}
-                        placeholder="/beforeafter/ba-1-after.jpg"
+                        placeholder={asset('/beforeafter/ba-1-after.jpg')}
                       />
                     </label>
                     <label>
@@ -784,7 +785,7 @@ export default function DevConsole({ data, onClose }) {
                       <input
                         value={c.before || ''}
                         onChange={(e) => baSet(idx, 'before', e.target.value)}
-                        placeholder="/beforeafter/ba-1-before.jpg"
+                        placeholder={asset('/beforeafter/ba-1-before.jpg')}
                       />
                     </label>
                   </div>
