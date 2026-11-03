@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import StarTunnel from './StarTunnel'
-import { VIEWBOX, WHEEL_CENTER, LOOP, DOTS, TICKS, BRUSH } from './logoArt'
+import { VIEWBOX, VIEW, WHEEL_CENTER, LOOP, DOTS, TICKS, BRUSH, SPINE, BRUSH_TIP } from './logoArt'
 import './Loader.css'
 
 /**
@@ -8,7 +8,10 @@ import './Loader.css'
  *
  * Load: the mark floats in the star tunnel as a layered 3D object (loop at the
  * back, colour wheel and brush in front of it), tilting in depth while its
- * colour wheel spins up like a reel. Film frames ride a ring toward the camera.
+ * colour wheel spins up like a reel. The brush paints the infinity loop: its
+ * tip runs along the loop's centre line, the loop appearing behind it, and it
+ * finishes on its own resting spot, then lifts off the page into its layer.
+ * Film frames ride a ring toward the camera.
  *
  * Hand-off: at 100% the mark flies to the exact spot of the hero logo,
  * flattens its layers, and slows its wheel so it lands at the same angle and
@@ -18,7 +21,27 @@ import './Loader.css'
  *
  * One rAF loop writes every transform directly (no React re-render per frame).
  */
-const DURATION = 1600
+const DURATION = 2200
+const DRAW = [0.05, 0.84] // part of the load the brush spends painting
+const BRUSH_REST = Math.atan2(618 - 445, 488 - 265) // the brush's own axis, handle to tip
+
+// the loop's centre line as points with running length, for placing the brush
+const SPINE_PTS = SPINE.split(' ').map((p) => p.split(',').map(Number))
+const SPINE_LEN = SPINE_PTS.reduce((acc, p, i) => {
+  acc.push(i ? acc[i - 1] + Math.hypot(p[0] - SPINE_PTS[i - 1][0], p[1] - SPINE_PTS[i - 1][1]) : 0)
+  return acc
+}, [])
+const SPINE_D = 'M' + SPINE_PTS.map((p) => p.join(',')).join('L')
+function onSpine(f) {
+  const want = f * SPINE_LEN[SPINE_LEN.length - 1]
+  let i = 1
+  while (i < SPINE_LEN.length - 1 && SPINE_LEN[i] < want) i++
+  const a = SPINE_PTS[i - 1], b = SPINE_PTS[i]
+  const k = (want - SPINE_LEN[i - 1]) / (SPINE_LEN[i] - SPINE_LEN[i - 1] || 1)
+  // heading over a short stretch, so the lean does not flicker point to point
+  const p0 = SPINE_PTS[Math.max(0, i - 4)], p1 = SPINE_PTS[Math.min(SPINE_PTS.length - 1, i + 3)]
+  return { x: a[0] + (b[0] - a[0]) * k, y: a[1] + (b[1] - a[1]) * k, heading: Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) }
+}
 const FLIGHT = 1150
 const RING = 14
 const GAP = 520
@@ -55,6 +78,8 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
   const rigRef = useRef(null)
   const layerRefs = useRef([])
   const wheelRef = useRef(null)
+  const brushRef = useRef(null)
+  const inkRef = useRef(null)
   const frameRefs = useRef([])
   const starSpeed = useRef(0.0006)
   const cb = useRef({ onReveal, onDone })
@@ -74,6 +99,7 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
     let raf, last = null, first = null, smoothRun = 0, ready = false
     let elapsed = 0, flightStart = null, flight = null
     let wheel = 0, wheelVel = 0 // deg, deg per ms
+    let lean = 0 // brush tilt while painting, deg
     const travel = RING * GAP + 1400
     const depth = [0, 42, 78] // loop, wheel, brush: px toward the viewer
 
@@ -110,7 +136,18 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
         const ry = reduced ? 0 : Math.sin(elapsed / 520) * 32 * (1 - e * 0.35)
         const rx = reduced ? 0 : 12 + Math.cos(elapsed / 700) * 8
         rig.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
-        layerRefs.current.forEach((l, i) => l && (l.style.transform = `translateZ(${reduced ? 0 : depth[i]}px)`))
+        // the brush paints the loop, then lifts off the page into its own layer
+        const d = reduced ? 1 : easeInOut(span(DRAW[0], DRAW[1], t))
+        const lift = easeOut(span(DRAW[1], 1, t))
+        const tip = onSpine(d)
+        const turn = Math.sin(tip.heading - BRUSH_REST) * 16 * (1 - span(DRAW[1] - 0.12, DRAW[1], t))
+        lean += (turn - lean) * (1 - Math.exp(-dt / 90))
+        if (t >= 1) lean = 0
+        brushRef.current?.setAttribute('transform',
+          `translate(${(tip.x - BRUSH_TIP.x).toFixed(2)} ${(tip.y - BRUSH_TIP.y).toFixed(2)}) rotate(${lean.toFixed(2)} ${BRUSH_TIP.x} ${BRUSH_TIP.y})`)
+        inkRef.current?.setAttribute('stroke-dashoffset', (1 - d).toFixed(4))
+        const zBrush = 10 + (depth[2] - 10) * lift
+        layerRefs.current.forEach((l, i) => l && (l.style.transform = `translateZ(${reduced ? 0 : i === 2 ? zBrush : depth[i]}px)`))
 
         const R = Math.min(W, H) * 0.42
         ring.forEach((f, i) => {
@@ -234,7 +271,12 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
       <div className="lmark" ref={markRef} style={{ opacity: 0 }}>
         <div className="lmark__rig" ref={rigRef}>
           <svg className="lmark__layer" viewBox={VIEWBOX} ref={(el) => (layerRefs.current[0] = el)}>
-            <path d={LOOP} fill="#cccccc" stroke="#ffffff" strokeWidth="0.2" />
+            {/* the loop shows only where the brush has been */}
+            <mask id="lmark-ink" maskUnits="userSpaceOnUse" x={VIEW.x - 40} y={VIEW.y - 40} width={VIEW.w + 80} height={VIEW.h + 80}>
+              <path ref={inkRef} d={SPINE_D} fill="none" stroke="#fff" strokeWidth="48" strokeLinecap="round" strokeLinejoin="round"
+                pathLength="1" strokeDasharray="1 1" strokeDashoffset={reduced ? 0 : 1} />
+            </mask>
+            <path d={LOOP} fill="#cccccc" stroke="#ffffff" strokeWidth="0.2" mask="url(#lmark-ink)" />
           </svg>
           <svg className="lmark__layer" viewBox={VIEWBOX} ref={(el) => (layerRefs.current[1] = el)}>
             <g ref={wheelRef}>
@@ -245,7 +287,9 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
             </g>
           </svg>
           <svg className="lmark__layer" viewBox={VIEWBOX} ref={(el) => (layerRefs.current[2] = el)}>
-            {BRUSH.map((b) => <path key={b.fill} fill={b.fill} d={b.d} />)}
+            <g ref={brushRef}>
+              {BRUSH.map((b) => <path key={b.fill} fill={b.fill} d={b.d} />)}
+            </g>
           </svg>
         </div>
       </div>
