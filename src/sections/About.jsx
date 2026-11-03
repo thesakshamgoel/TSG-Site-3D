@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Reveal from '../components/Reveal'
 import { useReducedMotion } from '../hooks/useReducedMotion'
-import { thumbHiFor } from '../data/media'
+import { thumbHiFor, thumbFallbackFor } from '../data/media'
+import { useImgFallback } from '../hooks/useImgFallback'
 import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
 import { emailEnabled, sendEmail } from '../data/email'
 import { toast } from '../components/Toast'
@@ -171,10 +172,26 @@ function RollIn({ text, as: Tag = 'h4', className }) {
  * subtitle line along its bottom, one at a time as you scroll.
  */
 // the film a review is about, matched by the title quoted in its role
-function filmFor(r, projects) {
-  const m = /["“]([^"”]+)["”]/.exec(r.role || '')
-  const t = (m ? m[1] : '').toLowerCase()
-  return t ? (projects || []).find((p) => (p.title || '').toLowerCase() === t) : null
+// Matches on the quoted title first, then on any film title that appears in
+// the role or the quote. Reviews that name no film (a visitor's own review, or
+// one whose wording differs) borrow one of the highlighted films in turn, so
+// the screen always shows a picture and never an empty black frame.
+function filmFor(r, projects, i = 0) {
+  const films = (projects || []).filter((p) => p.mediaType !== 'image' && (p.youtubeId || p.vimeoId))
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
+  const quoted = norm((/["“”]([^"“”]+)["“”]/.exec(r.role || '') || [])[1])
+  if (quoted) {
+    const exact = films.find((p) => norm(p.title) === quoted)
+    if (exact) return exact
+  }
+  const hay = ' ' + norm(`${r.role} ${r.quote}`) + ' '
+  const hit = films
+    .filter((p) => norm(p.title).length > 3 && hay.includes(' ' + norm(p.title) + ' '))
+    .sort((a, b) => b.title.length - a.title.length)[0]
+  if (hit) return hit
+  const pool = films.filter((p) => p.highlight || p.featured)
+  const list = pool.length ? pool : films
+  return list.length ? list[i % list.length] : null
 }
 
 function Subtitles({ reviews, projects, reduced }) {
@@ -193,7 +210,7 @@ function Subtitles({ reviews, projects, reduced }) {
         <div className="subs__screen">
           <span className="subs__tc" aria-hidden="true">SUBTITLES · EN</span>
           {reviews.map((r, i) => (
-            <SubLine key={r.id} r={r} i={i} cur={cur} film={filmFor(r, projects)} reduced={reduced} />
+            <SubLine key={r.id} r={r} i={i} cur={cur} film={filmFor(r, projects, i)} reduced={reduced} />
           ))}
         </div>
       </div>
@@ -206,13 +223,14 @@ function SubLine({ r, i, cur, film, reduced }) {
   const zoom = useTransform(cur, (c) => 1.08 - 0.08 * clamp01(c - i + 1))
   // films overlap through the change, so the screen never flashes black
   const filmO = useTransform(cur, (c) => 1 - smooth(0.5, 0.95, Math.abs(c - i)))
-  const src = film ? thumbHiFor(film) : ''
+  const thumb = useImgFallback(film ? thumbHiFor(film) : '', film ? thumbFallbackFor(film) : '', film?.id)
+  const src = thumb.broken ? '' : thumb.src
   const bars = useLetterbox(src)
   return (
     <>
-    {film && (
+    {film && !thumb.broken && (
       <motion.span className="subs__film" style={reduced ? undefined : { opacity: filmO, scale: zoom }}>
-        <img src={src} alt="" loading="lazy" decoding="async" style={letterboxCrop(bars)} />
+        <img src={src} alt="" decoding="async" onError={thumb.onError} style={letterboxCrop(bars)} />
       </motion.span>
     )}
     <motion.figure className="subs__line" style={reduced ? undefined : { opacity: o, y }}>
