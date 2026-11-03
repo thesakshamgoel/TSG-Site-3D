@@ -1,27 +1,49 @@
 .hl {
   position: relative;
   z-index: 3;
-  --W: min(84vw, calc((100svh - 410px) * 16 / 10));
 }
+/* three bands that cannot overlap: heading, the film, then its title */
 .hl__pin {
   position: sticky;
   top: 0;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(10px, 2vh, 20px);
+  padding: clamp(84px, 11vh, 108px) clamp(16px, 3vw, 48px) clamp(18px, 3.4vh, 36px);
+}
+.hl__top {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-height: 44px;
+}
+.hl__head {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.hl__count-all {
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
 }
 .hl__stage {
+  position: relative;
+  min-height: 0;
+}
+/* every film fills the band; they dissolve into each other */
+.hl__view {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: clamp(190px, 26vh, 250px) 0 clamp(150px, 20vh, 190px);
-}
-/* every film occupies the same spot; they dissolve into each other */
-.hl__view {
-  position: relative;
-  width: var(--W);
-  aspect-ratio: 16 / 10;
 }
 .hl__screen {
   position: absolute;
@@ -54,6 +76,7 @@
   overflow: hidden;
 }
 .hl__poster {
+  object-position: 50% 40%;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -94,38 +117,19 @@
   color: var(--text-dim);
 }
 
-.hl__head {
-  position: absolute;
-  top: clamp(84px, 11vh, 120px);
-  left: 0;
-  right: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(2rem, 4.6vw, 3.4rem);
-  letter-spacing: -0.02em;
-  z-index: 5;
-  pointer-events: none;
-}
 
 /* title and actions: plain 2D over the scene, under the facing film */
 .hl__meta {
-  position: absolute;
+  position: relative;
   z-index: 5;
-  left: clamp(16px, 5vw, 80px);
-  right: clamp(16px, 5vw, 80px);
-  bottom: clamp(24px, 5vh, 52px);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px 24px;
   flex-wrap: wrap;
+  min-height: clamp(96px, 15vh, 130px);
 }
+.hl__meta-in { min-width: 0; }
 .hl__tags {
   display: flex;
   flex-wrap: wrap;
@@ -146,8 +150,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(2.4rem, 5.6vw, 4.8rem);
-  line-height: 0.95;
+  font-size: clamp(2.2rem, 4.6vw, 4rem);
+  line-height: 0.98;
   letter-spacing: -0.035em;
   color: #fff;
 }
@@ -201,14 +205,11 @@
 .hl__dots button.is-on::after { background: var(--gold); }
 
 @media (max-width: 720px) {
-  .hl { --W: 92vw; }
-  .hl__meta { bottom: 96px; }
   .hl__frame { border-radius: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hl__pin { position: relative; height: auto; overflow: visible; padding: 120px 0 40px; }
-  .hl__stage { position: relative; inset: auto; padding: 0; }
-  .hl__view { aspect-ratio: auto; display: grid; gap: 16px; justify-items: center; }
-  .hl__screen { position: relative; inset: auto; width: var(--W); aspect-ratio: 16 / 10; opacity: 1 !important; }
-  .hl__head, .hl__meta { position: relative; top: auto; bottom: auto; }
+  .hl__pin { position: relative; height: auto; overflow: visible; display: block; padding: 120px clamp(16px, 3vw, 48px) 40px; }
+  .hl__stage { position: relative; }
+  .hl__view { position: relative; display: grid; gap: 16px; }
+  .hl__screen { position: relative; inset: auto; aspect-ratio: 16 / 9; opacity: 1 !important; }
 }

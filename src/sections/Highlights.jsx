@@ -143,8 +143,6 @@ export default function Highlights({ projects, onOpenProject }) {
   })
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const headO = useTransform(p, [0, 0.05], [1, 0])
-  const headY = useTransform(p, [0, 0.05], [0, -40])
 
   const jump = (i) => {
     const el = ref.current
@@ -180,10 +178,11 @@ export default function Highlights({ projects, onOpenProject }) {
   return (
     <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n * 1.05 + 1) * 100}vh` }}>
       <div className="hl__pin">
-        <motion.h2 className="hl__head" style={reduced ? undefined : { opacity: headO, y: headY }}>
+        <header className="hl__top">
           <span className="slate">Featured</span>
-          Highlighted work
-        </motion.h2>
+          <h2 className="hl__head">Highlighted work</h2>
+          <span className="hl__count-all" aria-hidden="true">{String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
+        </header>
 
         <div className="hl__stage">
           <div className="hl__view">
@@ -204,7 +203,6 @@ export default function Highlights({ projects, onOpenProject }) {
               transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
             >
               <div className="hl__tags">
-                <span className="hl__count">{String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
                 {s.award && <span className="hl__award">Award-winning</span>}
                 {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
               </div>
