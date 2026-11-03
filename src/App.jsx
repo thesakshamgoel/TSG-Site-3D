@@ -24,6 +24,7 @@ import { useLenis } from './hooks/useLenis'
 import ReelWall from './sections/ReelWall'
 import GradeWheels from './sections/GradeWheels'
 import Intertitle from './components/Intertitle'
+import Marquee from './sections/Marquee'
 import ConsentBar from './components/ConsentBar'
 import LegalDialog from './components/LegalDialog'
 import StarTunnel from './components/StarTunnel'
@@ -84,6 +85,8 @@ export default function App() {
     setGalleryCat(id)
   }, [])
 
+  // the trail from first idea to delivered film, set as the big type divider
+  const marqueeWords = useMemo(() => ['Light', 'Story', 'Shoot', 'Editing', 'VFX', 'Sound', 'DI', 'Grade', 'Deliver'], [])
   const snapIds = useMemo(() => ['top', 'highlights', 'grade', 'work'], [])
   // film frames for the loader's reel tunnel (small thumbnails, fast to fetch)
   const loaderThumbs = useMemo(
@@ -252,6 +255,8 @@ export default function App() {
             projects={data.projects}
             onOpenCategory={openCategory}
           />
+
+          <Marquee words={marqueeWords} reverse />
 
           <About
             profile={data.profile}
