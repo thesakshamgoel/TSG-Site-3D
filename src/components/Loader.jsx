@@ -116,7 +116,9 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
         return
       }
       const dt = Math.min(raw, 1000 / 50)
-      const W = window.innerWidth, H = window.innerHeight
+      // the page's width without the scroll bar: the page keeps that space
+      // reserved, so measuring this way the mark never shifts when it appears
+      const W = document.documentElement.clientWidth, H = window.innerHeight
       const mark = markRef.current, rig = rigRef.current
       const mw = mark.offsetWidth, mh = mark.offsetHeight
 
@@ -232,11 +234,17 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
       }
     }
     raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
+    // pin the stage to the page's width (scroll bar excluded) so nothing in
+    // the loader re-centres when the scroll bar shows up
+    const fit = () => rootRef.current?.style.setProperty('--loader-w', `${document.documentElement.clientWidth}px`)
+    fit()
+    window.addEventListener('resize', fit)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', fit) }
   }, [ring, reduced])
 
   return (
     <div className="loader" ref={rootRef} aria-hidden="true">
+      <div className="loader__stage">
       <div className="loader__canvas">
         <div className="loader__fade" ref={starsRef}>
           <StarTunnel className="loader__stars" speed={() => starSpeed.current} />
@@ -251,10 +259,13 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
       </div>
 
       <div className="loader__vignette" ref={vignetteRef} />
+      </div>
 
       {/* film-strip gate */}
       <div className="loader__strip loader__strip--top" ref={stripTopRef} />
       <div className="loader__strip loader__strip--bottom" ref={stripBotRef} />
+
+      <div className="loader__stage loader__stage--front">
 
       <div className="loader__hud" ref={hudRef}>
         <div className="loader__count">
@@ -292,6 +303,7 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
             </g>
           </svg>
         </div>
+      </div>
       </div>
     </div>
   )

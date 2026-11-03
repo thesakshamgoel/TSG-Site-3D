@@ -40,9 +40,6 @@ body {
 .lenis.lenis-smooth [data-lenis-prevent] {
   overscroll-behavior: contain;
 }
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
 
 html {
   /* keep the scrollbar's space reserved, so unlocking the scroll after the

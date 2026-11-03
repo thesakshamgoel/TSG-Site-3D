@@ -6,6 +6,21 @@
   overflow: hidden;
 }
 
+/* everything that is centred lives in a stage as wide as the page without its
+   scroll bar (set from JS), so the scroll bar appearing never moves it */
+.loader__stage {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--loader-w, 100%);
+  z-index: 1;
+}
+.loader__stage--front {
+  z-index: 4;
+  pointer-events: none;
+}
+
 .loader__canvas {
   position: absolute;
   inset: 0;

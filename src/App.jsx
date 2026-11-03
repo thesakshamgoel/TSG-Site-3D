@@ -135,9 +135,26 @@ export default function App() {
     }
   }, [loaded])
 
-  // lock the page + custom scroll while the loader is up
+  // Hold the page still while the loader is up. The scroll bar stays where it
+  // is (hiding it with overflow: hidden and bringing it back made the whole
+  // page, loader included, jump sideways); scrolling input is blocked instead.
   useEffect(() => {
-    document.documentElement.style.overflow = logoLanded ? '' : 'hidden'
+    if (logoLanded) return
+    const block = (e) => { e.preventDefault(); e.stopImmediatePropagation() }
+    const KEYS = [' ', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End']
+    const keys = (e) => KEYS.includes(e.key) && block(e)
+    const pin = () => window.scrollY && window.scrollTo(0, 0)
+    const opt = { capture: true, passive: false }
+    window.addEventListener('wheel', block, opt)
+    window.addEventListener('touchmove', block, opt)
+    window.addEventListener('keydown', keys, opt)
+    window.addEventListener('scroll', pin, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', block, opt)
+      window.removeEventListener('touchmove', block, opt)
+      window.removeEventListener('keydown', keys, opt)
+      window.removeEventListener('scroll', pin)
+    }
   }, [logoLanded])
 
   // flag the body so mobile-only layout (footer bottom-padding) can make room
