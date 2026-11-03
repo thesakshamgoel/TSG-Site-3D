@@ -1,0 +1,11 @@
+Changes, newest first. One entry per prompt.
+
+2026-11-03
+- Loader: the brush now paints the infinity loop along its centre line and
+  finishes on its resting spot, then lifts into its layer. Load runs 2.2s
+  (was 1.6s) to give the stroke time.
+- Loader no longer shifts sideways when the scroll bar appears: the scroll
+  bar stays visible throughout, scrolling is blocked during the loader
+  instead, and the loader's content is pinned to the page width.
+- Hosting: site live on GitHub Pages from branch tsg-site-2
+  (https://thesakshamgoel.github.io/TSG-Site-3D/).
