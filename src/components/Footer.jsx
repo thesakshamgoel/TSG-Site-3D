@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { firebaseEnabled } from '../firebase/config'
-import { watchUser, watchOwner } from '../firebase/auth'
+import { watchOwner } from '../firebase/auth'
 import { reopenConsent } from './consent'
 import './Footer.css'
 
@@ -33,13 +33,8 @@ const ICONS = {
 }
 
 export default function Footer({ profile, onOpenConsole, onOpenLegal }) {
-  // Direct contact details are visitor-login-gated (see About). Mirror that
-  // here so the footer's Email link doesn't leak the address when gated.
-  const [user, setUser] = useState(null)
   const [owner, setOwner] = useState(null)
-  useEffect(() => watchUser(setUser), [])
   useEffect(() => watchOwner(setOwner), [])
-  const showEmail = !firebaseEnabled || !!user
   // With auth on, the console entry point exists only for the owner account.
   const showConsole = !firebaseEnabled || !!owner
 
@@ -47,7 +42,7 @@ export default function Footer({ profile, onOpenConsole, onOpenLegal }) {
     profile.instagram && { label: 'Instagram', url: profile.instagram },
     profile.linkedin && { label: 'LinkedIn', url: profile.linkedin },
     profile.youtube && { label: 'YouTube', url: profile.youtube },
-    showEmail && profile.email && { label: 'Email', url: `mailto:${profile.email}`, internal: true },
+    profile.email && { label: 'Email', url: `mailto:${profile.email}`, internal: true },
   ].filter(Boolean)
 
   return (

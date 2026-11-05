@@ -11,6 +11,30 @@
   height: 26px;
   border: 2px solid rgba(233, 184, 114, 0.4);
 }
+
+/* away: brackets pushed out past the corners, everything faded; in: they
+   close in on the frame. Transitions, so a quick scroll back reverses cleanly */
+.hud__bracket,
+.hud__bar {
+  opacity: 0;
+  transition:
+    opacity 0.45s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hud__bracket--tl { transform: translate(-14px, -14px); }
+.hud__bracket--tr { transform: translate(14px, -14px); }
+.hud__bracket--bl { transform: translate(-14px, 14px); }
+.hud__bracket--br { transform: translate(14px, 14px); }
+.hud__bar { transform: translateY(10px); }
+.hud.is-on .hud__bracket,
+.hud.is-on .hud__bar {
+  opacity: 1;
+  transform: none;
+}
+.hud.is-on .hud__bar { transition-delay: 0.12s; }
+@media (prefers-reduced-motion: reduce) {
+  .hud__bracket, .hud__bar { transform: none !important; transition: opacity 0.3s ease; }
+}
 .hud__bracket--tl {
   top: 82px;
   left: 26px;

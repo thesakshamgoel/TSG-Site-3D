@@ -100,6 +100,7 @@
   min-width: 1.15em;
   text-align: right;
 }
+.rw__fig { color: var(--gold); }
 .rw__line em { color: var(--gold-soft); }
 @media (max-width: 720px) {
   .rw { height: 360vh; }

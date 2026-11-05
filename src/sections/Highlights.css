@@ -206,6 +206,9 @@
 
 @media (max-width: 720px) {
   .hl__frame { border-radius: 4px; }
+  /* phones: heading and counter on one line, the slate goes */
+  .hl__top .slate { display: none; }
+  .hl__head, .hl__count-all { white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hl__pin { position: relative; height: auto; overflow: visible; display: block; padding: 120px clamp(16px, 3vw, 48px) 40px; }

@@ -1,15 +1,27 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './FilmHUD.css'
 
 /**
- * Subtle cinema HUD over the whole viewport: viewfinder corner brackets, a live
- * running timecode and frame-rate read-out. Purely decorative (pointer-events
- * off) — the film touch that frames every screen.
+ * Viewfinder over the hero only: corner brackets, REC with a live timecode and
+ * the frame-rate read-out. It frames the opening shot, then the brackets slide
+ * out to the corners and fade as the hero leaves, and come back if you return.
+ * Purely decorative (pointer-events off); the timecode stops while it is away.
  */
 export default function FilmHUD() {
   const tcRef = useRef(null)
+  // starts away so it animates in on mount
+  const [on, setOn] = useState(false)
 
   useEffect(() => {
+    const hero = document.getElementById('hero')
+    if (!hero) return
+    const io = new IntersectionObserver(([e]) => setOn(e.intersectionRatio > 0.45), { threshold: [0, 0.45, 1] })
+    io.observe(hero)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!on) return
     let raf
     const start = performance.now()
     let last = -1
@@ -30,10 +42,10 @@ export default function FilmHUD() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [on])
 
   return (
-    <div className="hud" aria-hidden="true">
+    <div className={`hud ${on ? 'is-on' : ''}`} aria-hidden="true">
       <span className="hud__bracket hud__bracket--tl" />
       <span className="hud__bracket hud__bracket--tr" />
       <span className="hud__bracket hud__bracket--bl" />

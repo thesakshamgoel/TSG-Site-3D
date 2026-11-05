@@ -1,5 +1,21 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-06
+- Credentials: certificates show again (the grid cropped them to a blank
+  edge; now shown whole at their own 4:3 shape).
+- Numbers: hero stat is 50+ Projects; the reel counter counts to 50+.
+- Viewfinder (REC, timecode, corner brackets) shows only over the hero and
+  slides out to the corners / back in as you leave or return.
+- Cookie notice: one short sentence in a small corner card; a slim strip
+  above the tab bar on phones.
+- Contact: the enquiry form and email work without signing in. Reviews and
+  the phone number still need Google sign-in.
+- Console: passcode fallback and the stored passcode removed; the console
+  opens only for the owner's Google account.
+- Highlighted work on phones: heading and counter on one line.
+- Security: meta Content-Security-Policy and referrer policy added.
+- CREDITS.md added (fonts, libraries, media, third-party marks).
+
 2026-11-03
 - Loader: the brush now paints the infinity loop along its centre line and
   finishes on its resting spot, then lifts into its layer. Load runs 2.2s

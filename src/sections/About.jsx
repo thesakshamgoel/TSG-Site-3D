@@ -543,20 +543,17 @@ export default function About({
             <div className="contact__intro">
               <RollIn text="Let's roll." />
               <p>Available for cinematography, colour &amp; design work worldwide.</p>
-              {!gated && (
-                <>
-                  <a href={`mailto:${profile.email}`} className="contact__email">
-                    {profile.email}
-                  </a>
-                  {profile.phone && (
-                    <a
-                      href={`tel:${profile.phone.replace(/\s/g, '')}`}
-                      className="contact__phone timecode"
-                    >
-                      {profile.phone}
-                    </a>
-                  )}
-                </>
+              <a href={`mailto:${profile.email}`} className="contact__email">
+                {profile.email}
+              </a>
+              {/* the phone number stays behind sign-in, so scrapers can't lift it */}
+              {!gated && profile.phone && (
+                <a
+                  href={`tel:${profile.phone.replace(/\s/g, '')}`}
+                  className="contact__phone timecode"
+                >
+                  {profile.phone}
+                </a>
               )}
               <div className="contact__actions">
                 {profile.cv && (
@@ -573,13 +570,47 @@ export default function About({
             </div>
 
             <div className="contact__form-col">
-              {gated ? (
+              {firebaseEnabled && user && (
+                <div className="contact__signed">
+                  {user.photoURL && (
+                    <img src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+                  )}
+                  <span>
+                    Signed in as <strong>{user.displayName || user.email}</strong>
+                  </span>
+                  <button type="button" onClick={() => signOutUser()}>
+                    Sign out
+                  </button>
+                </div>
+              )}
+              <div className="cform__tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={formTab === 'project'}
+                  className={formTab === 'project' ? 'is-active' : ''}
+                  onClick={() => setFormTab('project')}
+                >
+                  Start a Project
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={formTab === 'review'}
+                  className={formTab === 'review' ? 'is-active' : ''}
+                  onClick={() => setFormTab('review')}
+                >
+                  Leave a Review
+                </button>
+              </div>
+              {formTab === 'project' ? (
+                // enquiries never need an account
+                <ContactForm key={user?.uid || 'anon'} email={profile.email} user={user} />
+              ) : gated ? (
+                // reviews do, so each one comes from a real, named person
                 <div className="contact__gate">
-                  <h4>Sign in to get in touch</h4>
+                  <h4>Sign in to leave a review</h4>
                   <p>
-                    Use your Google account to start a project or leave a
-                    review — and to see direct contact details. Browsing the
-                    portfolio never needs an account.
+                    Reviews are tied to a Google account so every one on this
+                    site comes from a real person. Enquiries never need one.
                   </p>
                   <button type="button" className="btn primary" onClick={doSignIn}>
                     Sign in with Google
@@ -587,44 +618,7 @@ export default function About({
                   {authErr && <span className="contact__gate-err">{authErr}</span>}
                 </div>
               ) : (
-                <>
-                  {firebaseEnabled && user && (
-                    <div className="contact__signed">
-                      {user.photoURL && (
-                        <img src={user.photoURL} alt="" referrerPolicy="no-referrer" />
-                      )}
-                      <span>
-                        Signed in as <strong>{user.displayName || user.email}</strong>
-                      </span>
-                      <button type="button" onClick={() => signOutUser()}>
-                        Sign out
-                      </button>
-                    </div>
-                  )}
-                  <div className="cform__tabs" role="tablist">
-                    <button
-                      role="tab"
-                      aria-selected={formTab === 'project'}
-                      className={formTab === 'project' ? 'is-active' : ''}
-                      onClick={() => setFormTab('project')}
-                    >
-                      Start a Project
-                    </button>
-                    <button
-                      role="tab"
-                      aria-selected={formTab === 'review'}
-                      className={formTab === 'review' ? 'is-active' : ''}
-                      onClick={() => setFormTab('review')}
-                    >
-                      Leave a Review
-                    </button>
-                  </div>
-                  {formTab === 'project' ? (
-                    <ContactForm key={user?.uid || 'anon'} email={profile.email} user={user} />
-                  ) : (
-                    <ReviewForm key={user?.uid || 'anon'} email={profile.email} user={user} />
-                  )}
-                </>
+                <ReviewForm key={user?.uid || 'anon'} email={profile.email} user={user} />
               )}
             </div>
           </div>

@@ -162,8 +162,10 @@
 .certs2__blank {
   display: block;
   width: 100%;
-  aspect-ratio: 1.414;
-  object-fit: cover;
+  height: auto;
+  /* same shape as the certificate artwork, so the whole print shows */
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
   border-radius: 6px;
   background: #f4f1ea;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 30px 60px -28px rgba(0, 0, 0, 0.9);

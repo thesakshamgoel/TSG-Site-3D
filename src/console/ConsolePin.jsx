@@ -1,31 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { firebaseEnabled } from '../firebase/config'
 import { signInOwner } from '../firebase/auth'
 import './ConsolePin.css'
 
 /**
- * Owner-only gate for the developer console.
- *  • Firebase configured → real Google sign-in, restricted to the owner account.
- *  • Otherwise            → email + passcode access-gating (front-end only).
- * The console just edits site content, so there's nothing dangerous behind it.
+ * Owner-only gate for the developer console: Google sign-in through Firebase,
+ * accepted only for the owner's account. Writes are also locked to that
+ * account by the Firestore rules, so the gate is enforced on the server too.
+ * There is no passcode fallback: without Firebase the console stays closed.
  */
-export default function ConsolePin({ pin, email, onOk, onClose }) {
-  const [emailVal, setEmailVal] = useState('')
-  const [value, setValue] = useState('')
-  const [error, setError] = useState(false)
+export default function ConsolePin({ onClose }) {
   const [busy, setBusy] = useState(false)
   const [authErr, setAuthErr] = useState('')
-  const inputRef = useRef(null)
 
   useEffect(() => {
-    if (!firebaseEnabled) inputRef.current?.focus()
     const onKey = (e) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // ── Firebase mode: Google sign-in ──────────────────────────────────────
   const googleSignIn = async () => {
     setBusy(true)
     setAuthErr('')
@@ -42,104 +36,52 @@ export default function ConsolePin({ pin, email, onOk, onClose }) {
     }
   }
 
-  if (firebaseEnabled) {
+  if (!firebaseEnabled) {
     return (
       <div className="pin" onClick={onClose}>
-        <motion.div
-          className="pin__panel"
-          onClick={(e) => e.stopPropagation()}
-          initial={{ opacity: 0, y: 16, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-        >
+        <div className="pin__panel" onClick={(e) => e.stopPropagation()}>
           <span className="slate">Restricted</span>
           <h3>Developer Console</h3>
-          <p>Owner access only. Sign in with your Google account.</p>
-          <button
-            type="button"
-            className="btn primary pin__google"
-            onClick={googleSignIn}
-            disabled={busy}
-          >
-            {busy ? 'Signing in…' : 'Sign in with Google'}
-          </button>
-          {authErr && (
-            <span className="pin__err" role="alert">
-              {authErr}
-            </span>
-          )}
+          <p>The console needs Firebase sign-in, which isn’t set up on this copy of the site.</p>
           <div className="pin__actions">
-            <button type="button" className="btn" onClick={onClose}>
-              Cancel
-            </button>
+            <button type="button" className="btn" onClick={onClose}>Close</button>
           </div>
-        </motion.div>
+        </div>
       </div>
     )
   }
 
-  // ── Fallback mode: email + passcode ────────────────────────────────────
-  const submit = (e) => {
-    e.preventDefault()
-    const emailOk = emailVal.trim().toLowerCase() === (email || '').trim().toLowerCase()
-    if (emailOk && value === pin) onOk()
-    else {
-      setError(true)
-      setValue('')
-    }
-  }
-
   return (
     <div className="pin" onClick={onClose}>
-      <motion.form
+      <motion.div
         className="pin__panel"
         onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
         initial={{ opacity: 0, y: 16, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: 'spring', stiffness: 280, damping: 26 }}
       >
         <span className="slate">Restricted</span>
         <h3>Developer Console</h3>
-        <p>Owner access only — enter your email and passcode.</p>
-        <input
-          ref={inputRef}
-          type="email"
-          className={`pin__email ${error ? 'is-error' : ''}`}
-          value={emailVal}
-          onChange={(e) => {
-            setEmailVal(e.target.value)
-            setError(false)
-          }}
-          placeholder="Owner email"
-          autoComplete="off"
-          spellCheck="false"
-        />
-        <input
-          type="password"
-          className={error ? 'is-error' : ''}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value)
-            setError(false)
-          }}
-          placeholder="Passcode"
-          autoComplete="off"
-        />
-        {error && (
+        <p>Owner access only. Sign in with your Google account.</p>
+        <button
+          type="button"
+          className="btn primary pin__google"
+          onClick={googleSignIn}
+          disabled={busy}
+        >
+          {busy ? 'Signing in…' : 'Sign in with Google'}
+        </button>
+        {authErr && (
           <span className="pin__err" role="alert">
-            Wrong email or passcode.
+            {authErr}
           </span>
         )}
         <div className="pin__actions">
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="btn primary">
-            Unlock
-          </button>
         </div>
-      </motion.form>
+      </motion.div>
     </div>
   )
 }

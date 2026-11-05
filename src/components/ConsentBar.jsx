@@ -3,9 +3,9 @@ import { useConsent, setConsent } from './consent'
 import './ConsentBar.css'
 
 /**
- * A short bar at the bottom of the screen. It never blocks the page. Both
- * answers are equally easy to give; "Essential only" keeps every third-party
- * embed off.
+ * A small card in the corner. It never blocks the page or covers the middle
+ * of the screen. Both answers are equally easy to give; "Essential only" keeps
+ * every third-party embed off.
  */
 export default function ConsentBar({ onOpenLegal }) {
   const { decided } = useConsent()
@@ -17,11 +17,9 @@ export default function ConsentBar({ onOpenLegal }) {
   return (
     <div className="consent" role="dialog" aria-label="Cookies and embedded content">
       <p className="consent__text">
-        This site sets no cookies of its own. The Instagram feed and the film previews that play on
-        the page come from other companies (Elfsight, YouTube) and may set theirs. They stay off
-        unless you allow them.{' '}
+        No cookies of our own. Instagram and YouTube embeds stay off until you allow them.{' '}
         <button type="button" className="consent__link" onClick={() => onOpenLegal('privacy')}>
-          Privacy notice
+          Privacy
         </button>
       </p>
       <div className="consent__actions">

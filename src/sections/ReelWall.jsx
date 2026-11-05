@@ -120,7 +120,8 @@ export default function ReelWall({ projects, onOpenProject }) {
       }
     })
   }, [projects])
-  const filmCount = (projects || []).filter((x) => x.category === 'film').length
+  // the published figure (same as the hero's), not a count of what is on the page
+  const filmCount = 50
 
   const total = films.length * GAP + LEAD + 600
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
@@ -146,9 +147,11 @@ export default function ReelWall({ projects, onOpenProject }) {
           ))}
         </motion.div>
         <motion.h2 className="rw__head" style={reduced ? undefined : { y: headY, scale: headScale, opacity: headOpacity }}>
-          <motion.span className="rw__num">{reduced ? filmCount : countText}</motion.span>
+          <span className="rw__fig">
+            <motion.span className="rw__num">{reduced ? filmCount : countText}</motion.span>+
+          </span>
           <span className="rw__line">
-            films. <em>One eye.</em>
+            projects. <em>One eye.</em>
           </span>
         </motion.h2>
       </div>

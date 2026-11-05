@@ -68,12 +68,9 @@ export default function App() {
   const [galleryCat, setGalleryCat] = useState(null)
   const [galleryOrigin, setGalleryOrigin] = useState({ x: 50, y: 50 })
   const [consoleOpen, setConsoleOpen] = useState(false)
-  // Firebase: owner Google-auth state. Fallback: session passcode unlock.
+  // the console opens only for the owner's Google account (Firebase Auth)
   const [ownerAuthed, setOwnerAuthed] = useState(false)
-  const [passAuthed, setPassAuthed] = useState(
-    () => typeof sessionStorage !== 'undefined' && sessionStorage.getItem('sg_console_ok') === '1'
-  )
-  const consoleAuthed = firebaseEnabled ? ownerAuthed : passAuthed
+  const consoleAuthed = firebaseEnabled && ownerAuthed
 
   useEffect(() => watchOwner((user) => setOwnerAuthed(!!user)), [])
   // "Get in touch" asks the About section to open a specific contact tab.
@@ -318,17 +315,7 @@ export default function App() {
             <DevConsole data={data} onClose={() => setConsoleOpen(false)} />
           </Suspense>
         ) : (
-          <ConsolePin
-            pin={data.profile.consolePin || 'saksham26'}
-            email={data.profile.consoleEmail || data.profile.email}
-            onOk={() => {
-              setPassAuthed(true)
-              try {
-                sessionStorage.setItem('sg_console_ok', '1')
-              } catch {}
-            }}
-            onClose={() => setConsoleOpen(false)}
-          />
+          <ConsolePin onClose={() => setConsoleOpen(false)} />
         ))}
     </>
   )

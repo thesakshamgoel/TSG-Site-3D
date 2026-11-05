@@ -494,21 +494,13 @@ export const PROFILE = {
     'I make films look the way stories feel — from the set to the grade to the final frame on screen.',
   // Quick proof points shown in the hero (kept in sync with your other site)
   stats: [
-    { value: '100+', label: 'Films & Edits' },
+    { value: '50+', label: 'Projects' },
     { value: '10+', label: 'Global Brands' },
     { value: '3', label: 'Festival Honors' },
     { value: '4', label: 'Years Experience' },
   ],
   email: 'thesakshamgoel@gmail.com',
   phone: '+91 75081 81811',
-  // Passcode to open the developer console (owner-only). Change this to your
-  // own secret. Note: front-end code is public, so this is access-gating for
-  // convenience — the console only edits YOUR browser's local data anyway.
-  consolePin: 'Hellomy@10.@',
-  // The developer console gate requires BOTH this email and the passcode above.
-  // (Front-end code is public, so this is practical access-gating, not a real
-  // login — that would need a backend. The console only edits local data.)
-  consoleEmail: 'thesakshamgoel@gmail.com',
   bio: 'Mumbai-trained filmmaker with a BSc. in Filmmaking from Whistling Woods International. From second-unit DP, edit and DI on the feature "Madhupyaala" to the short film "Supaari", I move fluidly between the set and the grade — always in service of the story.',
   instagram: 'https://www.instagram.com/thesakshamgoel/',
   instagramHandle: 'thesakshamgoel',
