@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
-import { thumbMidFor, thumbFallbackFor, isVimeo } from '../data/media'
+import { animate, motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
+import { thumbHiFor, thumbFallbackFor, isVimeo } from '../data/media'
 import { useConsent } from '../components/consent'
 import { useImgFallback } from '../hooks/useImgFallback'
 import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
@@ -8,8 +8,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useScrollDamp } from '../hooks/useScrollDamp'
 import './Highlights.css'
 
-// Muted, chrome-less background loop of the actual film. Far sharper than any
-// YouTube thumbnail, which tops out at a heavily compressed 1280px.
+// Muted, chrome-less background loop of the actual film.
 function bgSrc(s) {
   if (isVimeo(s)) return `https://player.vimeo.com/video/${s.vimeoId}?background=1&autoplay=1&loop=1&muted=1&dnt=1`
   const id = s.youtubeId
@@ -17,26 +16,24 @@ function bgSrc(s) {
 }
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
-const smoothstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
+const pad = (n) => String(n).padStart(2, '0')
 
 /**
- * Highlighted work: one film at a time in a single frame. Scroll moves a
- * cursor between films; each holds still for a while, then dissolves into the
- * next. Only opacity and a slow scale move, so it stays on the compositor and
- * runs the same at 60 and 120 Hz. The film playing silently behind the
- * poster starts only after the page has been still, and stops the moment you
- * scroll again.
+ * Highlighted work as opening titles. Each film fills the screen; its title
+ * sets in large over the picture with a credits line under it. Between films
+ * a shutter closes, a slate for the next film shows on the blades, and the
+ * shutter opens on the new picture. Scrolling only picks the film; the change
+ * itself always plays at the same pace, so a fast scroll can't rush it or
+ * make it stutter. Only transform and opacity move.
  */
-function Screen({ s, i, cursor, live, onOpen }) {
-  const thumb = useImgFallback(thumbMidFor(s), thumbFallbackFor(s), s.id)
+const CHANGE_S = 1.6 // one shutter close-and-open, in seconds
+// shutter closure over a change's progress: 0 open, 1 shut at the midpoint.
+// Symmetric, so a change can be restarted from its mirror point seamlessly.
+const shutAt = (p) => smooth(0.03, 0.34, Math.min(p, 1 - p)) // shut and held from 0.34 to 0.66
+function Shot({ s, on, live }) {
+  const thumb = useImgFallback(thumbHiFor(s), thumbFallbackFor(s), s.id)
   const [shown, setShown] = useState(false)
-  // crossfade: the film is fully visible only while it holds; neighbours
-  // dissolve over it. Opacity and a slow scale are all that moves.
-  const d = useTransform(cursor, (c) => Math.abs(c - i))
-  const opacity = useTransform(d, (v) => 1 - smoothstep(0.15, 0.85, v))
-  const scale = useTransform(cursor, (c) => 1 + 0.045 * (1 - clamp01(1 - (c - i + 1) / 2)))
-  const z = useTransform(d, (v) => (v < 0.5 ? 2 : 1))
-  // black bars baked into the poster are cropped away before the rails go round it
   const bars = useLetterbox(thumb.broken ? '' : thumb.src)
   const vis = 1 - bars.top - bars.bottom
   const frameRef = useRef(null)
@@ -67,13 +64,13 @@ function Screen({ s, i, cursor, live, onOpen }) {
   }
 
   return (
-    <motion.div className="hl__screen" style={{ opacity, zIndex: z }}>
-      <button type="button" className="hl__frame" onClick={() => onOpen(s)} aria-label={`Watch ${s.title} with sound`}>
-        <motion.span className="hl__gate" style={{ scale }}>
+    <div className={`hl__shot ${on ? 'is-on' : ''}`} aria-hidden="true">
+      {/* swapped only while the shutter is shut; a slow push-in while it holds */}
+      <div className="hl__pic">
         {!thumb.broken ? (
           <img className="hl__poster" src={thumb.src} alt="" onError={thumb.onError} decoding="async" style={letterboxCrop(bars)} />
         ) : (
-          <span className="hl__ph">{s.title}</span>
+          <span className="hl__ph" />
         )}
         {live && (
           <iframe
@@ -88,10 +85,39 @@ function Screen({ s, i, cursor, live, onOpen }) {
             onLoad={onFrameLoad}
           />
         )}
+      </div>
+    </div>
+  )
+}
+
+/** The title card for the facing film: each line rises out of its own mask. */
+function Titles({ s, n, idx, shut }) {
+  // 0 while the film holds, 1 once the shutter is closing on it
+  const away = useTransform(shut, (v) => smooth(0, 0.7, v))
+  const rise = (delay) => (v) => `${(smooth(delay, 1, v) * 105).toFixed(2)}%`
+  const yTitle = useTransform(away, rise(0))
+  const yCred = useTransform(away, rise(0.15))
+  const yTop = useTransform(away, rise(0.3))
+  const o = useTransform(away, (v) => 1 - smooth(0.5, 1, v))
+  const credits = [s.role, ...(s.tags || [])].filter(Boolean)
+  return (
+    <motion.div className="hl__titles" style={{ opacity: o }}>
+      <span className="hl__mask">
+        <motion.span className="hl__over" style={{ y: yTop }}>
+          {s.award && <b>Award-winning</b>}
+          <span>Scene {pad(idx + 1)} of {pad(n)}</span>
         </motion.span>
-        <span className="hl__rail hl__rail--t" aria-hidden="true" />
-        <span className="hl__rail hl__rail--b" aria-hidden="true" />
-      </button>
+      </span>
+      <h3 className="hl__title">
+        <span className="hl__mask">
+          <motion.span style={{ y: yTitle }}>{s.title}</motion.span>
+        </span>
+      </h3>
+      <span className="hl__mask">
+        <motion.span className="hl__credits" style={{ y: yCred }}>
+          {credits.map((c, k) => <span key={k}>{c}</span>)}
+        </motion.span>
+      </span>
     </motion.div>
   )
 }
@@ -102,65 +128,94 @@ export default function Highlights({ projects, onOpenProject }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // a touch slower inside the ring, so each film gets time on screen
   useScrollDamp(ref, 0.8)
 
-  // the cursor: which film faces you. A soft hold at each film (the speed
-  // dips near it but never stops, so the scroll never feels stuck)
-  const cursor = useTransform(p, (v) => {
-    const raw = Math.min(n - 1, Math.max(0, (v - 0.05) / 0.9)) * (n - 1)
-    const base = Math.min(n - 2, Math.floor(raw))
-    const f = raw - base
-    // flat at each film (a real hold), eased glide in between
-    const e = f < 0.3 ? 0 : f > 0.7 ? 1 : (() => { const t = (f - 0.3) / 0.4; return t * t * t * (t * (t * 6 - 15) + 10) })()
-    return base + e
+  // the film the scroll position asks for
+  const want = useTransform(p, (v) => Math.round(Math.min(1, Math.max(0, (v - 0.04) / 0.92)) * (n - 1)))
+  // the change in progress: from -> to, phase 0..1 (1 = settled)
+  const phase = useMotionValue(1)
+  const shut = useTransform(phase, shutAt)
+  const bladeTop = useTransform(shut, (v) => `${((v - 1) * 100).toFixed(3)}%`)
+  const bladeBot = useTransform(shut, (v) => `${((1 - v) * 100).toFixed(3)}%`)
+  // the slate comes up as the blades meet and is gone before they part
+  const slateO = useTransform(phase, (ph) => (ph <= 0.5 ? smooth(0.26, 0.36, ph) : 1 - smooth(0.6, 0.67, ph)))
+  const slateY = useTransform(slateO, (v) => `${((1 - v) * 14).toFixed(2)}px`)
+  // the clapper stick is up while the shutter closes and claps shut on it
+  const stick = useTransform(phase, (ph) => (ph <= 0.5 ? -16 * (1 - smooth(0.42, 0.5, ph)) : 0))
+  const progress = useMotionValue(0)
+  const [view, setView] = useState({ from: 0, to: 0 })
+  const [shown, setShown] = useState(0) // the film behind the shutter right now
+  const run = useRef({ from: 0, to: 0, anim: null })
+
+  const go = (target) => {
+    const r = run.current
+    if (target === r.to) return
+    animate(progress, n > 1 ? target / (n - 1) : 1, { duration: reduced ? 0 : CHANGE_S, ease: [0.65, 0, 0.35, 1] })
+    const ph = phase.get()
+    if (ph < 0.5 && r.anim) {
+      // still closing: just retarget, the shutter opens on the new film
+      r.to = target
+      setView({ from: r.from, to: target })
+      return
+    }
+    // settled, or already opening: start a change from where the shutter is
+    r.anim?.stop()
+    r.from = r.to
+    r.to = target
+    setView({ from: r.from, to: target })
+    if (reduced) { phase.set(1); setShown(target); return }
+    phase.set(ph < 1 ? 1 - ph : 0)
+    r.anim = animate(phase, 1, {
+      duration: CHANGE_S * (1 - phase.get()),
+      ease: 'linear', // the shutter curve itself is eased (shutAt)
+      onComplete: () => { r.anim = null },
+    })
+  }
+  useMotionValueEvent(want, 'change', go)
+  // swap the picture at the midpoint, while the shutter is shut
+  useMotionValueEvent(phase, 'change', (ph) => {
+    const v = ph < 0.5 ? run.current.from : run.current.to
+    setShown((p) => (p === v ? p : v))
   })
-  const [active, setActive] = useState(0)
+  useEffect(() => () => run.current.anim?.stop(), [])
+
   const [live, setLive] = useState(-1)
   const { media } = useConsent()
-  const timer = useRef(null)
-  const rest = useRef({ at: 0, live: -1, last: 0 })
   const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 721px)').matches
-  // The film plays only once the page has been still for a moment, and stops
-  // the instant the ring really moves: a video player starting or stopping in
-  // the middle of a scroll is what made it jerk. Tiny drift from the scroll
-  // easing settling does not count as movement.
-  useMotionValueEvent(cursor, 'change', (c) => {
-    const a = Math.round(c)
-    setActive((prev) => (prev === a ? prev : a))
-    const r = rest.current
-    if (r.live !== -1) {
-      if (Math.abs(c - r.at) > 0.012) { r.live = -1; setLive(-1) }
-      else return
+  // The silent preview starts only once a change has finished and the page
+  // has been still for a moment; any new change stops it.
+  const [settled, setSettled] = useState(true)
+  useMotionValueEvent(phase, 'change', (ph) => setSettled((p) => (p === (ph >= 1) ? p : ph >= 1)))
+  const lastMove = useRef(0)
+  useMotionValueEvent(p, 'change', () => { lastMove.current = performance.now() })
+  useEffect(() => {
+    setLive(-1)
+    if (!settled || reduced || !wide || !media) return
+    let t
+    const check = () => {
+      if (performance.now() - lastMove.current > 900) setLive(shown)
+      else t = setTimeout(check, 300)
     }
-    if (Math.abs(c - r.last) < 0.0015 && timer.current) { r.last = c; return }
-    r.last = c
-    clearTimeout(timer.current)
-    timer.current = null
-    if (!reduced && wide && media && Math.abs(c - a) < 0.03) {
-      timer.current = setTimeout(() => { r.at = c; r.live = a; setLive(a) }, 900)
-    }
-  })
-  useEffect(() => () => clearTimeout(timer.current), [])
-
+    t = setTimeout(check, 900)
+    return () => clearTimeout(t)
+  }, [settled, shown, reduced, wide, media])
 
   const jump = (i) => {
     const el = ref.current
     if (!el) return
-    const v = 0.05 + (i / Math.max(1, n - 1)) * 0.9
+    const v = 0.04 + (i / Math.max(1, n - 1)) * 0.92
     const top = el.getBoundingClientRect().top + window.scrollY
     const y = top + v * (el.offsetHeight - window.innerHeight)
     if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.4 })
     else window.scrollTo({ top: y, behavior: 'smooth' })
   }
 
-  // Decode the posters while the page is idle, so the first scroll into this
-  // section does not stall on image decoding.
+  // decode the posters while idle, so the first scroll in never stalls
   useEffect(() => {
     const ric = window.requestIdleCallback || ((f) => setTimeout(f, 1500))
     const id = ric(() => {
       slides.forEach((sl) => {
-        const src = thumbMidFor(sl)
+        const src = thumbHiFor(sl)
         if (!src) return
         const im = new Image()
         im.decoding = 'async'
@@ -173,43 +228,53 @@ export default function Highlights({ projects, onOpenProject }) {
   }, [n])
 
   if (!n) return null
-  const s = slides[active] || slides[0]
+  const s = slides[shown] || slides[0]
+  const next = slides[view.to] || slides[0]
 
   return (
-    <section className="hl" id="highlights" ref={ref} style={reduced ? undefined : { height: `${(n * 1.05 + 1) * 100}vh` }}>
+    <section className="hl" id="highlights" ref={ref} style={{ height: `${(n * 1.1 + 1) * 100}vh` }}>
       <div className="hl__pin">
+        <button type="button" className="hl__screen" onClick={() => onOpenProject(s)} aria-label={`Watch ${s.title} with sound`}>
+          {slides.map((sl, i) => (
+            <Shot key={sl.id} s={sl} on={shown === i} live={live === i} />
+          ))}
+          <span className="hl__scrim" aria-hidden="true" />
+        </button>
+
+        {/* the shutter, with the next film's slate on its blades */}
+        {!reduced && (
+          <div className="hl__shutter" aria-hidden="true">
+            <motion.span className="hl__blade hl__blade--t" style={{ y: bladeTop }} />
+            <motion.span className="hl__blade hl__blade--b" style={{ y: bladeBot }} />
+            <motion.div className="hl__slate" style={{ opacity: slateO, y: slateY }}>
+              <div className="hl__board">
+                <div className="hl__clap">
+                  <motion.span className="hl__stick" style={{ rotate: stick }} />
+                  <span className="hl__bar" />
+                </div>
+                <div className="hl__fields">
+                  <div className="hl__f hl__f--wide"><span>Prod.</span><b>TSG Studios</b></div>
+                  <div className="hl__f"><span>Roll</span><b>A{pad(view.to + 1)}</b></div>
+                  <div className="hl__f hl__f--title"><span>Title</span><strong>{next.title}</strong></div>
+                  <div className="hl__f"><span>Scene</span><b>{pad(view.to + 1)}</b></div>
+                  <div className="hl__f"><span>Take</span><b>1</b></div>
+                  <div className="hl__f"><span>Of</span><b>{pad(n)}</b></div>
+                  <div className="hl__f hl__f--wide"><span>DoP</span><b>Saksham Goel</b></div>
+                  <div className="hl__f"><span>FPS</span><b>24</b></div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         <header className="hl__top">
           <span className="slate">Featured</span>
           <h2 className="hl__head">Highlighted work</h2>
-          <span className="hl__count-all" aria-hidden="true">{String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span>
+          <span className="hl__count-all" aria-hidden="true">{pad(shown + 1)} / {pad(n)}</span>
         </header>
 
-        <div className="hl__stage">
-          <div className="hl__view">
-            {slides.map((sl, i) => (
-              <Screen key={sl.id} s={sl} i={i} cursor={cursor} live={live === i} onOpen={onOpenProject} />
-            ))}
-          </div>
-        </div>
-
-        <div className="hl__meta">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={s.id}
-              className="hl__meta-in"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
-            >
-              <div className="hl__tags">
-                {s.award && <span className="hl__award">Award-winning</span>}
-                {(s.tags || []).map((tg) => <span key={tg}>{tg}</span>)}
-              </div>
-              <h3 className="hl__title">{s.title}</h3>
-              <p className="hl__role">{s.role}</p>
-            </motion.div>
-          </AnimatePresence>
+        <div className="hl__bottom">
+          <Titles key={s.id} s={s} n={n} idx={shown} shut={shut} />
           <div className="hl__actions">
             <button type="button" className="hl__play" onClick={() => onOpenProject(s)}>
               <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
@@ -221,15 +286,16 @@ export default function Highlights({ projects, onOpenProject }) {
                   key={sl.id}
                   type="button"
                   role="tab"
-                  aria-selected={i === active}
+                  aria-selected={i === view.to}
                   aria-label={sl.title}
-                  className={i === active ? 'is-on' : ''}
+                  className={i === view.to ? 'is-on' : ''}
                   onClick={() => jump(i)}
                 />
               ))}
             </div>
           </div>
         </div>
+        {!reduced && <motion.span className="hl__progress" style={{ scaleX: progress }} aria-hidden="true" />}
       </div>
     </section>
   )

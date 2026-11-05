@@ -1,5 +1,16 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-06 (Featured redesign)
+- Featured / Highlighted work rebuilt as opening titles: each film fills the
+  screen with a slow push-in, its title rises in large type with a credits
+  line, and a gold progress line runs along the bottom.
+- Film changes are triggered by scroll but play at a fixed pace (about 1.6s):
+  shutter closes, clapperboard slate holds, picture swaps while shut, shutter
+  opens. Fast scrolls can't rush or skip it; a flick past several films
+  closes once and opens on the last.
+- New slate: clapperboard with a hinged striped stick that claps shut as the
+  shutter closes, and ruled fields (Prod., Roll, Title, Scene, Take, DoP, FPS).
+
 2026-11-06
 - Credentials: certificates show again (the grid cropped them to a blank
   edge; now shown whole at their own 4:3 shape).
