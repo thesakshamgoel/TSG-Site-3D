@@ -278,11 +278,17 @@ export default function Highlights({ projects, onOpenProject }) {
     const onScroll = () => { clearTimeout(restT); if (!isPaging()) restT = setTimeout(settle, 180) }
     const down = () => { touching = true }
     const up = () => { touching = false; onScroll() }
+    // On a touch screen nothing moves the page for you: the phone's own scroll
+    // is left alone (nudging it after a swipe read as the page bouncing back),
+    // and the film simply follows where you stop, at its fixed pace.
+    const touchScreen = !!window.matchMedia?.('(pointer: coarse)').matches
     window.addEventListener('wheel', onWheel, { capture: true, passive: false })
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('touchstart', down, { passive: true })
-    window.addEventListener('touchend', up, { passive: true })
-    window.addEventListener('touchcancel', up, { passive: true })
+    if (!touchScreen) window.addEventListener('scroll', onScroll, { passive: true })
+    if (!touchScreen) {
+      window.addEventListener('touchstart', down, { passive: true })
+      window.addEventListener('touchend', up, { passive: true })
+      window.addEventListener('touchcancel', up, { passive: true })
+    }
     return () => {
       clearTimeout(restT)
       window.removeEventListener('wheel', onWheel, { capture: true })

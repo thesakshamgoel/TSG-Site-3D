@@ -1,5 +1,14 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-07 (scroll bounce)
+- Fix: on touch screens the page no longer nudges a scroll that comes to rest
+  inside Featured; that nudge pulled the page back toward the previous film
+  and read as a bounce (measured: 14 backwards frames in 14 swipes before,
+  0 after). Touch scrolling is fully native; the film follows where you stop.
+- Tried overscroll-behavior: none and overflow-anchor: none; the first blocked
+  touch scrolling at the end of Featured in testing, so both were removed.
+- Removed the unused useSmoothScroll hook.
+
 2026-11-07 (mobile scroll correction)
 - Touch scrolling is native again. Driving it from the page (the previous
   change) made it slower and laggier on a real phone. Lenis now smooths only
