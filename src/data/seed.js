@@ -438,10 +438,11 @@ export const COMPARISONS = [
 export const EXPERIENCES = [
   {
     id: 'exp-madhupyaala',
-    role: 'Editor · Colorist · Visual Designer — "Madhupyaala"',
+    role: '2nd Unit DP · Editor · Colorist · Visual Designer · Post Manager — "Madhupyaala"',
     org: 'Feature Film',
     period: '2025',
-    detail: 'Editing, colour and visual design on the feature film "Madhupyaala".',
+    detail:
+      'Second-unit cinematography, editing, colour, visual design and post-production management on the feature film "Madhupyaala".',
   },
   {
     id: 'exp-parda',
@@ -500,7 +501,7 @@ export const PROFILE = {
   ],
   email: 'thesakshamgoel@gmail.com',
   phone: '+91 75081 81811',
-  bio: 'Mumbai-trained filmmaker with a BSc. in Filmmaking from Whistling Woods International. From editing, colour and visual design on the feature "Madhupyaala" to shooting the short film "Supaari", I move fluidly between the set and the grade — always in service of the story.',
+  bio: 'Mumbai-trained filmmaker with a BSc. in Filmmaking from Whistling Woods International. From second-unit DP, editing, colour, visual design and post management on the feature "Madhupyaala" to shooting the short film "Supaari", I move fluidly between the set and the grade — always in service of the story.',
   instagram: 'https://www.instagram.com/thesakshamgoel/',
   instagramHandle: 'thesakshamgoel',
   // Drop your portrait at public/photo.jpg and your CV at public/cv.pdf.

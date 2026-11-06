@@ -1,6 +1,8 @@
 Changes, newest first. One entry per prompt.
 
 2026-11-06 (fixes after testing)
+- Experience: Madhupyaala roles are now 2nd Unit DP, Editor, Colorist, Visual
+  Designer, Post Manager (bio line updated to match).
 - Experience: Supaari removed from the timeline entirely.
 - Featured: phone swipes could never advance (the page snapped back to the
   first film every time); a stopped scroll now continues to the next film in
