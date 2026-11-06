@@ -241,6 +241,7 @@ export default function App() {
           name={data.profile.name}
           onOpenConsole={() => setConsoleOpen(true)}
           onNavigate={navigate}
+          galleryCat={galleryCat}
         />
 
         <main>

@@ -5,7 +5,6 @@ import { useConsent } from '../components/consent'
 import { useImgFallback } from '../hooks/useImgFallback'
 import { useLetterbox, letterboxCrop } from '../hooks/useLetterbox'
 import { useReducedMotion } from '../hooks/useReducedMotion'
-import { useScrollDamp } from '../hooks/useScrollDamp'
 import './Highlights.css'
 
 // Muted, chrome-less background loop of the actual film.
@@ -27,7 +26,7 @@ const pad = (n) => String(n).padStart(2, '0')
  * itself always plays at the same pace, so a fast scroll can't rush it or
  * make it stutter. Only transform and opacity move.
  */
-const CHANGE_S = 1.6 // one shutter close-and-open, in seconds
+const CHANGE_S = 1.15 // one shutter close-and-open, in seconds
 // shutter closure over a change's progress: 0 open, 1 shut at the midpoint.
 // Symmetric, so a change can be restarted from its mirror point seamlessly.
 const shutAt = (p) => smooth(0.03, 0.34, Math.min(p, 1 - p)) // shut and held from 0.34 to 0.66
@@ -80,6 +79,7 @@ function Shot({ s, on, live }) {
             title=""
             tabIndex={-1}
             aria-hidden="true"
+            inert=""
             allow="autoplay; encrypted-media; picture-in-picture"
             ref={frameRef}
             onLoad={onFrameLoad}
@@ -128,7 +128,6 @@ export default function Highlights({ projects, onOpenProject }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  useScrollDamp(ref, 0.8)
 
   // the film the scroll position asks for
   const want = useTransform(p, (v) => Math.round(Math.min(1, Math.max(0, (v - 0.04) / 0.92)) * (n - 1)))
@@ -171,7 +170,13 @@ export default function Highlights({ projects, onOpenProject }) {
       onComplete: () => { r.anim = null },
     })
   }
-  useMotionValueEvent(want, 'change', go)
+  // while the scroll is being paged by us, the scroll position must not
+  // re-decide the film: we already chose it
+  // (a deadline, not a flag: an interrupted scroll animation can never leave
+  // it stuck on)
+  const pagingUntil = useRef(0)
+  const isPaging = () => performance.now() < pagingUntil.current
+  useMotionValueEvent(want, 'change', (v) => { if (!isPaging()) go(v) })
   // swap the picture at the midpoint, while the shutter is shut
   useMotionValueEvent(phase, 'change', (ph) => {
     const v = ph < 0.5 ? run.current.from : run.current.to
@@ -200,15 +205,94 @@ export default function Highlights({ projects, onOpenProject }) {
     return () => clearTimeout(t)
   }, [settled, shown, reduced, wide, media])
 
-  const jump = (i) => {
+  // Where each film rests, in page scroll positions.
+  const geom = () => {
     const el = ref.current
-    if (!el) return
-    const v = 0.04 + (i / Math.max(1, n - 1)) * 0.92
     const top = el.getBoundingClientRect().top + window.scrollY
-    const y = top + v * (el.offsetHeight - window.innerHeight)
-    if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.4 })
-    else window.scrollTo({ top: y, behavior: 'smooth' })
+    const travel = el.offsetHeight - window.innerHeight
+    return { top, travel, at: (i) => top + (0.04 + (i / Math.max(1, n - 1)) * 0.92) * travel }
   }
+  const pageTo = (i, duration = 1.2) => {
+    const lenis = window.__lenis
+    const y = geom().at(i)
+    if (!lenis) { window.scrollTo({ top: y, behavior: 'smooth' }); return }
+    pagingUntil.current = performance.now() + duration * 1000 + 120
+    go(i)
+    lenis.scrollTo(y, {
+      duration,
+      easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+      force: true,
+    })
+  }
+  const jump = (i) => pageTo(i, 1.0)
+
+  // One scroll gesture, one film. A fast flick or a long trackpad swipe moves
+  // exactly one film and then waits for the shutter to finish; it cannot run
+  // past the film you wanted. At the first and last film the scroll leaves the
+  // section as normal. A scroll that stops between films (touch, scroll bar,
+  // keys) settles onto the nearest one.
+  useEffect(() => {
+    if (reduced || n < 2) return
+    let lastWheel = 0, restT = 0, touching = false, leaving = false
+    const inside = (g, y) => y >= g.top - 2 && y <= g.top + g.travel + 2
+    const onWheel = (e) => {
+      const lenis = window.__lenis
+      if (!lenis || lenis.isStopped || Math.abs(e.deltaY) < 1 || e.ctrlKey) return
+      const g = geom()
+      if (!inside(g, window.scrollY)) return
+      const next = run.current.to + (e.deltaY > 0 ? 1 : -1)
+      const now = performance.now()
+      const gap = now - lastWheel
+      lastWheel = now
+      // A new gesture is either one that follows a pause, or a deliberate
+      // notch or swipe (a big delta) once the shutter has finished. The tail of
+      // a trackpad swipe is a stream of small deltas, so it never counts; but
+      // spinning a mouse wheel without stopping must not lock the page either.
+      const fresh = !isPaging() && phase.get() >= 1 && (gap >= 140 || Math.abs(e.deltaY) >= 60)
+      if (fresh) leaving = false
+      // At the first or last film a fresh gesture scrolls on, out of the
+      // section, and all of that gesture goes with it. The tail of a hard
+      // flick that just paged onto this film is swallowed instead.
+      if (next < 0 || next > n - 1) {
+        if (fresh) leaving = true
+        if (leaving) return
+      }
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      if (fresh && next >= 0 && next <= n - 1) pageTo(next, 1.0)
+    }
+    // A scroll that stops between films (touch, scroll bar, keys) goes on to
+    // the next film in the direction it was moving, once it has moved a little
+    // way off the one it started on. Snapping to the nearest film instead would
+    // pull a short swipe straight back, and the page would never advance.
+    const settle = () => {
+      const g = geom(), y = window.scrollY
+      if (isPaging() || touching || !inside(g, y) || y < g.at(0) || y > g.at(n - 1)) return
+      const cur = run.current.to
+      const d = y - g.at(cur)
+      if (Math.abs(d) < 3) return
+      const gap = (g.at(n - 1) - g.at(0)) / (n - 1)
+      const target = Math.abs(d) > gap * 0.1 ? Math.min(n - 1, Math.max(0, cur + Math.sign(d))) : cur
+      pageTo(target, 0.6)
+    }
+    const onScroll = () => { clearTimeout(restT); if (!isPaging()) restT = setTimeout(settle, 180) }
+    const down = () => { touching = true }
+    const up = () => { touching = false; onScroll() }
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false })
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('touchstart', down, { passive: true })
+    window.addEventListener('touchend', up, { passive: true })
+    window.addEventListener('touchcancel', up, { passive: true })
+    return () => {
+      clearTimeout(restT)
+      window.removeEventListener('wheel', onWheel, { capture: true })
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('touchstart', down)
+      window.removeEventListener('touchend', up)
+      window.removeEventListener('touchcancel', up)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n, reduced])
 
   // decode the posters while idle, so the first scroll in never stalls
   useEffect(() => {

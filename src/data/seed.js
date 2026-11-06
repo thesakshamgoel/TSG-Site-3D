@@ -437,20 +437,26 @@ export const COMPARISONS = [
 
 export const EXPERIENCES = [
   {
-    id: 'exp-madhushala',
-    role: '2nd Unit DP · Editor · Colorist — "Madhupyaala"',
-    org: 'Feature Film',
-    period: '2025',
-    detail:
-      'Second-unit cinematography, editorial and DI colour on the feature film "Madhupyaala".',
+    id: 'exp-supaari',
+    role: 'DP · Editor · Colorist — "Supaari"',
+    org: 'Short Film',
+    period: '2026',
+    detail: 'Cinematography, editing and colour on the short film "Supaari".',
   },
   {
-    id: 'exp-clients',
-    role: 'Cinematographer · Editor · DI Artist — "Supaari"',
-    org: 'Short Film · Freelance',
-    period: '2022 — Present',
-    detail:
-      'Cinematography, editing and DI colour on the short film "Supaari", plus ongoing freelance work for brands and independent artists.',
+    id: 'exp-madhupyaala',
+    role: 'Editor · Colorist · Visual Designer — "Madhupyaala"',
+    org: 'Feature Film',
+    period: '2025',
+    detail: 'Editing, colour and visual design on the feature film "Madhupyaala".',
+  },
+  {
+    id: 'exp-parda',
+    role: 'Best Film · Best Editor — Parda Short Film Festival',
+    org: 'Festival',
+    period: '2025',
+    detail: 'Winner of Best Film and Best Editor at the Parda Short Film Festival.',
+    highlight: 'Award winner',
   },
   {
     id: 'exp-wwi',
@@ -501,7 +507,7 @@ export const PROFILE = {
   ],
   email: 'thesakshamgoel@gmail.com',
   phone: '+91 75081 81811',
-  bio: 'Mumbai-trained filmmaker with a BSc. in Filmmaking from Whistling Woods International. From second-unit DP, edit and DI on the feature "Madhupyaala" to the short film "Supaari", I move fluidly between the set and the grade — always in service of the story.',
+  bio: 'Mumbai-trained filmmaker with a BSc. in Filmmaking from Whistling Woods International. From editing, colour and visual design on the feature "Madhupyaala" to shooting the short film "Supaari", I move fluidly between the set and the grade — always in service of the story.',
   instagram: 'https://www.instagram.com/thesakshamgoel/',
   instagramHandle: 'thesakshamgoel',
   // Drop your portrait at public/photo.jpg and your CV at public/cv.pdf.

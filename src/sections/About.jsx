@@ -40,16 +40,18 @@ const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t
 /**
  * The opener: the portrait is exposed out of the page's own dark, low-key and
  * black and white, one soft light on the face. It has real transparency, so
- * there is no black shape of its own: it fades in, holds, and fades back out
- * into the page as you scroll on.
+ * there is no black shape of its own: it fades in out of the page and then
+ * stays.
  */
 function PortraitIntro({ profile, reduced }) {
   const ref = useRef(null)
   const [ok, setOk] = useState(true)
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start end', 'end end'] })
-  const expose = useTransform(p, [0.18, 0.5, 0.8, 0.98], [0, 1, 1, 0])
+  // exposed once, then it stays: the portrait and name hold on screen until the
+  // section scrolls away with the page, with no fade-out
+  const expose = useTransform(p, [0.18, 0.5], [0, 1])
   const scale = useTransform(p, [0.18, 0.8], [1.08, 1])
-  const bioO = useTransform(p, [0.5, 0.64, 0.8, 0.95], [0, 1, 1, 0])
+  const bioO = useTransform(p, [0.5, 0.64], [0, 1])
   const bioY = useTransform(p, [0.5, 0.64], [14, 0])
   const src = profile.photoLowkey || asset('/photo-lowkey.webp')
   return (
@@ -71,35 +73,56 @@ function PortraitIntro({ profile, reduced }) {
   )
 }
 
-// experience as a filmography: year, project, role; the heading stays the
-// largest thing on screen and each row reads in one line
+// Experience as a career timeline: a rail that fills with gold as you scroll,
+// a big year, the project and role, one line of detail, and tags.
 function Credits({ experiences }) {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 60%'] })
   return (
-    <ol className="exp">
-      {experiences.map((e) => {
-        const [role, project] = e.role.split(/\s+—\s+/)
-        return (
-          <motion.li
-            key={e.id}
-            className="exp__row"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-8% 0px' }}
-            transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          >
-            <span className="exp__year">{e.period}</span>
-            <span className="exp__main">
-              <span className="exp__title">{(project || role).replace(/["“”]/g, '')}</span>
-              <span className="exp__role">{project ? role : e.org}</span>
-            </span>
-            <span className="exp__org">
-              {project ? e.org : ''}
-              {e.highlight && <b>{e.highlight}</b>}
-            </span>
-          </motion.li>
-        )
-      })}
-    </ol>
+    <div className="exp" ref={ref}>
+      <span className="exp__rail" aria-hidden="true">
+        <motion.i style={{ scaleY: scrollYProgress }} />
+      </span>
+      <ol className="exp__list">
+        {experiences.map((e) => {
+          const [role, project] = e.role.split(/\s+—\s+/)
+          const [from, to] = String(e.period).split(/\s+—\s+/)
+          const tags = String(e.org || '').split(/\s+·\s+/).filter(Boolean)
+          return (
+            <motion.li
+              key={e.id}
+              className="exp__row"
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-10% 0px' }}
+              transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <motion.span
+                className="exp__dot"
+                aria-hidden="true"
+                initial={{ scale: 0.5, backgroundColor: 'rgba(10,9,8,1)' }}
+                whileInView={{ scale: 1, backgroundColor: 'rgba(233,184,114,1)' }}
+                viewport={{ once: true, margin: '-30% 0px' }}
+                transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+              />
+              <div className="exp__when">
+                <span className="exp__from">{from}</span>
+                {to && <span className="exp__to">{/present/i.test(to) ? 'to now' : `to ${to}`}</span>}
+              </div>
+              <div className="exp__body">
+                <h3 className="exp__title">{(project || role).replace(/["“”]/g, '')}</h3>
+                <p className="exp__role">{project ? role : e.org}</p>
+                {e.detail && <p className="exp__detail">{e.detail}</p>}
+                <div className="exp__tags">
+                  {project && tags.map((t) => <span key={t}>{t}</span>)}
+                  {e.highlight && <span className="exp__award">{e.highlight}</span>}
+                </div>
+              </div>
+            </motion.li>
+          )
+        })}
+      </ol>
+    </div>
   )
 }
 

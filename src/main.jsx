@@ -4,6 +4,7 @@ import './perf'
 import App from './App.jsx'
 import './styles/global.css'
 import './styles/cinema.css'
+import './styles/glass.css'
 import './styles/fonts'
 
 ReactDOM.createRoot(document.getElementById('root')).render(

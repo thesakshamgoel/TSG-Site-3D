@@ -12,8 +12,9 @@
   min-height: 44px; /* comfortable tap target */
   padding: 8px 15px;
   border-radius: 100px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--lg-edge);
+  background: var(--lg-fill-strong);
+  box-shadow: inset 0 1px 5px -2px var(--lg-lip), inset 0 -2px 6px -3px var(--lg-lip-dark);
   color: var(--text-dim);
   font-size: 0.85rem;
   font-weight: 600;

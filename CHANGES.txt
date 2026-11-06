@@ -1,5 +1,41 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-06 (fixes after testing)
+- Featured: phone swipes could never advance (the page snapped back to the
+  first film every time); a stopped scroll now continues to the next film in
+  its direction. Spinning a mouse wheel without a pause no longer locks the
+  page (a deliberate notch is accepted once the shutter has finished). The
+  change is 1.15s (was 1.4s). The preview frame is inert so it can never catch
+  the wheel.
+- Experience: the Supaari still is removed (text-only timeline). Entries now:
+  Supaari 2026 (Short Film, DP / Editor / Colorist), Madhupyaala 2025 (Feature
+  Film, Editor / Colorist / Visual Designer), Parda Short Film Festival 2025
+  (Best Film and Best Editor, award winner), Whistling Woods 2022-2025. Bio line
+  updated to match.
+- Loader: the start of the logo draw no longer pops (the ink fades in over the
+  first few percent of the stroke, and the whole mark fades up from nothing).
+- Portrait: no fade-out (it stays until the page scrolls it away); the cut-out
+  edge is softer and the pale rim on the hair and ears is gone. Previous image
+  kept at scratchpad/photo-lowkey.before-edge.webp and in git history.
+
+2026-11-06 (glass nav, Featured paging, Experience)
+- Nav: floating liquid-glass pill (shared recipe in styles/glass.css). A glass
+  lens slides between links and rests on the section you are in. Blur 7px, flat
+  soft edge lights (no sharp white lip), and a rim bend of what is behind the
+  glass (components/useRefraction.jsx, SVG displacement as a backdrop-filter;
+  Chromium only, others get the plain blur; lite devices get a solid tint).
+- Nav hides when you scroll down and returns on scroll up (always shown near
+  the top and when something in it has keyboard focus).
+- Featured scroll: one film per scroll gesture, fixed-pace change, cannot run
+  past the film you wanted or out of the section in a hard flick; a scroll that
+  stops between films settles onto the nearest one.
+- Fix: scrolling out of the last (or first) Featured film was being swallowed
+  after the first few pixels, so the Grade section could not be reached. A
+  fresh gesture at either end now carries all the way out.
+- Experience rebuilt as a career timeline: gold rail that fills on scroll, big
+  year, project, role, detail line, tags, and a still from the film where one
+  exists (Supaari).
+
 2026-11-06 (Featured redesign)
 - Featured / Highlighted work rebuilt as opening titles: each film fills the
   screen with a slow push-in, its title rises in large type with a credits

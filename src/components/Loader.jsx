@@ -52,6 +52,7 @@ const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const span = (a, b, x) => clamp01((x - a) / (b - a))
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 const easeOut = (t) => 1 - Math.pow(1 - t, 3)
+const smooth01 = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 
 // where the hero's wheel will be pointing `ahead` ms from now
 function heroWheelAngle(ahead) {
@@ -134,7 +135,8 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
         wheel = (wheel + wheelVel * dt) % 360
         const s = 1.18 + e * 0.12
         mark.style.transform = `translate3d(${(W - mw) / 2}px, ${(H - mh) / 2 - H * 0.04}px, 0) scale(${s.toFixed(4)})`
-        mark.style.opacity = Math.min(1, 0.2 + e * 1.6).toFixed(3)
+        // fades up from nothing (it used to appear at 20% in a single frame)
+        mark.style.opacity = (Math.min(1, 0.2 + e * 1.6) * smooth01(0, 0.08, t)).toFixed(3)
         const ry = reduced ? 0 : Math.sin(elapsed / 520) * 32 * (1 - e * 0.35)
         const rx = reduced ? 0 : 12 + Math.cos(elapsed / 700) * 8
         rig.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
@@ -148,6 +150,10 @@ export default function Loader({ onReveal, onDone, name = 'Saksham Goel', thumbs
         brushRef.current?.setAttribute('transform',
           `translate(${(tip.x - BRUSH_TIP.x).toFixed(2)} ${(tip.y - BRUSH_TIP.y).toFixed(2)}) rotate(${lean.toFixed(2)} ${BRUSH_TIP.x} ${BRUSH_TIP.y})`)
         inkRef.current?.setAttribute('stroke-dashoffset', (1 - d).toFixed(4))
+        // the stroke's round cap would show as a full-size dot the instant the
+        // first sliver is drawn; fade the ink in over the first few percent so
+        // the start of the line grows out of nothing instead of popping
+        inkRef.current?.setAttribute('stroke-opacity', reduced ? '1' : smooth01(0.004, 0.05, d).toFixed(3))
         const zBrush = 10 + (depth[2] - 10) * lift
         layerRefs.current.forEach((l, i) => l && (l.style.transform = `translateZ(${reduced ? 0 : i === 2 ? zBrush : depth[i]}px)`))
 

@@ -1,0 +1,38 @@
+/* Liquid glass, tuned for a dark page.
+   A glass surface is: a faint light fill, a light blur and a bend of what passes behind it, a
+   barely-there edge, and a faint, warm lip along the top and a darker one
+   below it, both soft and wide rather than sharp. No gradients and no glow;
+   the form comes mostly from the bend and a short, tinted shadow. Use .lg for panels and bars, and
+   .lg-chip for small raised pieces inside one (they do not blur again). */
+:root {
+  --lg-fill: rgba(255, 248, 238, 0.05);
+  --lg-fill-strong: rgba(255, 248, 238, 0.075);
+  --lg-edge: rgba(255, 248, 238, 0.07);
+  --lg-lip: rgba(255, 248, 238, 0.09);
+  --lg-lip-dark: rgba(0, 0, 0, 0.22);
+  --lg-shadow: 0 16px 34px -18px rgba(6, 4, 2, 0.6);
+  --lg-blur: 7px; /* a little frost; the bend does most of the work */
+}
+.lg {
+  background: var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.5);
+  border: 1px solid var(--lg-edge);
+  box-shadow: inset 0 1px 6px -2px var(--lg-lip), inset 0 -2px 8px -3px var(--lg-lip-dark), var(--lg-shadow);
+}
+/* with the rim bend on (see components/useRefraction), Chromium only */
+.lg.lg--refract {
+  -webkit-backdrop-filter: var(--lg-url) blur(var(--lg-blur)) saturate(1.5);
+  backdrop-filter: var(--lg-url) blur(var(--lg-blur)) saturate(1.5);
+}
+.lg-chip {
+  background: var(--lg-fill-strong);
+  border: 1px solid var(--lg-edge);
+  box-shadow: inset 0 1px 5px -2px var(--lg-lip), inset 0 -2px 6px -3px var(--lg-lip-dark), 0 6px 14px -9px rgba(6, 4, 2, 0.7);
+}
+/* phones and weak machines: a blur re-renders every scroll frame, so they get
+   a solid dark tint with the same edge lights instead */
+.lite .lg, .lite .lg.lg--refract { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(22, 20, 18, 0.92); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg { background: rgba(22, 20, 18, 0.92); }
+}
