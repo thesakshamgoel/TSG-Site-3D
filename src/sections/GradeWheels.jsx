@@ -134,28 +134,26 @@ function loadImg(src) {
     const i = new Image()
     i.crossOrigin = 'anonymous'
     i.decoding = 'async'
-    i.onload = () => res(i)
+    // decode off the main thread, so drawing it later costs nothing
+    i.onload = () => (i.decode ? i.decode().catch(() => {}).then(() => res(i)) : res(i))
     i.onerror = rej
     i.src = src
   })
 }
-// pack up to six frames into a 2 x 3 atlas, each cover-cropped to 16:9
-function atlas(imgs, cw, ch) {
-  const c = document.createElement('canvas')
-  c.width = cw * 2
-  c.height = ch * 3
-  const g = c.getContext('2d')
+// Frames are cover-cropped to 16:9 and packed six to an atlas (2 x 3). They are
+// drawn and uploaded one tile per animation frame, so no single frame carries
+// the whole job: on a phone, doing it all at once froze the page for a second.
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()))
+function tileOf(im, cw, ch, scratch) {
+  const g = scratch.getContext('2d')
   g.fillStyle = '#000'
-  g.fillRect(0, 0, c.width, c.height)
-  imgs.forEach((im, k) => {
-    if (!im) return
-    const col = k % 2, row = Math.floor(k / 2)
-    const ir = im.naturalWidth / im.naturalHeight, cr = cw / ch
-    let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0
-    if (ir > cr) { sw = sh * cr; sx = (im.naturalWidth - sw) / 2 } else { sh = sw / cr; sy = (im.naturalHeight - sh) / 2 }
-    g.drawImage(im, sx, sy, sw, sh, col * cw, row * ch, cw, ch)
-  })
-  return c
+  g.fillRect(0, 0, cw, ch)
+  if (!im) return scratch
+  const ir = im.naturalWidth / im.naturalHeight, cr = cw / ch
+  let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0
+  if (ir > cr) { sw = sh * cr; sx = (im.naturalWidth - sw) / 2 } else { sh = sw / cr; sy = (im.naturalHeight - sh) / 2 }
+  g.drawImage(im, sx, sy, sw, sh, 0, 0, cw, ch)
+  return scratch
 }
 
 export default function GradeWheels({ comparisons, onOpenImage }) {
@@ -217,7 +215,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const G = { gl, loc, texA: gl.createTexture(), texB: gl.createTexture(), ready: false }
     glRef.current = G
     const size = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+      const dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(max-width: 720px)').matches ? 1.25 : 1.5)
       canvas.width = Math.round((canvas.clientWidth || window.innerWidth) * dpr)
       canvas.height = Math.round((canvas.clientHeight || window.innerHeight) * dpr)
       state.current.dirty = true
@@ -229,21 +227,38 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
 
     // phones get a smaller atlas: the frame band there is only ~400px wide
     const small = window.matchMedia('(max-width: 720px)').matches
-    const cw = small ? 1024 : 1600, ch = Math.round((cw * 9) / 16)
+    const cw = small ? 800 : 1600, ch = Math.round((cw * 9) / 16)
     let live = true
-    const load = () => Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then((res) => {
+    const load = () => Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then(async (res) => {
       if (!live) return
-      const up = (tex, unit, src) => {
+      const scratch = document.createElement('canvas')
+      scratch.width = cw; scratch.height = ch
+      const alloc = (tex, unit) => {
         gl.activeTexture(gl.TEXTURE0 + unit)
         gl.bindTexture(gl.TEXTURE_2D, tex)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src)
+        // empty atlas first (black), tiles are filled in below
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, cw * 2, ch * 3, 0, gl.RGB, gl.UNSIGNED_BYTE, null)
       }
-      up(G.texA, 0, atlas(res.map((r) => r[0]), cw, ch))
-      up(G.texB, 1, atlas(res.map((r) => r[1]), cw, ch))
+      alloc(G.texA, 0)
+      alloc(G.texB, 1)
+      for (let k = 0; k < 6; k++) {
+        for (const [side, tex, unit] of [[0, G.texA, 0], [1, G.texB, 1]]) {
+          if (!live) return
+          const im = res[k] ? res[k][side] : null
+          if (!im) continue
+          // one tile every ~90 ms: a background trickle, never a hitch
+          await nextFrame()
+          await new Promise((r) => setTimeout(r, 90))
+          gl.activeTexture(gl.TEXTURE0 + unit)
+          gl.bindTexture(gl.TEXTURE_2D, tex)
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, (k % 2) * cw, Math.floor(k / 2) * ch, gl.RGB, gl.UNSIGNED_BYTE, tileOf(im, cw, ch, scratch))
+          state.current.dirty = true
+        }
+      }
       G.ready = true
       setHasGL(true)
       state.current.dirty = true

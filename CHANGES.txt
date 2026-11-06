@@ -1,5 +1,22 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-07 (mobile pass)
+- Credentials on phones and tablets: a swipeable row, one card at a time with
+  the next peeking, a 01 / 05 counter and tap targets for each card. Desktop
+  keeps the grid.
+- Mobile lag: the Grade section decoded twelve large frames, drew them into
+  atlases and uploaded them in one burst, freezing the page (1.2 s in a 4x
+  CPU-throttled test). It now loads one tile every ~90 ms, off the main thread,
+  with smaller tiles and a lower render scale on phones (worst frame now
+  ~0.2 s in the same test). The intro loader uses 8 film frames instead of 14
+  on phones.
+- Mobile scroll speed: touch scrolling is now driven by the page (finger 0.9x,
+  capped inertia) instead of the phone's native fling, so a flick no longer
+  tears through several sections.
+- Reel heading fits the screen ("projects. One eye." was clipped).
+- Cookie card on phones is one short line of text with the two answers side by
+  side underneath.
+
 2026-11-06 (fixes after testing)
 - Experience: Madhupyaala roles are now 2nd Unit DP, Editor, Colorist, Visual
   Designer, Post Manager (bio line updated to match).

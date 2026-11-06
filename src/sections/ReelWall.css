@@ -107,7 +107,8 @@
   .rw__frame--s { width: 38vw; }
   .rw__frame--m { width: 48vw; }
   .rw__frame--l { width: 58vw; }
-  .rw__head { flex-direction: column; align-items: center; gap: 0; font-size: 3.4rem; text-align: center; }
+  /* sized to the screen so the whole line fits: "projects. One eye." */
+  .rw__head { flex-direction: column; align-items: center; gap: 0; font-size: clamp(2.2rem, 11vw, 3.4rem); text-align: center; }
   .rw__num { text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {

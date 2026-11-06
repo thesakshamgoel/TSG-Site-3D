@@ -131,12 +131,36 @@ function Credits({ experiences }) {
  * Tap or click one to see it full size.
  */
 function CertGrid({ certificates, onView }) {
+  const ref = useRef(null)
+  const [at, setAt] = useState(0)
+  // on phones the grid is a swipeable row: track which card is in front
+  const onScroll = () => {
+    const el = ref.current
+    if (!el || !el.firstElementChild) return
+    const step = el.firstElementChild.getBoundingClientRect().width + 14
+    setAt(Math.min(certificates.length - 1, Math.max(0, Math.round(el.scrollLeft / step))))
+  }
+  const go = (i) => {
+    const el = ref.current
+    if (!el || !el.children[i]) return
+    el.scrollTo({ left: el.children[i].offsetLeft - 16, behavior: 'smooth' })
+  }
   return (
-    <ul className="certs2">
-      {certificates.map((c, i) => (
-        <CertPrint key={c.id} c={c} i={i} onView={onView} />
-      ))}
-    </ul>
+    <>
+      <ul className="certs2" ref={ref} onScroll={onScroll} data-lenis-prevent-touch>
+        {certificates.map((c, i) => (
+          <CertPrint key={c.id} c={c} i={i} onView={onView} />
+        ))}
+      </ul>
+      <div className="certs2__nav" role="group" aria-label="Credentials">
+        <span className="certs2__count" aria-live="polite">{String(at + 1).padStart(2, '0')} / {String(certificates.length).padStart(2, '0')}</span>
+        <div className="certs2__dots">
+          {certificates.map((c, i) => (
+            <button key={c.id} type="button" aria-label={c.title} aria-current={i === at ? 'true' : undefined} className={i === at ? 'is-on' : ''} onClick={() => go(i)} />
+          ))}
+        </div>
+      </div>
+    </>
   )
 }
 function CertPrint({ c, i, onView }) {

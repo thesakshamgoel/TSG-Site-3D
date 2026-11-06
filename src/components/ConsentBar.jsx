@@ -17,7 +17,7 @@ export default function ConsentBar({ onOpenLegal }) {
   return (
     <div className="consent" role="dialog" aria-label="Cookies and embedded content">
       <p className="consent__text">
-        No cookies of our own. Instagram and YouTube embeds stay off until you allow them.{' '}
+        <span className="consent__lead">No cookies of our own. </span>YouTube and Instagram embeds stay off until you allow them.{' '}
         <button type="button" className="consent__link" onClick={() => onOpenLegal('privacy')}>
           Privacy
         </button>

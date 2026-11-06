@@ -51,19 +51,20 @@
   .consent__btn:hover { border-color: rgba(255, 255, 255, 0.4); }
 }
 @media (max-width: 560px) {
-  /* phones: one tight strip above the tab bar, text and buttons side by side */
+  /* phones: a short strip above the tab bar. One line of text, the two
+     answers side by side underneath. It is about half the old height. */
   .consent {
     right: 12px;
     left: 12px;
     width: auto;
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 10px 10px 14px;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-radius: 16px;
   }
-  .consent__text { font-size: 0.8rem; }
-  .consent__actions { grid-template-columns: 1fr; gap: 6px; }
-  .consent__btn { min-height: 44px; padding: 0 12px; font-size: 0.82rem; }
+  .consent__lead { display: none; }
+  .consent__text { font-size: 0.8rem; line-height: 1.4; }
+  .consent__actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .consent__btn { min-height: 44px; padding: 0 10px; font-size: 0.84rem; }
 }
 @media (prefers-reduced-motion: reduce) { .consent { animation: none; } }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import StarTunnel from './StarTunnel'
+import { LITE } from '../perf'
 import { VIEWBOX, VIEW, WHEEL_CENTER, LOOP, DOTS, TICKS, BRUSH, SPINE, BRUSH_TIP } from './logoArt'
 import './Loader.css'
 
@@ -43,7 +44,7 @@ function onSpine(f) {
   return { x: a[0] + (b[0] - a[0]) * k, y: a[1] + (b[1] - a[1]) * k, heading: Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) }
 }
 const FLIGHT = 1150
-const RING = 14
+const RING = LITE ? 8 : 14 // fewer big 3D film frames on phones and weaker machines
 const GAP = 520
 const HERO_WHEEL_DEG_PER_MS = 360 / 24000 // matches .logomark__wheel (24s per turn)
 const HERO_WHEEL_DELAY = 2000

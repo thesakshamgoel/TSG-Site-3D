@@ -214,14 +214,72 @@
 .certs2__cap { display: grid; gap: 3px; text-align: center; }
 .certs2__cap b { font-weight: 500; font-size: 1.02rem; color: #fff; }
 .certs2__cap span { font-size: 0.86rem; color: var(--text-dim); }
+
+/* the position read-out is for the swipeable row only */
+.certs2__nav { display: none; }
+/* Tablets and phones: one row you swipe sideways, a card at a time, instead of
+   a tall stack of big prints. It runs edge to edge; the next card peeks. */
 @media (max-width: 900px) {
-  .certs2 { grid-template-columns: repeat(2, 1fr); }
-  .certs2__item, .certs2__item:nth-child(4), .certs2__item:nth-child(5) { grid-column: auto; }
-  .certs2__item:nth-child(5) { grid-column: 1 / -1; width: calc(50% - 10px); justify-self: center; }
-}
-@media (max-width: 560px) {
-  .certs2 { grid-template-columns: 1fr; }
-  .certs2__item:nth-child(5) { width: 100%; }
+  .certs2 {
+    display: flex;
+    gap: 14px;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 4px 16px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .certs2::-webkit-scrollbar { display: none; }
+  .certs2__item,
+  .certs2__item:nth-child(4),
+  .certs2__item:nth-child(5) {
+    flex: 0 0 min(72vw, 340px);
+    grid-column: auto;
+    scroll-snap-align: start;
+  }
+  .certs2__cap { text-align: left; }
+  .certs2__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(100%, 420px);
+    padding: 0 4px;
+  }
+  .certs2__count {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .certs2__dots { display: flex; }
+  .certs2__dots button {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .certs2__dots button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    transition: background-color 0.25s cubic-bezier(0.23, 1, 0.32, 1), transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .certs2__dots button.is-on::after { background: var(--gold); transform: scale(1.3); }
 }
 
 /* ── reviews as subtitles ────────────────────────────────────────────── */
