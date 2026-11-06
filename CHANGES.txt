@@ -1,5 +1,11 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-07 (mobile scroll correction)
+- Touch scrolling is native again. Driving it from the page (the previous
+  change) made it slower and laggier on a real phone. Lenis now smooths only
+  the mouse wheel.
+- Grade shader renders at 1x on phones (was 1.25x): fewer pixels per frame.
+
 2026-11-07 (mobile pass)
 - Credentials on phones and tablets: a swipeable row, one card at a time with
   the next peeking, a 01 / 05 counter and tap targets for each card. Desktop

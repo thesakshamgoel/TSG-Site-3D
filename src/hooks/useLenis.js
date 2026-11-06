@@ -16,18 +16,13 @@ export function useLenis(ready, paused) {
 
   useEffect(() => {
     if (reduced) return
-    // On touch screens the page drives its own scrolling too, so a hard flick
-    // carries about a screen instead of however far the phone's native fling
-    // decides (which on a long, pinned page rips through several sections).
-    const touch = !!window.matchMedia?.('(pointer: coarse)').matches
+    // Touch scrolling stays native: the phone's own fling runs off the main
+    // thread, so it is the smoothest there is. (Driving it from the page made
+    // it both slower and laggier.) Lenis only smooths the mouse wheel.
     const lenis = new Lenis({
       lerp: 0.085,
       smoothWheel: true,
       wheelMultiplier: 0.9,
-      touchMultiplier: 0.9,
-      syncTouch: touch,
-      syncTouchLerp: 0.09,
-      touchInertiaMultiplier: 14,
     })
     lenisRef.current = lenis
     window.__lenis = lenis

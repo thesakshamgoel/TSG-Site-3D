@@ -215,7 +215,7 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const G = { gl, loc, texA: gl.createTexture(), texB: gl.createTexture(), ready: false }
     glRef.current = G
     const size = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(max-width: 720px)').matches ? 1.25 : 1.5)
+      const dpr = Math.min(window.devicePixelRatio || 1, window.matchMedia('(max-width: 720px)').matches ? 1 : 1.5)
       canvas.width = Math.round((canvas.clientWidth || window.innerWidth) * dpr)
       canvas.height = Math.round((canvas.clientHeight || window.innerHeight) * dpr)
       state.current.dirty = true
