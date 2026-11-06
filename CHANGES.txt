@@ -1,6 +1,7 @@
 Changes, newest first. One entry per prompt.
 
 2026-11-06 (fixes after testing)
+- Experience: Supaari removed from the timeline entirely.
 - Featured: phone swipes could never advance (the page snapped back to the
   first film every time); a stopped scroll now continues to the next film in
   its direction. Spinning a mouse wheel without a pause no longer locks the
@@ -8,7 +9,7 @@ Changes, newest first. One entry per prompt.
   change is 1.15s (was 1.4s). The preview frame is inert so it can never catch
   the wheel.
 - Experience: the Supaari still is removed (text-only timeline). Entries now:
-  Supaari 2026 (Short Film, DP / Editor / Colorist), Madhupyaala 2025 (Feature
+  Madhupyaala 2025 (Feature
   Film, Editor / Colorist / Visual Designer), Parda Short Film Festival 2025
   (Best Film and Best Editor, award winner), Whistling Woods 2022-2025. Bio line
   updated to match.

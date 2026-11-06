@@ -437,13 +437,6 @@ export const COMPARISONS = [
 
 export const EXPERIENCES = [
   {
-    id: 'exp-supaari',
-    role: 'DP · Editor · Colorist — "Supaari"',
-    org: 'Short Film',
-    period: '2026',
-    detail: 'Cinematography, editing and colour on the short film "Supaari".',
-  },
-  {
     id: 'exp-madhupyaala',
     role: 'Editor · Colorist · Visual Designer — "Madhupyaala"',
     org: 'Feature Film',
