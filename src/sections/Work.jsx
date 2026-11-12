@@ -95,7 +95,10 @@ function Panel({ category, projects, active, dimmed, index, onHover, onLeave, on
 
         <div className="panel__bottom">
           <h3 className="panel__title">{category.title}</h3>
-          <p className="panel__tag">{category.tagline}</p>
+          {/* the tag line only when it says something the list below does not */}
+          {category.tagline && category.tagline.replace(/\s+/g, ' ') !== (category.subcats || []).map((x) => x.label).join(' · ') && (
+            <p className="panel__tag">{category.tagline}</p>
+          )}
 
           <ul className="panel__subs">
             {(category.subcats || []).map((s) => (
@@ -141,7 +144,6 @@ export default function Work({ categories, projects, onOpenCategory }) {
       <div className="container">
         <Reveal>
           <div className="work__head">
-            <span className="slate">Two Reels</span>
             <h2 className="section-title">
               Pick a reel, <span className="gradient-text">step inside.</span>
             </h2>

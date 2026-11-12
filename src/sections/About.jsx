@@ -34,8 +34,6 @@ function Chapter({ no, title, children }) {
   )
 }
 
-const clamp01 = (v) => Math.min(1, Math.max(0, v))
-const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 
 /**
  * The opener: the portrait is exposed out of the page's own dark, low-key and
@@ -91,7 +89,7 @@ function Credits({ experiences }) {
           return (
             <motion.li
               key={e.id}
-              className="exp__row"
+              className={`exp__row ${/gold/i.test(e.highlight || '') ? 'is-gold' : ''}`}
               initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-10% 0px' }}
@@ -110,12 +108,30 @@ function Credits({ experiences }) {
                 {to && <span className="exp__to">{/present/i.test(to) ? 'to now' : `to ${to}`}</span>}
               </div>
               <div className="exp__body">
-                <h3 className="exp__title">{(project || role).replace(/["“”]/g, '')}</h3>
+                <h3 className="exp__title">
+                  {(project || role).replace(/["“”]/g, '')}
+                  {/gold/i.test(e.highlight || '') && (
+                    <motion.span
+                      className="exp__medal"
+                      initial={{ opacity: 0, scale: 1.7, rotate: -14 }}
+                      whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+                      viewport={{ once: true, margin: '-20% 0px' }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 24, delay: 0.25 }}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 2h3l1 5-2.5 1.2z M16 2h-3l-1 5 2.5 1.2z" />
+                        <circle cx="12" cy="15" r="6.2" />
+                        <circle cx="12" cy="15" r="3.6" className="exp__medal-in" />
+                      </svg>
+                      {e.highlight}
+                    </motion.span>
+                  )}
+                </h3>
                 <p className="exp__role">{project ? role : e.org}</p>
                 {e.detail && <p className="exp__detail">{e.detail}</p>}
                 <div className="exp__tags">
                   {project && tags.map((t) => <span key={t}>{t}</span>)}
-                  {e.highlight && <span className="exp__award">{e.highlight}</span>}
+                  {e.highlight && !/gold/i.test(e.highlight) && <span className="exp__award">{e.highlight}</span>}
                 </div>
               </div>
             </motion.li>
@@ -169,10 +185,11 @@ function CertPrint({ c, i, onView }) {
   return (
     <motion.li
       className="certs2__item"
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      style={{ transformOrigin: '50% 0' }}
+      initial={{ opacity: 0, y: -26, rotate: i % 2 ? 3 : -3 }}
+      whileInView={{ opacity: 1, y: 0, rotate: 0 }}
       viewport={{ once: true, margin: '-8% 0px' }}
-      transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.23, 1, 0.32, 1] }}
+      transition={{ opacity: { duration: 0.4, delay: i * 0.09 }, default: { type: 'spring', stiffness: 110, damping: 13, delay: i * 0.09 } }}
     >
       <button
         type="button"
@@ -187,8 +204,9 @@ function CertPrint({ c, i, onView }) {
         )}
       </button>
       <div className="certs2__cap">
+        <span className="certs2__no">No. {String(i + 1).padStart(2, '0')} · {c.year}</span>
         <b>{c.title}</b>
-        <span>{c.issuer} · {c.year}</span>
+        <span className="certs2__by">{c.issuer}</span>
       </div>
     </motion.li>
   )
@@ -241,52 +259,98 @@ function filmFor(r, projects, i = 0) {
   return list.length ? list[i % list.length] : null
 }
 
-function Subtitles({ reviews, projects, reduced }) {
-  const ref = useRef(null)
-  const n = reviews.length
-  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  const cur = useTransform(p, (v) => {
-    const raw = v * (n - 1)
-    const base = Math.min(n - 1, Math.floor(raw))
-    return base >= n - 1 ? n - 1 : base + smooth(0.4, 0.6, raw - base)
-  })
+// Kind words: what the people Saksham worked with wrote. Each review sits
+// under a still of the film it is about, with who wrote it and their role,
+// and the section ends with the way to leave one.
+function ReviewStill({ film }) {
+  const t = useImgFallback(film ? thumbHiFor(film) : '', film ? thumbFallbackFor(film) : '', film?.id)
+  const bars = useLetterbox(t.broken ? '' : t.src)
+  if (!film || t.broken) return <span className="kw__still kw__still--none" aria-hidden="true" />
   return (
-    <div className="subs" id="reviews" ref={ref} style={reduced ? undefined : { height: `${(n * 0.7 + 1) * 100}vh` }}>
-      <div className="subs__pin">
-        <h3 className="subs__head">Kind words</h3>
-        <div className="subs__screen">
-          <span className="subs__tc" aria-hidden="true">SUBTITLES · EN</span>
-          {reviews.map((r, i) => (
-            <SubLine key={r.id} r={r} i={i} cur={cur} film={filmFor(r, projects, i)} reduced={reduced} />
-          ))}
-        </div>
-      </div>
-    </div>
+    <span className="kw__still" aria-hidden="true">
+      <motion.span
+        className="kw__push"
+        initial={{ scale: 1.14 }}
+        whileInView={{ scale: 1 }}
+        viewport={{ once: true, margin: '-8% 0px' }}
+        transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <img src={t.src} alt="" loading="lazy" decoding="async" onError={t.onError} style={letterboxCrop(bars)} />
+      </motion.span>
+      <span className="kw__film">{film.title}</span>
+    </span>
   )
 }
-function SubLine({ r, i, cur, film, reduced }) {
-  const o = useTransform(cur, (c) => 1 - smooth(0.2, 0.5, Math.abs(c - i)))
-  const y = useTransform(cur, (c) => (i - c) * 16)
-  const zoom = useTransform(cur, (c) => 1.08 - 0.08 * clamp01(c - i + 1))
-  // films overlap through the change, so the screen never flashes black
-  const filmO = useTransform(cur, (c) => 1 - smooth(0.5, 0.95, Math.abs(c - i)))
-  const thumb = useImgFallback(film ? thumbHiFor(film) : '', film ? thumbFallbackFor(film) : '', film?.id)
-  const src = thumb.broken ? '' : thumb.src
-  const bars = useLetterbox(src)
+
+function KindWords({ reviews, projects, onLeave }) {
+  const ref = useRef(null)
+  const [at, setAt] = useState(0)
+  if (!reviews?.length) return null
+  const onScroll = () => {
+    const el = ref.current
+    if (!el || !el.firstElementChild) return
+    const step = el.firstElementChild.getBoundingClientRect().width + 16
+    setAt(Math.min(reviews.length - 1, Math.max(0, Math.round(el.scrollLeft / step))))
+  }
+  const go = (i) => {
+    const el = ref.current
+    if (el?.children[i]) el.scrollTo({ left: el.children[i].offsetLeft - 16, behavior: 'smooth' })
+  }
   return (
-    <>
-    {film && !thumb.broken && (
-      <motion.span className="subs__film" style={reduced ? undefined : { opacity: filmO, scale: zoom }}>
-        <img src={src} alt="" decoding="async" onError={thumb.onError} style={letterboxCrop(bars)} />
-      </motion.span>
-    )}
-    <motion.figure className="subs__line" style={reduced ? undefined : { opacity: o, y }}>
-      <blockquote>{r.quote}</blockquote>
-      <figcaption>
-        {r.name} <span>{r.role}</span>
-      </figcaption>
-    </motion.figure>
-    </>
+    <div className="kw" id="reviews">
+      <div className="kw__head">
+        <h3 className="about__h">Kind words</h3>
+        <p className="kw__sub">From the directors and producers I have worked with.</p>
+      </div>
+      <ul className="kw__list" ref={ref} onScroll={onScroll} data-lenis-prevent-touch>
+        {reviews.map((r, i) => {
+          const stars = Number(r.rating) || 0
+          return (
+            <motion.li
+              key={r.id}
+              className="kw__item"
+              initial={{ opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-8% 0px' }}
+              transition={{ duration: 0.6, delay: i * 0.08, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <ReviewStill film={filmFor(r, projects, i)} />
+              <motion.figure
+                className="kw__body"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-8% 0px' }}
+                transition={{ duration: 0.6, delay: i * 0.08 + 0.3, ease: [0.23, 1, 0.32, 1] }}
+              >
+                {stars > 0 && (
+                  <span className="kw__stars" aria-label={`${stars} out of 5`}>
+                    {'★'.repeat(stars)}<span aria-hidden="true">{'★'.repeat(5 - stars)}</span>
+                  </span>
+                )}
+                <blockquote className="kw__quote">{r.quote}</blockquote>
+                <figcaption className="kw__who">
+                  <b>{r.name}</b>
+                  <span>{r.role}</span>
+                </figcaption>
+              </motion.figure>
+            </motion.li>
+          )
+        })}
+      </ul>
+      <div className="kw__foot">
+        <div className="certs2__nav kw__nav" role="group" aria-label="Reviews">
+          <span className="certs2__count">{String(at + 1).padStart(2, '0')} / {String(reviews.length).padStart(2, '0')}</span>
+          <div className="certs2__dots">
+            {reviews.map((r, i) => (
+              <button key={r.id} type="button" aria-label={`Review by ${r.name}`} aria-current={i === at ? 'true' : undefined} className={i === at ? 'is-on' : ''} onClick={() => go(i)} />
+            ))}
+          </div>
+        </div>
+        <button type="button" className="kw__leave" onClick={onLeave}>
+          Worked with me? Leave a review
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -582,7 +646,19 @@ export default function About({
         </div>
       </div>
 
-      <Subtitles reviews={reviews} projects={projects} reduced={reduced} />
+      <div className="container">
+        <KindWords
+          reviews={reviews}
+          projects={projects}
+          onLeave={() => {
+            setFormTab('review')
+            const el = document.getElementById('contact')
+            if (!el) return
+            if (window.__lenis) window.__lenis.scrollTo(el, { offset: -90, duration: 1.2, force: true })
+            else el.scrollIntoView({ behavior: 'smooth' })
+          }}
+        />
+      </div>
 
       <div className="container">
         <Chapter no="" title="Start a project">

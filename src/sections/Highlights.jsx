@@ -358,7 +358,6 @@ export default function Highlights({ projects, onOpenProject }) {
         )}
 
         <header className="hl__top">
-          <span className="slate">Featured</span>
           <h2 className="hl__head">Highlighted work</h2>
           <span className="hl__count-all" aria-hidden="true">{pad(shown + 1)} / {pad(n)}</span>
         </header>

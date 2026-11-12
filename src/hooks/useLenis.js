@@ -6,6 +6,10 @@ import Lenis from 'lenis'
  * Free scrolling is what lets pinned, scroll-scrubbed sections work. Keeps the
  * same return shape as before so navigation code does not change.
  */
+// a section that starts under another (the reel sits beneath the hero) says how
+// far in, in screen heights, it really begins: jump there, not to its box top
+const railOffset = (el) => (parseFloat(el?.dataset?.railOffset) || 0) * window.innerHeight
+
 export function useLenis(ready, paused) {
   const lenisRef = useRef(null)
   const indexRef = useRef(0)
@@ -45,7 +49,7 @@ export function useLenis(ready, paused) {
       // re-measure first: images that loaded since mount make the page taller,
       // and a stale height clamps the jump short
       lenis.resize()
-      lenis.scrollTo(el, { duration: 1.2, offset: -64, force: true })
+      lenis.scrollTo(el, { duration: 1.2, offset: -64 + railOffset(el), force: true })
     }
     document.addEventListener('click', onClick)
     return () => {
@@ -70,7 +74,7 @@ export function useLenis(ready, paused) {
     const l = lenisRef.current
     if (l) {
       l.resize()
-      l.scrollTo(id === 'top' ? 0 : el, { duration: 1.2, offset: id === 'top' ? 0 : -64, force: true })
+      l.scrollTo(id === 'top' ? 0 : el, { duration: 1.2, offset: id === 'top' ? 0 : -64 + railOffset(el), force: true })
     }
     else el.scrollIntoView({ behavior: 'auto', block: 'start' })
   }, [])

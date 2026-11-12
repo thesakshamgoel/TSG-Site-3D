@@ -19,7 +19,9 @@ const TABS = [
 function layoutTop(el) {
   let y = 0
   for (let n = el; n; n = n.offsetParent) y += n.offsetTop
-  return y
+  // a section that starts under another (the reel sits beneath the hero) says
+  // how far in, in screen heights, it really begins
+  return y + (parseFloat(el.dataset?.railOffset) || 0) * window.innerHeight
 }
 
 export default function MobileTabBar({ galleryCat, onNavigate }) {

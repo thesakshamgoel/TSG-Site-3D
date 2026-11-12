@@ -4,8 +4,9 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import './Intertitle.css'
 
 /**
- * A chapter card between sections, like a silent-film intertitle: a small
- * chapter numeral, the next section's name set large, and two short rules.
+ * A chapter card between sections, like a silent-film intertitle: the next
+ * section's name set large between two short rules (a small numeral above it
+ * only if one is passed).
  * It rises in and fades out with the scroll; nothing else moves.
  */
 export default function Intertitle({ no, title }) {
@@ -18,7 +19,7 @@ export default function Intertitle({ no, title }) {
   return (
     <div className="itt" ref={ref}>
       <motion.div className="itt__card" style={reduced ? undefined : { opacity: o, y }}>
-        <span className="itt__no">{no}</span>
+        {no && <span className="itt__no">{no}</span>}
         <div className="itt__row">
           <motion.span className="itt__rule itt__rule--l" style={reduced ? undefined : { scaleX: rule }} />
           <h2 className="itt__title">{title}</h2>

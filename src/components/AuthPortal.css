@@ -10,21 +10,22 @@
   align-items: center;
   gap: 8px;
   min-height: 44px; /* comfortable tap target */
-  padding: 8px 15px;
-  border-radius: 100px;
-  border: 1px solid var(--lg-edge);
-  background: var(--lg-fill-strong);
-  box-shadow: inset 0 1px 5px -2px var(--lg-lip), inset 0 -2px 6px -3px var(--lg-lip-dark);
+  padding: 0 10px;
+  border: 0;
+  background: none;
   color: var(--text-dim);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: border-color 0.2s cubic-bezier(0.23, 1, 0.32, 1), color 0.2s cubic-bezier(0.23, 1, 0.32, 1), background 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s cubic-bezier(0.23, 1, 0.32, 1), transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
-.authportal__signin:hover {
-  border-color: color-mix(in srgb, var(--text) 35%, transparent);
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
-}
+.authportal__signin:hover { color: var(--text); }
+.authportal__signin:active { transform: scale(0.97); }
+.authportal__signin:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .authportal__signin:disabled {
   opacity: 0.6;
   pointer-events: none;

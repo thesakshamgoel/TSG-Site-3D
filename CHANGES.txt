@@ -1,5 +1,71 @@
 Changes, newest first. One entry per prompt.
 
+2026-11-12 to 2026-11-13 (published)
+- Hero rebuilt as a title page on the starfield (reference: richie.network):
+  the logo at the centre with "Post Production" and "Design Studio" either
+  side, joined by fine gold leads; the track record on an edit timeline (ruler,
+  gold marker flags, a playhead that sweeps across once and lights each figure);
+  "Saksham Goel" on one line across the bottom in Fraunces Light, each letter
+  rising out of its own line into focus. No buttons in the hero.
+- Hero to reel: the hero holds while you scroll and the camera dollies through
+  it. Nothing fades: everything parts and leaves the frame (the logo grows and
+  rises off the top, "Post Production" and "Design Studio" slide off either
+  side, the timeline and the name drop off the bottom). The reel sits pinned
+  underneath from the start and comes out of the depth once the centre is
+  clear; nothing slides up from the bottom. The side rail, tab bar and "Reel"
+  jumps account for the overlap.
+- Name font specimen (8 options) at scratchpad/name-fonts.png.
+- Hero name: Fraunces at a heavier weight, raised from the bottom edge, drawn
+  as a line: each letter's outline traces itself in gold with a soft glow, the
+  letters fill, and the gold outline stays; a brighter gold line keeps
+  travelling round the letters (desktop; phones get the draw-in and outline). The real name stays in the page for search
+  engines and screen readers. The gold lines are masked to the outside of the
+  letters, so the font's overlapping letter shapes never show as lines.
+- Under the logo, one role at a time between two short gold rules:
+  Cinematographer, DI Colorist, Film & Motion Editor, each sliding up into a
+  masked window, holding, and leaving as the next arrives (a 9-second loop).
+- Track record moved out of the hero into the reel's flyby, just two figures:
+  "50+ projects." then "10+ global brands." They move in the frames' own 3D
+  space: from far back, tilted, straightening as they arrive, drifting closer
+  while the number counts, then sweeping past the camera with the opposite
+  tilt and dimming, in one continuous motion. The number has a fixed width, so
+  the line no longer shifts when it reaches two digits. The reel is about 12%
+  longer to fit the second figure.
+- Animation fixes from a full pass:
+  - Loader: the ink mask now covers the whole loop (it missed a sliver at the
+    open end, which appeared at once when the hero logo took over).
+  - Primary buttons: removed the hover shine sweep (it animated a layout
+    property) and the gold glow; flat gold with a lighter hover and a press.
+  - Outline buttons: removed the hover glow.
+  - "step inside." and "@thesakshamgoel": removed the looping gradient shimmer.
+  - Side rail: the active marker now scales instead of resizing (no layout work).
+  - Logo dots: pop in from 40% instead of from nothing.
+  - REC dot: no red glow.
+  - Removed three unused files (Stills, BeforeAfter, WorkCard) and their styles.
+- Stars react to scrolling: they speed up hard and stretch into long trails
+  while you scroll (up to about 6x their resting streak), then settle back.
+- Removed filler labels: "One eye.", "Featured", "Chapter II/III", the grade
+  "Keep scrolling..." note, "Two Reels", the duplicate Graphics tag line, the
+  "Instagram" label.
+- Hero stats: one quiet line of figures (gold numerals, plain labels, hairline
+  rules) instead of the boxed four-cell panel; they rise in one by one and
+  the rules draw in.
+- Grade images: sized WebP copies (1600px desktop, 800px phones, 400px
+  previews) replace the 4K JPEGs on the page; previews load when the page is
+  idle so the frame is never black, sharp frames swap in as you approach.
+  4K masters only load when a frame is opened full size.
+- Credentials: framed prints with a mat, the degree large on the left, numbered
+  captions; they drop in and swing to rest like frames being hung.
+- Kind words: a proper reviews section (film still, the quote, who wrote it,
+  stars when given) with a "Leave a review" button to the form; a swipe row on
+  phones. Cards rise in while their stills push in.
+- Experience: Gold Medalist is a gold medal badge beside Whistling Woods that
+  stamps in, with the year and rail dot in gold.
+- Nav: flat full-width title bar in the site's own type (numbered small-caps
+  links with a sliding gold rule, squared Get in touch, plain Sign in). The
+  glass pill and its files are removed.
+- All framer animations now follow the reduced-motion setting.
+
 2026-11-07 (scroll bounce)
 - Fix: on touch screens the page no longer nudges a scroll that comes to rest
   inside Featured; that nudge pulled the page back toward the previous film

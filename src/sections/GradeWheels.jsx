@@ -140,6 +140,16 @@ function loadImg(src) {
     i.src = src
   })
 }
+// The built-in frames are 4K masters. The site loads sized copies of them
+// (public/beforeafter/web 1600px, /sm 800px, /tiny 400px previews); the masters
+// are only fetched when someone opens a frame full size. Frames added from the
+// console have no sized copies and load as given.
+const sized = (src, dir) =>
+  /\/beforeafter\/ba-\d+-(after|before)\.jpg$/.test(src || '')
+    ? src.replace('/beforeafter/', `/beforeafter/${dir}/`).replace(/\.jpg$/, '.webp')
+    : src
+const loadSized = (src, dir) => loadImg(sized(src, dir)).catch(() => loadImg(src))
+
 // Frames are cover-cropped to 16:9 and packed six to an atlas (2 x 3). They are
 // drawn and uploaded one tile per animation frame, so no single frame carries
 // the whole job: on a phone, doing it all at once froze the page for a second.
@@ -229,47 +239,71 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
     const small = window.matchMedia('(max-width: 720px)').matches
     const cw = small ? 800 : 1600, ch = Math.round((cw * 9) / 16)
     let live = true
-    const load = () => Promise.all(pairs.map((pr) => Promise.all([loadImg(pr.before).catch(() => null), loadImg(pr.after).catch(() => null)]))).then(async (res) => {
-      if (!live) return
-      const scratch = document.createElement('canvas')
-      scratch.width = cw; scratch.height = ch
-      const alloc = (tex, unit) => {
-        gl.activeTexture(gl.TEXTURE0 + unit)
-        gl.bindTexture(gl.TEXTURE_2D, tex)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-        // empty atlas first (black), tiles are filled in below
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, cw * 2, ch * 3, 0, gl.RGB, gl.UNSIGNED_BYTE, null)
-      }
-      alloc(G.texA, 0)
-      alloc(G.texB, 1)
-      for (let k = 0; k < 6; k++) {
-        for (const [side, tex, unit] of [[0, G.texA, 0], [1, G.texB, 1]]) {
+    const scratch = document.createElement('canvas')
+    scratch.width = cw; scratch.height = ch
+    const alloc = (tex, unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit)
+      gl.bindTexture(gl.TEXTURE_2D, tex)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, cw * 2, ch * 3, 0, gl.RGB, gl.UNSIGNED_BYTE, null)
+    }
+    alloc(G.texA, 0)
+    alloc(G.texB, 1)
+    // one tile into its place in an atlas
+    const put = (side, k, im) => {
+      if (!live || !im) return
+      gl.activeTexture(gl.TEXTURE0 + side)
+      gl.bindTexture(gl.TEXTURE_2D, side ? G.texB : G.texA)
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, (k % 2) * cw, Math.floor(k / 2) * ch, gl.RGB, gl.UNSIGNED_BYTE, tileOf(im, cw, ch, scratch))
+      state.current.dirty = true
+    }
+    // Two passes, so the frame is never black. First the small previews (about
+    // 70 KB for all twelve), fetched as soon as the page is idle: the section is
+    // drawable from then on. Then the sharp frames replace them one tile at a
+    // time as the section gets close.
+    const preview = async () => {
+      const res = await Promise.all(pairs.map((pr) => Promise.all([loadSized(pr.before, 'tiny').catch(() => null), loadSized(pr.after, 'tiny').catch(() => null)])))
+      for (let k = 0; k < res.length; k++) {
+        for (const side of [0, 1]) {
           if (!live) return
-          const im = res[k] ? res[k][side] : null
-          if (!im) continue
-          // one tile every ~90 ms: a background trickle, never a hitch
           await nextFrame()
-          await new Promise((r) => setTimeout(r, 90))
-          gl.activeTexture(gl.TEXTURE0 + unit)
-          gl.bindTexture(gl.TEXTURE_2D, tex)
-          gl.texSubImage2D(gl.TEXTURE_2D, 0, (k % 2) * cw, Math.floor(k / 2) * ch, gl.RGB, gl.UNSIGNED_BYTE, tileOf(im, cw, ch, scratch))
-          state.current.dirty = true
+          if (!sharp[side][k]) put(side, k, res[k][side])
         }
       }
+      if (!live) return
       G.ready = true
       setHasGL(true)
       state.current.dirty = true
-    })
-    // twelve 4K frames into two atlases is real work: do it only as the
-    // section approaches, not while the site is booting
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); load() } }, { rootMargin: '150% 0px' })
+    }
+    const sharp = [[], []] // tiles that already hold their sharp frame
+    const full = async () => {
+      const dir = small ? 'sm' : 'web'
+      const jobs = pairs.map((pr) => [loadSized(pr.before, dir).catch(() => null), loadSized(pr.after, dir).catch(() => null)])
+      for (let k = 0; k < jobs.length; k++) {
+        for (const side of [0, 1]) {
+          const im = await jobs[k][side]
+          if (!live) return
+          await nextFrame()
+          // phones: leave a gap between uploads so scrolling never hitches
+          if (small) await new Promise((r) => setTimeout(r, 60))
+          if (im) { put(side, k, im); sharp[side][k] = true }
+        }
+      }
+      if (!live) return
+      G.ready = true
+      setHasGL(true)
+    }
+    const ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 600))
+    const idle = ric(() => preview())
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); full() } }, { rootMargin: '250% 0px' })
     io.observe(ref.current)
     return () => {
       live = false
       io.disconnect()
+      ;(window.cancelIdleCallback || clearTimeout)(idle)
       window.removeEventListener('resize', size)
       ro?.disconnect()
     }
@@ -609,8 +643,8 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
           <div className="gw__fallback" aria-hidden="true">
             {pairs.map((pr, k) => (
               <div key={pr.id || k} className="gw__fslat">
-                <img src={pr.before} alt="" loading="lazy" />
-                <img className="gw__fb-out" src={pr.after} alt="" loading="lazy" />
+                <img src={sized(pr.before, 'web')} alt="" loading="lazy" decoding="async" />
+                <img className="gw__fb-out" src={sized(pr.after, 'web')} alt="" loading="lazy" decoding="async" />
               </div>
             ))}
           </div>
@@ -633,9 +667,6 @@ export default function GradeWheels({ comparisons, onOpenImage }) {
           ))}
           <div className="gw__final" ref={finalRef} style={{ opacity: 0 }}>
             <h2 className="gw__h">{countWord}, <em>graded.</em></h2>
-            <p className="gw__note">
-              Keep scrolling and each frame opens in turn. {FINE ? 'Click' : 'Tap'} one to jump to it, hold to see it raw.
-            </p>
           </div>
         </div>
 

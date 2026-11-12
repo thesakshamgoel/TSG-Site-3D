@@ -1,15 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './perf'
+import { MotionConfig } from 'framer-motion'
 import App from './App.jsx'
 import './styles/global.css'
 import './styles/cinema.css'
-import './styles/glass.css'
 import './styles/fonts'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    {/* every framer animation follows the visitor's reduced-motion setting:
+        movement is dropped, fades stay */}
+    <MotionConfig reducedMotion="user">
+      <App />
+    </MotionConfig>
   </React.StrictMode>
 )
 

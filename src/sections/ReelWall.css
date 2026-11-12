@@ -1,7 +1,8 @@
 .rw {
   position: relative;
   z-index: 3;
-  height: 420vh;
+  /* long enough for the films to fly by and both figures to pass */
+  height: 470vh;
 }
 .rw__pin {
   position: sticky;
@@ -75,11 +76,21 @@
   transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .rw__frame:hover .rw__cap { opacity: 1; }
+/* the figures share the frames' 3D space: same perspective, same centre */
+.rw__heads {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+  pointer-events: none;
+}
 .rw__head {
   position: absolute;
   left: 50%;
   top: 50%;
-  translate: -50% -50%;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
   margin: 0;
   display: flex;
   align-items: baseline;
@@ -95,19 +106,18 @@
   z-index: 2;
 }
 .rw__num {
+  display: inline-block;
   color: var(--gold);
-  font-variant-numeric: tabular-nums;
-  min-width: 1.15em;
+  /* every digit the same width, so the count never jostles the line */
+  font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
 }
 .rw__fig { color: var(--gold); }
-.rw__line em { color: var(--gold-soft); }
 @media (max-width: 720px) {
-  .rw { height: 360vh; }
   .rw__frame--s { width: 38vw; }
   .rw__frame--m { width: 48vw; }
   .rw__frame--l { width: 58vw; }
-  /* sized to the screen so the whole line fits: "projects. One eye." */
+  /* sized to the screen so the whole line fits */
   .rw__head { flex-direction: column; align-items: center; gap: 0; font-size: clamp(2.2rem, 11vw, 3.4rem); text-align: center; }
   .rw__num { text-align: center; }
 }
@@ -116,7 +126,8 @@
   .rw__pin { position: relative; height: auto; padding: 120px 20px; }
   .rw__space { position: relative; perspective: none; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
   .rw__frame { position: relative; left: auto; top: auto; translate: none; }
-  .rw__head { position: relative; left: auto; top: auto; translate: none; justify-content: center; margin-bottom: 40px; }
+  .rw__heads { position: relative; inset: auto; perspective: none; }
+  .rw__head { position: relative; left: auto; top: auto; transform: none; justify-content: center; margin: 0 0 24px; }
 }
 
 /* line-art props: faint, slowly turning in 3D as they drift past */

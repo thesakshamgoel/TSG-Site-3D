@@ -35,16 +35,16 @@ export default function LogoMark({ className = '', label = 'Saksham Goel logo' }
       {/* the colour wheel: dots pop in, then the whole wheel turns */}
       <g className="logomark__wheel">
         <motion.path fill="#fbb03b" d={DOTS[0].d} style={{ transformBox: 'view-box', transformOrigin: '606.3px 500.8px' }}
-          initial={reduced ? false : { scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.75 }} />
         <motion.path fill="#39b54a" d={DOTS[1].d} style={{ transformBox: 'view-box', transformOrigin: '676.6px 571.1px' }}
-          initial={reduced ? false : { scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.87 }} />
         <motion.path fill="#2e3192" d={DOTS[2].d} style={{ transformBox: 'view-box', transformOrigin: '746.9px 500.8px' }}
-          initial={reduced ? false : { scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.99 }} />
         <motion.path fill="#ed1c24" d={DOTS[3].d} style={{ transformBox: 'view-box', transformOrigin: '676.6px 430.4px' }}
-          initial={reduced ? false : { scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 1.11 }} />
         <motion.g initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.2 }}>
           <path fill="#b3b3b3" d={TICKS[0]} />

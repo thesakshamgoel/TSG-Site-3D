@@ -1,226 +1,155 @@
-import { useEffect, useRef } from 'react'
+import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { useMagnetic } from '../hooks/useMagnetic'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { LITE } from '../perf'
 import LogoMark from '../components/LogoMark'
 import './Hero.css'
 
-const REEL_LABELS = [
-  'CINEMATOGRAPHER',
-  'DI ARTIST',
-  'VFX ARTIST',
-  'FILM EDITOR',
-  'DIT',
-  'GRAPHIC DESIGNER',
-  'LOGO DESIGNER',
-  'CAMERA OPERATOR',
-]
-
-// one letter of the name: flips up out of a mask on arrival, and drifts away
-// from the centre of the name as the hero scrolls out
-function NameChar({ ch, k, mid, delay, exit, reduced, ready }) {
-  const x = useTransform(exit, [0, 1], [0, (k - mid) * 16])
+/**
+ * The name, drawn as a line. On arrival every letter's outline traces itself
+ * in a fine hairline, then the letters fill. After that a short gold line keeps
+ * travelling round the outlines, slowly and for good: a quiet, continuous
+ * detail rather than a glow. (Phones and reduced motion skip the travelling
+ * line; reduced motion also skips the draw.) It is SVG text sized to its own
+ * measured bounds, so it fills the width it is given at every screen size.
+ */
+function DrawnName({ name, ready, reduced }) {
+  const ref = useRef(null)
+  const mid = 'nm' + useId().replace(/[^a-zA-Z0-9]/g, '')
+  const [box, setBox] = useState('0 -80 600 100')
+  useLayoutEffect(() => {
+    let live = true
+    const measure = () => {
+      const t = ref.current
+      if (!t || !live) return
+      const b = t.getBBox()
+      if (b.width) setBox(`${(b.x - 4).toFixed(1)} ${(b.y - 4).toFixed(1)} ${(b.width + 8).toFixed(1)} ${(b.height + 8).toFixed(1)}`)
+    }
+    measure()
+    // measure again once the display face has loaded (the fallback is wider)
+    document.fonts?.ready.then(measure)
+    return () => { live = false }
+  }, [name])
+  const cls = `hero__nsvg ${ready ? 'is-on' : ''} ${reduced ? 'is-still' : ''}`
   return (
-    <span className="hero__char-mask">
-      <motion.span
-        className="hero__char"
-        initial={reduced ? false : { y: '70%', rotateX: -85, opacity: 0 }}
-        animate={ready ? { y: '0%', rotateX: 0, opacity: 1 } : undefined}
-        transition={{ duration: 0.95, delay, ease: [0.22, 1, 0.36, 1] }}
-        style={reduced ? undefined : { x }}
-      >
-        {ch}
-      </motion.span>
-    </span>
+    <svg className={cls} viewBox={box} aria-hidden="true">
+      {/* The gold lines are only ever drawn outside the letters: the mask is
+          the letters cut out of a white field. The font builds some letters
+          from overlapping shapes, and a plain outline showed every one of
+          those inner edges as a line through the letter. */}
+      <defs>
+        <mask id={mid} maskUnits="userSpaceOnUse" x="-100" y="-200" width="1000" height="400">
+          <rect x="-100" y="-200" width="1000" height="400" fill="#fff" />
+          <text className="hero__nt" x="0" y="0" fill="#000">{name}</text>
+        </mask>
+      </defs>
+      <g mask={`url(#${mid})`}>
+        <text className="hero__nt hero__nt--line" x="0" y="0">{name}</text>
+        {!LITE && !reduced && <text className="hero__nt hero__nt--trace" x="0" y="0">{name}</text>}
+      </g>
+      <text ref={ref} className="hero__nt hero__nt--fill" x="0" y="0">{name}</text>
+    </svg>
   )
 }
 
-// counts a published figure up from zero ("100+" -> 0..100, then "+")
-function CountUp({ value, delay = 0.5, ready }) {
-  const ref = useRef(null)
-  const reduced = useReducedMotion()
-  useEffect(() => {
-    const m = String(value).match(/^(\d+)(.*)$/)
-    const el = ref.current
-    if (!m || !el || reduced || !ready) return
-    const target = +m[1], suffix = m[2]
-    let raf, t0 = null
-    const step = (t) => {
-      if (t0 == null) t0 = t + delay * 1000
-      const k = Math.min(1, Math.max(0, (t - t0) / 1600))
-      const e = 1 - Math.pow(1 - k, 3)
-      el.textContent = Math.round(target * e) + (k >= 1 ? suffix : '')
-      if (k < 1) raf = requestAnimationFrame(step)
-    }
-    el.textContent = '0'
-    raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
-  }, [value, delay, reduced, ready])
-  return <b ref={ref}>{value}</b>
-}
 
-export default function Hero({ profile, onExplore, ready = true, logoHidden = false }) {
-  const magnet = useMagnetic(8)
-  const nameWords = profile.name.split(' ')
+// what he does, under the mark: one at a time, rolling through like frames
+const ROLES = ['Cinematographer', 'DI Colorist', 'Film & Motion Editor']
+
+export default function Hero({ profile, ready = true, logoHidden = false }) {
   const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
-  const y = useTransform(scrollYProgress, [0, 1], [0, -160])
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18])
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
   const reduced = useReducedMotion()
-  // depth on the way out: each layer leaves at its own speed
-  const yLogo = useTransform(scrollYProgress, [0, 1], [0, -200])
-  const yName = useTransform(scrollYProgress, [0, 1], [0, -90])
-  const yCopy = useTransform(scrollYProgress, [0, 1], [0, -30])
-  const yStats = useTransform(scrollYProgress, [0, 1], [0, 40])
-  const yReel = useTransform(scrollYProgress, [0, 1], [0, 90])
-  const reelX = useTransform(scrollYProgress, [0, 1], ['0%', '-12%'])
-  let charIndex = 0
-  const nameLen = profile.name.replace(/\s/g, '').length
+  // The hero holds while you scroll through it and the camera dollies
+  // forward through it: everything parts from the centre and leaves the
+  // frame (the logo up and past you, the studio's name to either side, the
+  // timeline and the name down), faster as it goes. Nothing fades; the centre
+  // clears for the reel, which comes out of the depth behind.
+  const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  const k = useTransform(p, (v) => Math.pow(Math.min(1, v / 0.85), 1.6)) // 0..1, accelerating
+  const W = () => window.innerWidth
+  const Hh = () => window.innerHeight
+  const logoY = useTransform(k, (v) => -v * Hh() * 0.95)
+  const logoS = useTransform(k, (v) => 1 + v * 1.8)
+  const leftX = useTransform(k, (v) => -v * W() * 0.75)
+  const rightX = useTransform(k, (v) => v * W() * 0.75)
+  const sideS = useTransform(k, (v) => 1 + v * 0.6)
+  const nameY = useTransform(k, (v) => v * Hh() * 0.65)
+  const nameS = useTransform(k, (v) => 1 + v * 0.5)
+
+  const [left, right] = profile.tagline.replace(/\s*&\s*/, '|').split('|')
 
   return (
-    <section className="hero section" id="hero" ref={ref}>
-      <motion.div className="hero__scroll" style={{ y, scale, opacity }}>
-      <div className="container hero__inner">
-        <motion.div className="hero__layer hero__layer--1" style={{ y: yLogo }}>
-          <LogoMark className={`hero__logo${logoHidden ? ' is-hidden' : ''}`} label={`${profile.name} logo`} />
-        </motion.div>
-
-        <motion.span
-          className="slate hero__slate"
-          initial={{ opacity: 0, y: 12 }}
-          animate={ready ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.6, delay: 0.15 }}
-        >
-          Portfolio · Reel 2026
-        </motion.span>
-
-        {/* pointer-parallax wrapper — floats the name against the section tilt */}
-        <motion.div className="hero__name-float hero__layer hero__layer--2" style={{ y: yName }}>
-          <motion.h1
-            aria-label={profile.name}
-            className="hero__name"
-            initial={{ opacity: 0 }}
-            animate={ready ? { opacity: 1 } : undefined}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            {nameWords.map((word, i) => (
-              <span className="hero__word-mask" key={`${word}-${i}`} aria-hidden="true">
-                {Array.from(word).map((ch) => {
-                  const k = charIndex++
-                  return (
-                    <NameChar
-                      key={k}
-                      ch={ch}
-                      k={k}
-                      mid={(nameLen - 1) / 2}
-                      delay={0.25 + k * 0.045}
-                      exit={scrollYProgress}
-                      reduced={reduced}
-                      ready={ready}
-                    />
-                  )
-                })}
-              </span>
-            ))}
-          </motion.h1>
-        </motion.div>
-
-        <motion.div className="hero__layer hero__layer--3" style={{ y: yCopy }}>
-        <motion.p
-          className="hero__tagline"
-          initial={{ opacity: 0, y: 18 }}
-          animate={ready ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.7, delay: 0.18 }}
-        >
-          {profile.tagline.split(' ').map((w, i) => (
-            <motion.span
-              key={i}
-              className="hero__tagword"
-              initial={reduced ? false : { opacity: 0, y: '0.6em' }}
-              animate={ready ? { opacity: 1, y: '0em' } : undefined}
-              transition={{ duration: 0.7, delay: 0.7 + i * 0.09, ease: [0.22, 1, 0.36, 1] }}
+    <section className={`hero section ${reduced ? 'is-still' : ''}`} id="hero" ref={ref}>
+      <div className="hero__stage">
+        <div className="hero__inner">
+          {/* the mark at the centre of the frame, the studio either side */}
+          <div className="hero__center">
+            <motion.div className="hero__exit hero__exit--l" style={reduced ? undefined : { x: leftX, scale: sideS }}>
+            <motion.p
+              className="hero__side hero__side--l"
+              initial={reduced ? false : { opacity: 0, x: -24 }}
+              animate={ready ? { opacity: 1, x: 0 } : undefined}
+              transition={{ duration: 1, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
             >
-              {w}
-            </motion.span>
-          ))}
-        </motion.p>
-
-
-        <motion.p
-          className="hero__intro"
-          initial={{ opacity: 0, y: 18 }}
-          animate={ready ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.7, delay: 0.26 }}
-        >
-          {profile.intro}
-        </motion.p>
-        </motion.div>
-
-        {profile.stats?.length > 0 && (
-          <motion.div className="hero__layer hero__layer--4" style={{ y: yStats }}>
-          <motion.div
-            className="hero__stats"
-            aria-label="Track record"
-            initial={{ opacity: 0, y: 16 }}
-            animate={ready ? { opacity: 1, y: 0 } : undefined}
-            transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {profile.stats.map((s) => (
-              <div className="hero__stat" key={s.label}>
-                <CountUp value={s.value} ready={ready} />
-                <span>{s.label}</span>
-              </div>
-            ))}
-          </motion.div>
-          </motion.div>
-        )}
-
-        {/* film-strip accent */}
-        <motion.div className="hero__layer hero__layer--5" style={{ y: yReel, x: reelX }}>
-        <motion.div
-          className="hero__reel"
-          initial={{ opacity: 0 }}
-          animate={ready ? { opacity: 1 } : undefined}
-          transition={{ duration: 0.9, delay: 0.36 }}
-          aria-hidden="true"
-        >
-          <span className="perf-row hero__reel-perf" />
-          <div className="hero__reel-frames">
-            <div className="hero__reel-track">
-              {[...REEL_LABELS, ...REEL_LABELS].map((f, i) => (
-                <span key={i} className="hero__reel-frame">
-                  {f}
+              {left}
+              <motion.span
+                className="hero__lead hero__lead--l"
+                aria-hidden="true"
+                initial={reduced ? false : { scaleX: 0 }}
+                animate={ready ? { scaleX: 1 } : undefined}
+                transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </motion.p>
+            </motion.div>
+            <motion.div className="hero__mark hero__layer hero__layer--1" style={reduced ? undefined : { y: logoY, scale: logoS }}>
+              <LogoMark className={`hero__logo${logoHidden ? ' is-hidden' : ''}`} label={`${profile.name} logo`} />
+              <motion.p
+                className={`hero__roles ${ready ? 'is-on' : ''}`}
+                initial={reduced ? false : { opacity: 0 }}
+                animate={ready ? { opacity: 1 } : undefined}
+                transition={{ duration: 0.8, delay: 1.2 }}
+              >
+                <span className="hero__rule-s" aria-hidden="true" />
+                {/* every role sits in the same cell, so the window is as wide
+                    as the longest one and nothing around it moves */}
+                <span className="hero__roll">
+                  {ROLES.map((r, i) => (
+                    <span key={r} className="hero__role" style={{ '--i': i }}>{r}</span>
+                  ))}
                 </span>
-              ))}
-            </div>
+                <span className="hero__rule-s" aria-hidden="true" />
+              </motion.p>
+            </motion.div>
+            {right && (
+              <motion.div className="hero__exit hero__exit--r" style={reduced ? undefined : { x: rightX, scale: sideS }}>
+              <motion.p
+                className="hero__side hero__side--r"
+                initial={reduced ? false : { opacity: 0, x: 24 }}
+                animate={ready ? { opacity: 1, x: 0 } : undefined}
+                transition={{ duration: 1, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <motion.span
+                  className="hero__lead hero__lead--r"
+                  aria-hidden="true"
+                  initial={reduced ? false : { scaleX: 0 }}
+                  animate={ready ? { scaleX: 1 } : undefined}
+                  transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+                />
+                {right}
+              </motion.p>
+              </motion.div>
+            )}
           </div>
-          <span className="perf-row hero__reel-perf" />
-        </motion.div>
-        </motion.div>
 
-        <motion.div
-          className="hero__cta"
-          initial={{ opacity: 0 }}
-          animate={ready ? { opacity: 1 } : undefined}
-          transition={{ duration: 0.7, delay: 0.46 }}
-        >
-          <button
-            className="btn primary"
-            ref={magnet.ref}
-            onMouseMove={magnet.onMouseMove}
-            onMouseLeave={magnet.onMouseLeave}
-            onClick={onExplore}
-          >
-            Roll the reel
-          </button>
-          <a href="#about" className="btn">
-            About &amp; reviews
-          </a>
-        </motion.div>
+          {/* the name, one line across the bottom, drawn as a line */}
+          <motion.div className="hero__name-wrap hero__layer hero__layer--2" style={reduced ? undefined : { y: nameY, scale: nameS }}>
+            <h1 className="hero__name">
+              <span className="sr-only">{profile.name}</span>
+              <DrawnName name={profile.name} ready={ready} reduced={reduced} />
+            </h1>
+          </motion.div>
+        </div>
       </div>
-      </motion.div>
-
     </section>
   )
 }

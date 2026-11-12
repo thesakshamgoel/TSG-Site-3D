@@ -32,7 +32,17 @@ const SPINE_LEN = SPINE_PTS.reduce((acc, p, i) => {
   acc.push(i ? acc[i - 1] + Math.hypot(p[0] - SPINE_PTS[i - 1][0], p[1] - SPINE_PTS[i - 1][1]) : 0)
   return acc
 }, [])
-const SPINE_D = 'M' + SPINE_PTS.map((p) => p.join(',')).join('L')
+// The ink mask follows the same line, run 18 units past the open end where
+// the stroke starts: the centre line stops short of the loop's rounded end, and
+// without the overrun a sliver of that end was never inked, so it appeared all
+// at once when the hero's logo took over. (The brush still follows the line
+// itself and lands on its resting spot.)
+const SPINE_D = (() => {
+  const [a, b] = [SPINE_PTS[0], SPINE_PTS[3]]
+  const l = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1
+  const lead = [a[0] + ((a[0] - b[0]) / l) * 18, a[1] + ((a[1] - b[1]) / l) * 18]
+  return 'M' + [lead, ...SPINE_PTS].map((p) => p.map((v) => +v.toFixed(1)).join(',')).join('L')
+})()
 function onSpine(f) {
   const want = f * SPINE_LEN[SPINE_LEN.length - 1]
   let i = 1

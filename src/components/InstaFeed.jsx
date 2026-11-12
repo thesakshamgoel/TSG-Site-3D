@@ -60,7 +60,6 @@ export default function InstaFeed({ profile }) {
     <section className="insta section" id="insta">
       <div className="container">
         <div className="insta__head">
-          <span className="slate">Instagram</span>
           <h2 className="section-title">
             Latest from <span className="gradient-text">@{handle}</span>
           </h2>

@@ -51,7 +51,9 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
       const k60 = Math.min(3, last ? (now - last) / 16.667 : 1)
       last = now
       const y = window.scrollY
-      vel += (Math.min(Math.abs(y - lastY), 120) - vel) * Math.min(1, 0.12 * k60)
+      // scroll speed, smoothed: it rises fast when you scroll and settles slowly
+      const target = Math.min(Math.abs(y - lastY) / Math.max(k60, 0.25), 160)
+      vel += (target - vel) * Math.min(1, (target > vel ? 0.35 : 0.06) * k60)
       lastY = y
       const k = read(props.current.intensity)
       if (k <= 0.01) {
@@ -61,7 +63,9 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
         return
       }
       cleared = false
-      const sp = (props.current.speed ? props.current.speed() : reduced ? 0.0015 : 0.0025 + vel * 0.00045) * k60
+      // scrolling speeds the stars up hard and stretches their trails
+      const sp = (props.current.speed ? props.current.speed() : reduced ? 0.0015 : 0.0025 + Math.min(vel, 90) * 0.0011) * k60
+      const trail = reduced ? 1 : 1 + Math.min(vel, 90) * 0.09 // how far back each streak reaches, in frames
       ctx.clearRect(0, 0, W, H)
       ctx.lineCap = 'round'
       const cx = W / 2, cy = H / 2, f = Math.max(W, H) * 0.5
@@ -70,11 +74,13 @@ export default function StarTunnel({ intensity = 1, speed, reduced = false, clas
         s.z -= sp
         if (s.z <= 0.02) { seed(s, true); continue }
         const x = cx + (s.x / s.z) * f, y2 = cy + (s.y / s.z) * f
-        const px = cx + (s.x / s.pz) * f, py = cy + (s.y / s.pz) * f
+        // the tail: where the star was a few frames ago (longer when scrolling)
+        const tz = Math.min(1, s.z + (s.pz - s.z) * trail)
+        const px = cx + (s.x / tz) * f, py = cy + (s.y / tz) * f
         if (x < -40 || x > W + 40 || y2 < -40 || y2 > H + 40) { seed(s, true); continue }
         const a = Math.min(1, (1 - s.z) * 1.4) * k
         ctx.strokeStyle = `rgba(255, 240, 214, ${(a * 0.85).toFixed(2)})`
-        ctx.lineWidth = (1 - s.z) * 2.2 + 0.3
+        ctx.lineWidth = (1 - s.z) * 2.2 + 0.3 + Math.min(vel, 90) * 0.006
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x + 0.01, y2 + 0.01); ctx.stroke()
       }
       raf = requestAnimationFrame(draw)

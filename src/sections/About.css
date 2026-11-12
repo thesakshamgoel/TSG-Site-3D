@@ -162,6 +162,33 @@
   color: var(--text-dim);
 }
 .exp__tags .exp__award { border-color: rgba(233, 184, 114, 0.5); color: var(--gold); }
+/* the gold medal: a medal mark and the words in gold beside the school's name,
+   a gold dot on the rail, and the year in gold */
+.exp__medal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 14px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid rgba(233, 184, 114, 0.55);
+  border-radius: 100px;
+  background: rgba(233, 184, 114, 0.1);
+  vertical-align: middle;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.exp__medal svg { width: 18px; height: 18px; fill: var(--gold); }
+.exp__medal-in { fill: none; stroke: #140f06; stroke-width: 1.2; }
+.exp__row.is-gold .exp__from { color: var(--gold); }
+.exp__row.is-gold .exp__dot { box-shadow: 0 0 0 4px rgba(233, 184, 114, 0.18); }
+@media (max-width: 560px) {
+  .exp__medal { display: flex; width: max-content; margin: 10px 0 0; }
+}
 @media (max-width: 760px) {
   .exp__row { grid-template-columns: minmax(0, 1fr); }
   .exp__body { padding-top: 0; }
@@ -178,21 +205,24 @@
   padding: 0;
   width: min(100%, 1120px);
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: clamp(28px, 4vw, 48px) clamp(20px, 3vw, 36px);
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: clamp(26px, 3.4vw, 44px) clamp(20px, 2.6vw, 32px);
+  align-items: start;
 }
-.certs2__item { grid-column: span 2; display: grid; gap: 14px; align-content: start; }
-/* five prints: the last two sit centred on the second row */
-.certs2__item:nth-child(4) { grid-column: 2 / span 2; }
-.certs2__item:nth-child(5) { grid-column: 4 / span 2; }
+.certs2__item { display: grid; gap: 14px; align-content: start; min-width: 0; }
+/* the degree is the headline credential: it gets the big frame */
+.certs2__item:first-child { grid-row: span 2; align-self: center; }
+/* each print sits in a dark frame with a cream mat, like it hangs on a wall */
 .certs2__print {
   display: block;
-  padding: 0;
-  border: 0;
-  background: none;
+  width: 100%;
+  padding: clamp(8px, 1vw, 12px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 4px;
+  background: #16130f;
+  box-shadow: 0 26px 50px -30px rgba(0, 0, 0, 0.95);
   cursor: pointer;
-  border-radius: 6px;
-  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.35s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .certs2__print img,
 .certs2__blank {
@@ -202,18 +232,31 @@
   /* same shape as the certificate artwork, so the whole print shows */
   aspect-ratio: 4 / 3;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 2px;
   background: #f4f1ea;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 30px 60px -28px rgba(0, 0, 0, 0.9);
 }
 .certs2__print:active { transform: scale(0.985); }
 .certs2__print:focus-visible { outline: 2px solid var(--gold); outline-offset: 5px; }
 @media (hover: hover) and (pointer: fine) {
-  .certs2__print:hover { transform: translateY(-5px); }
+  .certs2__print:hover { transform: translateY(-5px); border-color: rgba(233, 184, 114, 0.45); }
 }
-.certs2__cap { display: grid; gap: 3px; text-align: center; }
-.certs2__cap b { font-weight: 500; font-size: 1.02rem; color: #fff; }
-.certs2__cap span { font-size: 0.86rem; color: var(--text-dim); }
+.certs2__cap { display: grid; gap: 4px; text-align: left; }
+.certs2__no {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.certs2__cap b {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  color: #fff;
+}
+.certs2__item:first-child .certs2__cap b { font-size: clamp(1.3rem, 2vw, 1.6rem); }
+.certs2__by { font-size: 0.88rem; color: var(--text-dim); }
 
 /* the position read-out is for the swipeable row only */
 .certs2__nav { display: none; }
@@ -236,13 +279,11 @@
   }
   .certs2::-webkit-scrollbar { display: none; }
   .certs2__item,
-  .certs2__item:nth-child(4),
-  .certs2__item:nth-child(5) {
+  .certs2__item:first-child {
     flex: 0 0 min(72vw, 340px);
     grid-column: auto;
     scroll-snap-align: start;
   }
-  .certs2__cap { text-align: left; }
   .certs2__nav {
     display: flex;
     align-items: center;
@@ -282,97 +323,128 @@
   .certs2__dots button.is-on::after { background: var(--gold); transform: scale(1.3); }
 }
 
-/* ── reviews as subtitles ────────────────────────────────────────────── */
-.subs {
-  position: relative;
-  margin-top: clamp(60px, 10vh, 120px);
-}
-.subs__pin {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
+/* ── kind words: reviews from the people he worked with ─────────────── */
+.kw {
+  padding-top: clamp(120px, 20vh, 220px);
   display: grid;
-  align-content: center;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  gap: 24px;
-  padding: 0 clamp(16px, 4vw, 56px);
+  gap: clamp(32px, 5vh, 52px);
 }
-.subs__head {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  letter-spacing: -0.02em;
+.kw__head { display: grid; justify-items: center; gap: 14px; text-align: center; }
+.kw__sub { margin: 0; color: var(--text-dim); font-size: 1rem; }
+.kw__list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  width: min(100%, 1120px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2.4vw, 28px);
 }
-.subs__screen {
+.kw__item {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0f0d0b;
+}
+.kw__still {
   position: relative;
-  width: min(100%, 1180px);
-  aspect-ratio: 2.39;
-  background: #000;
-  border-radius: 6px;
+  display: block;
+  aspect-ratio: 16 / 7;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 40px 100px -40px rgba(0, 0, 0, 0.9);
+  background: #15120f;
 }
-.subs__film {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  will-change: transform, opacity;
-}
-.subs__film img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* a darker band where the subtitle sits, so it reads over any frame */
-.subs__screen::after {
+.kw__push { position: absolute; inset: 0; display: block; will-change: transform; }
+.kw__still img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+/* the film's name sits on its own still, on a short dark band */
+.kw__still::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: auto 0 0 0;
+  height: 60%;
+  background: linear-gradient(to top, rgba(15, 13, 11, 0.95), rgba(15, 13, 11, 0));
+}
+.kw__still--none { aspect-ratio: 16 / 3; }
+.kw__still--none::after { display: none; }
+.kw__film {
+  position: absolute;
   z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.2));
-}
-.subs__line { z-index: 2; }
-.subs__tc { z-index: 2; }
-.subs__tc {
-  position: absolute;
-  top: 16px;
   left: 18px;
+  bottom: 12px;
   font-family: var(--font-mono, monospace);
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.35);
-}
-.subs__line {
-  position: absolute;
-  left: 50%;
-  bottom: 9%;
-  translate: -50% 0;
-  width: min(86%, 46rem);
-  margin: 0;
-  text-align: center;
-  will-change: transform, opacity;
-}
-.subs__line blockquote {
-  margin: 0;
-  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
-  line-height: 1.4;
-  color: #fff;
-  text-shadow: 0 2px 4px #000;
-}
-.subs__line figcaption {
-  margin-top: 12px;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold);
 }
-.subs__line figcaption span { color: var(--text-dim); margin-left: 8px; }
+.kw__body {
+  margin: 0;
+  padding: 20px 22px 24px;
+  display: grid;
+  align-content: space-between;
+  gap: 22px;
+}
+.kw__stars { color: var(--gold); letter-spacing: 0.12em; font-size: 0.9rem; }
+.kw__stars span { color: rgba(255, 255, 255, 0.18); }
+.kw__quote {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.08rem, 1.5vw, 1.24rem);
+  line-height: 1.45;
+  color: #f1ece2;
+  text-wrap: pretty;
+}
+.kw__quote::before { content: '“'; color: var(--gold); margin-right: 2px; }
+.kw__quote::after { content: '”'; color: var(--gold); margin-left: 1px; }
+.kw__who {
+  display: grid;
+  gap: 3px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.kw__who b { font-weight: 500; font-size: 0.98rem; color: #fff; }
+.kw__who span { font-size: 0.86rem; color: var(--text-dim); }
+.kw__foot { display: grid; justify-items: center; gap: 18px; }
+.kw__leave {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(233, 184, 114, 0.5);
+  border-radius: 4px;
+  background: none;
+  color: var(--gold);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.25s cubic-bezier(0.23, 1, 0.32, 1), color 0.25s cubic-bezier(0.23, 1, 0.32, 1), transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .kw__leave:hover { background: var(--gold); color: #140f06; }
+}
+.kw__leave:active { transform: scale(0.97); }
+.kw__leave:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+/* phones and tablets: a row you swipe, one review at a time */
+@media (max-width: 900px) {
+  .kw__list {
+    display: flex;
+    gap: 16px;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 4px 16px 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .kw__list::-webkit-scrollbar { display: none; }
+  .kw__item { flex: 0 0 min(82vw, 380px); scroll-snap-align: start; }
+}
 
 /* chapter heading (contact) */
 .chapter { margin-top: clamp(120px, 20vh, 220px); }

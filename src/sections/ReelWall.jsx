@@ -15,6 +15,47 @@ function rand(i, s) {
   return x - Math.floor(x)
 }
 
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const easeOut = (t) => 1 - Math.pow(1 - t, 3)
+
+/**
+ * One figure in the flyby ("50+ projects."), moving in the same 3D space as
+ * the film frames. Timed in screen heights of scroll from the top of the page:
+ * it comes from far back, tilted, and straightens as it arrives; drifts closer
+ * while its number counts up; then sweeps past the camera, tilting the other
+ * way and dimming as it goes, like the frames do. From arrival to exit it is
+ * one continuous motion, so there is no corner where it stops and restarts.
+ */
+function Beat({ vh, value, label, at, side = 1, reduced, as: Tag = 'p' }) {
+  const [e0, e1, , l1] = at
+  const m = String(value).match(/^(\d+)(.*)$/)
+  const target = m ? +m[1] : 0
+  const suffix = m ? m[2] : ''
+  const digits = String(target).length
+  // depth in px: -1500 far away, 0 at rest distance, +720 brushing the lens
+  const z = useTransform(vh, (v) => {
+    if (v < e1) return -1500 * (1 - easeOut(clamp01((v - e0) / (e1 - e0))))
+    const t = clamp01((v - e1) / (l1 - e1))
+    return 230 * t + 490 * Math.pow(t, 2.5)
+  })
+  const rx = useTransform(vh, (v) => (v < e1 ? 16 * (1 - easeOut(clamp01((v - e0) / (e1 - e0)))) : -10 * Math.pow(clamp01((v - e1) / (l1 - e1)), 2)))
+  const ry = useTransform(vh, (v) => side * (v < e1 ? 12 * (1 - easeOut(clamp01((v - e0) / (e1 - e0)))) : -8 * Math.pow(clamp01((v - e1) / (l1 - e1)), 2)))
+  const transform = useTransform([z, rx, ry], ([zz, x, y]) => `translate3d(-50%, -50%, ${zz.toFixed(1)}px) rotateX(${x.toFixed(2)}deg) rotateY(${y.toFixed(2)}deg)`)
+  const opacity = useTransform(z, (zz) => clamp01((zz + 1500) / 700) * (1 - clamp01((zz - 360) / 340)))
+  const visibility = useTransform(vh, (v) => (v < e0 || v > l1 ? 'hidden' : 'visible'))
+  const n = useTransform(vh, (v) => Math.round(target * easeOut(clamp01((v - e0) / ((e1 - e0) * 1.6)))))
+  const MotionTag = motion[Tag]
+  return (
+    <MotionTag className="rw__head" style={reduced ? undefined : { transform, opacity, visibility }}>
+      <span className="rw__fig">
+        {/* room for the final number from the start, so the line never shifts */}
+        <motion.span className="rw__num" style={{ minWidth: `${digits}ch` }}>{reduced ? target : n}</motion.span>{suffix}
+      </span>
+      <span className="rw__line">{label}</span>
+    </MotionTag>
+  )
+}
+
 function Frame({ p, f, i, total, onOpen, reduced }) {
   const z0 = -i * GAP - LEAD
   const z = useTransform(p, (v) => z0 + v * total)
@@ -104,7 +145,7 @@ function Prop({ p, kind, i, total, reduced }) {
  * itself as it arrives (no hard edge over the hero), then the frames grow
  * from specks to full-size as they rush past.
  */
-export default function ReelWall({ projects, onOpenProject }) {
+export default function ReelWall({ projects, stats = [], onOpenProject }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const films = useMemo(() => {
@@ -120,23 +161,32 @@ export default function ReelWall({ projects, onOpenProject }) {
       }
     })
   }, [projects])
-  // the published figure (same as the hero's), not a count of what is on the page
-  const filmCount = 50
-
   const total = films.length * GAP + LEAD + 600
   const { scrollYProgress: p } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // arrival: 0 while the section rises over the hero, 1 when it pins
+  // Arrival. The reel sits pinned underneath the hero from the top of the
+  // page; it shows itself while the camera pushes into the hero's logo, so it
+  // comes out of the depth instead of rising from the bottom. (With reduced
+  // motion there is no push-in, and it arrives the ordinary way.)
+  const { scrollY } = useScroll()
   const { scrollYProgress: e } = useScroll({ target: ref, offset: ['start end', 'start start'] })
-
-  const spaceO = useTransform(e, [0.55, 1], [0, 1])
-  const headY = useTransform(e, [0.5, 1], [80, 0])
-  const headScale = useTransform(p, [0, 0.5, 1], [0.92, 1.06, 1.5])
-  const headOpacity = useTransform([e, p], ([a, b]) => Math.min(1, Math.max(0, (a - 0.6) / 0.4)) * (1 - Math.min(1, Math.max(0, (b - 0.72) / 0.18))))
-  const count = useTransform(p, [0, 0.6], [0, filmCount])
-  const countText = useTransform(count, (v) => Math.round(v))
+  const handoff = useTransform(scrollY, (v) => {
+    const H = window.innerHeight
+    // starts once the hero has mostly parted and left the centre clear
+    return Math.min(1, Math.max(0, (v - 0.4 * H) / (0.5 * H)))
+  })
+  const arrival = reduced ? e : handoff
+  const spaceO = useTransform(arrival, [0.15, 1], [0, 1])
+  // scroll in screen heights from the top of the page, for the two figures
+  const vh = useTransform(scrollY, (v) => v / window.innerHeight)
+  // just the two that matter here: projects and brands
+  const beats = stats.slice(0, 2).map((st) => ({ value: st.value, label: `${String(st.label).toLowerCase()}.` }))
+  const TIMES = [
+    [0.4, 0.9, 1.55, 2.05], // arrives with the hero's exit, holds, flies past
+    [1.95, 2.45, 3.05, 3.55],
+  ]
 
   return (
-    <section className="rw" id="reelwall" ref={ref}>
+    <section className={`rw ${reduced ? '' : 'rw--under'}`} id="reelwall" ref={ref} data-rail-offset={reduced ? undefined : '1'}>
       <div className="rw__pin" data-opaque>
         <motion.div className="rw__space" style={reduced ? undefined : { opacity: spaceO }}>
           {PROP_LIST.map((k, i) => (
@@ -146,14 +196,11 @@ export default function ReelWall({ projects, onOpenProject }) {
             <Frame key={f.p.id} p={p} f={f} i={i} total={total} onOpen={onOpenProject} reduced={reduced} />
           ))}
         </motion.div>
-        <motion.h2 className="rw__head" style={reduced ? undefined : { y: headY, scale: headScale, opacity: headOpacity }}>
-          <span className="rw__fig">
-            <motion.span className="rw__num">{reduced ? filmCount : countText}</motion.span>+
-          </span>
-          <span className="rw__line">
-            projects. <em>One eye.</em>
-          </span>
-        </motion.h2>
+        <div className="rw__heads">
+          {beats.map((bt, i) => (
+            <Beat key={bt.label} vh={vh} value={bt.value} label={bt.label} at={TIMES[i]} side={i ? -1 : 1} reduced={reduced} as={i ? 'p' : 'h2'} />
+          ))}
+        </div>
       </div>
     </section>
   )

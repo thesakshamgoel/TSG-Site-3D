@@ -76,7 +76,6 @@
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
 }
 .gw__h em { color: var(--gold); }
-.gw__note { margin-top: 14px; max-width: 32ch; color: var(--text); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8); }
 
 .gw__panel {
   position: absolute;
@@ -192,7 +191,6 @@
   .gw__copy { top: var(--copy-top); left: 16px; right: 16px; width: auto; height: var(--copy-h); }
   .gw__step { font-size: 1.55rem; line-height: 1.12; }
   .gw__h { font-size: 2.1rem; }
-  .gw__note { margin-top: 8px; font-size: 0.9rem; }
   .gw__frame {
     inset: auto 0 auto 0;
     top: var(--frame-top);
@@ -219,7 +217,6 @@
   .gw__stage { --copy-top: 64px; --copy-h: 92px; }
   .gw__step { font-size: 1.3rem; }
   .gw__h { font-size: 1.75rem; }
-  .gw__note { font-size: 0.82rem; }
   .gw .wheel__ring { width: 13vw; }
   .gw__panel { padding: 10px; gap: 8px; }
   .gw__scenes button { aspect-ratio: 16 / 8; }
@@ -230,7 +227,6 @@
   .gw__copy { top: 60px; width: 42vw; }
   .gw__step { font-size: 1.3rem; }
   .gw__h { font-size: 1.8rem; }
-  .gw__note { display: none; }
   .gw__panel { width: 46vw; right: 12px; bottom: 12px; padding: 10px; gap: 8px; }
   .gw .wheel__ring { width: 9vw; }
   .gw .wheel__val, .gw__scenes { display: none; }

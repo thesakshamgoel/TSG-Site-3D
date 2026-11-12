@@ -53,7 +53,11 @@ function pageStars() {
   if (!wall.h) return 0.6
   const H = window.innerHeight
   const top = wall.top - window.scrollY
-  const arrive = Math.min(1, Math.max(0, 1 - top / H))
+  // the reel can sit under the hero (top 0): then it "arrives" as the camera
+  // pushes into the hero's logo, not at page load
+  const arrive = wall.top < H
+    ? Math.min(1, Math.max(0, (window.scrollY - wall.top - 0.4 * H) / (0.5 * H)))
+    : Math.min(1, Math.max(0, 1 - top / H))
   const leave = Math.min(1, Math.max(0, (top + wall.h) / H))
   return (0.6 + 0.4 * arrive) * leave
 }
@@ -249,21 +253,20 @@ export default function App() {
             profile={data.profile}
             ready={loaded}
             logoHidden={!logoLanded}
-            onExplore={() => scrollToId('highlights')}
           />
 
-          <ReelWall projects={data.projects} onOpenProject={(p) => setLightbox(p)} />
+          <ReelWall projects={data.projects} stats={data.profile.stats} onOpenProject={(p) => setLightbox(p)} />
 
           <Highlights
             projects={data.featuredProjects}
             onOpenProject={(p) => setLightbox(p)}
           />
 
-          <Intertitle no="CHAPTER II" title="The grade" />
+          <Intertitle title="The grade" />
 
           <GradeWheels comparisons={data.comparisons} onOpenImage={(img) => setLightbox(img)} />
 
-          <Intertitle no="CHAPTER III" title="The work" />
+          <Intertitle title="The work" />
 
           <Work
             categories={data.categories}

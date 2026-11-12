@@ -1,366 +1,228 @@
+/* The hero as a title page on the starfield: the studio mark in the centre
+   with the studio's name either side of it, and the name across the bottom.
+   The track record now lives in the reel's flyby, just after. */
 .hero {
   position: relative;
-  min-height: 100vh;
-  min-height: 100svh; /* dynamic viewport: no jump when mobile URL bar hides */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 120px 0;
+  /* the extra height is the scroll that drives the push-in to the next section */
+  height: 190vh;
+  height: 190svh;
   text-align: center;
 }
-
-/* (letterbox bars removed — they read as a black line against the 3D space) */
-
-.hero__hud {
-  position: absolute;
+/* beats the general .section padding, which loads later. The hero lies over
+   the start of the reel (its negative margin takes it out of the flow), so the
+   reel is already there, pinned, as the camera pushes in. Nothing in the hero
+   is clickable, so it lets clicks through to the reel underneath. */
+.section.hero {
+  padding: 0;
   z-index: 4;
-  font-family: var(--font-mono);
+  margin-bottom: -190vh;
+  margin-bottom: -190svh;
+  pointer-events: none;
 }
-.hero__hud--tl {
-  top: 86px;
-  left: 40px;
-}
-.hero__hud--tr {
-  top: 86px;
-  right: 40px;
-}
-.hero__hud--bl {
-  bottom: 78px;
-  left: 40px;
-}
-
-.hero__inner {
-  max-width: 1040px;
+.section.hero.is-still { margin-bottom: 0; pointer-events: auto; }
+.hero.is-still { height: auto; }
+.hero__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  align-items: stretch;
+  padding: 76px 0 64px;
+  overflow: hidden;
+}
+.hero.is-still .hero__stage { position: relative; }
+.hero__inner {
   position: relative;
   z-index: 2;
-  /* slight 3D focus toward the pointer */
-  transform: perspective(1200px) rotateX(calc(var(--pny) * -1.6deg))
-    rotateY(calc(var(--pnx) * 1.6deg));
-  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
-  transform-style: preserve-3d;
+  width: min(1240px, 100%);
+  height: 100%;
+  padding-left: max(clamp(16px, 4vw, 56px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(16px, 4vw, 56px), env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  grid-template-areas: 'center' 'name';
+  justify-items: center;
+  row-gap: clamp(18px, 3.4vh, 34px);
 }
 
+/* ── the mark in the centre, "Post Production" and "Design Studio" either
+   side of it, joined to it by two fine gold leads ── */
+.hero__center {
+  grid-area: center;
+  align-self: center;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: clamp(18px, 2.6vw, 40px);
+}
+.hero__mark { --logo-w: clamp(220px, min(27vw, 38vh), 400px); }
 .hero__logo {
-  width: clamp(150px, 17vw, 220px);
   height: auto;
-  margin-bottom: 22px;
   filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.5));
-  animation: logo-float 5s ease-in-out infinite;
 }
-@keyframes logo-float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(1.2deg);
-  }
+.hero__logo.logomark {
+  width: var(--logo-w, 260px);
+  height: auto;
+  margin: 0;
 }
-
-.hero__slate {
-  margin-bottom: 22px;
-}
-
-/* continuous, gentle text motion */
-/* pointer-parallax float — sits on a wrapper so it composes with the
-   section tilt above and the breathe animation on the h1 itself */
-.hero__name-float {
-  transform: translate(calc(var(--pnx) * 6px), calc(var(--pny) * 4px));
-  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.hero__name {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(2.6rem, 10vw, 7.4rem);
-  line-height: 0.92;
-  letter-spacing: -0.03em;
-  margin-bottom: 22px;
-  color: #ffffff;
-  max-width: 100%;
-  overflow-wrap: break-word;
-  text-shadow: 0 8px 80px rgba(0, 0, 0, 0.7);
-}
-
-/* masked word reveal — each word rises out of its own clipping window */
-.hero__word-mask {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: bottom;
-  /* a touch of hidden room so descenders aren't shaved by the clip */
-  padding-bottom: 0.06em;
-  margin-bottom: -0.06em;
-}
-.hero__word-mask:not(:last-child) {
-  margin-right: 0.26em;
-}
-.hero__word {
-  display: inline-block;
-}
-
-.hero__tagline {
-  font-size: clamp(1.1rem, 3.2vw, 2rem);
-  font-weight: 500;
-  margin-bottom: 18px;
-}
-
-
-/* stats strip — proof points in one hairline panel */
-.hero__stats {
+/* the roles under the mark: one at a time, in the display face, between two
+   short gold rules. Each slides up into a masked window, holds, and leaves
+   upward as the next arrives, like frames advancing through a gate. */
+.hero__mark { display: grid; justify-items: center; }
+.hero__roles {
+  margin: clamp(14px, 2.4vh, 22px) 0 0;
   display: flex;
-  justify-content: center;
-  margin: 0 auto 46px;
-  max-width: 640px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(16, 16, 19, 0.5);
-  backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-}
-.hero__stat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 15px 10px;
-}
-.hero__stat + .hero__stat {
-  border-left: 1px solid var(--border);
-}
-.hero__stat b {
-  font-family: var(--font-display);
-  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
-  font-weight: 500;
-  line-height: 1;
-  color: var(--gold);
-}
-.hero__stat span {
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  text-align: center;
-}
-
-.hero__intro {
-  color: var(--text);
-  opacity: 0.8;
-  font-size: clamp(1.02rem, 2vw, 1.2rem);
-  max-width: 560px;
-  margin-bottom: 40px;
-}
-
-/* film-strip accent */
-.hero__reel {
-  width: min(680px, 92%);
-  margin-bottom: 40px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: #08080a;
-}
-.hero__reel-perf {
-  display: block;
-  height: 16px;
-  background-size: auto 16px;
-}
-.hero__reel-frames {
-  overflow: hidden;
-}
-/* infinite marquee: labels are rendered twice, so -50% loops seamlessly */
-.hero__reel-track {
-  display: flex;
-  width: max-content;
-  animation: reel-marquee 20s linear infinite;
-}
-@keyframes reel-marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.hero__reel:hover .hero__reel-track {
-  animation-play-state: paused;
-}
-.hero__reel-frame {
-  flex: 0 0 auto;
-  min-width: 128px;
-  text-align: center;
-  white-space: nowrap;
-  padding: 14px 18px;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, rgba(233, 184, 114, 0.05), transparent);
-}
-
-.hero__cta {
-  display: flex;
   gap: 14px;
-  flex-wrap: wrap;
-  justify-content: center;
+}
+.hero__rule-s { width: 22px; height: 1px; background: var(--gold); opacity: 0.8; }
+.hero__roll {
+  display: grid;
+  overflow: hidden;
+  padding: 0.12em 0 0.18em; /* room for descenders inside the window */
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-variation-settings: 'opsz' 36;
+  font-size: clamp(1rem, 1.25vw, 1.15rem);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #efe9dd;
+  white-space: nowrap;
+}
+.hero__role {
+  grid-area: 1 / 1;
+  justify-self: center;
+  transform: translateY(110%);
+  opacity: 0;
+}
+.hero__roles.is-on .hero__role {
+  animation: hero-role 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation-delay: calc(1.4s + var(--i) * 3s);
+}
+@keyframes hero-role {
+  0% { transform: translateY(110%); opacity: 0; }
+  6%, 30% { transform: translateY(0); opacity: 1; }
+  36%, 100% { transform: translateY(-110%); opacity: 0; }
 }
 
-.hero__scrollhint {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+/* hidden while the loader's mark flies in to take its place */
+.hero__logo.is-hidden { visibility: hidden; }
+
+.hero__side {
+  margin: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  color: var(--text-dim);
-  font-size: 0.68rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  z-index: 4;
+  gap: clamp(12px, 1.6vw, 22px);
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.2rem, 2.1vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: #f1ece2;
+  white-space: nowrap;
 }
-.hero__scrollline {
-  width: 1px;
-  height: 40px;
-  background: linear-gradient(var(--gold), transparent);
-  animation: scrollpulse 2s ease-in-out infinite;
+.hero__exit--l { justify-self: end; }
+.hero__exit--r { justify-self: start; }
+.hero__exit { will-change: transform; }
+.hero__lead {
+  display: block;
+  width: clamp(28px, 4vw, 64px);
+  height: 1px;
+  background: var(--gold);
 }
-@keyframes scrollpulse {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scaleY(0.7);
-  }
-  50% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
+.hero__lead--l { transform-origin: 0 50%; }
+.hero__lead--r { transform-origin: 100% 50%; }
+
+/* ── the name: one line across the bottom, in the title face ── */
+.hero__name-wrap { grid-area: name; width: 100%; min-width: 0; margin-bottom: clamp(20px, 6vh, 64px); }
+.hero__name { margin: 0; line-height: 0; }
+/* the drawn name: sized by width, its height follows from the measured text */
+.hero__nsvg {
+  display: block;
+  width: min(66vw, 1040px);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+}
+.hero__nt {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variation-settings: 'opsz' 144;
+  font-size: 100px;
+  letter-spacing: -1.2px;
+}
+/* the gold outline draws itself in round the outside of the letters (it is
+   masked to the outside, so only its outer half shows) and stays, with a soft
+   glow (asked for on the name; kept low) */
+.hero__nt--line {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.2px;
+  stroke-linejoin: round;
+  stroke-dasharray: 560;
+  stroke-dashoffset: 560;
+  filter: drop-shadow(0 0 2px rgba(233, 184, 114, 0.5));
+}
+/* the letters, filling in once the outline has gone round them */
+.hero__nt--fill { fill: #f4f1ea; opacity: 0; }
+/* a brighter gold line that keeps travelling round the letters (outside) */
+.hero__nt--trace {
+  fill: none;
+  stroke: #ffe2b0;
+  stroke-width: 3.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 80 480;
+  opacity: 0;
+  filter: drop-shadow(0 0 3px rgba(233, 184, 114, 0.9)) drop-shadow(0 0 9px rgba(233, 184, 114, 0.4));
+}
+.hero__nsvg.is-on .hero__nt--line { animation: hero-draw 2.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards; }
+.hero__nsvg.is-on .hero__nt--fill { animation: hero-fill 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.9s forwards; }
+.hero__nsvg.is-on .hero__nt--trace {
+  animation:
+    hero-trace-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) 3s forwards,
+    hero-trace 11s linear 3s infinite;
+}
+@keyframes hero-draw { to { stroke-dashoffset: 0; } }
+@keyframes hero-fill { to { opacity: 1; } }
+@keyframes hero-trace-in { to { opacity: 0.9; } }
+/* one full lap of the dash pattern: constant speed, as an endless loop should be */
+@keyframes hero-trace { to { stroke-dashoffset: -560; } }
+/* reduced motion: the name, filled, outline already drawn */
+.hero__nsvg.is-still .hero__nt--fill { opacity: 1; }
+.hero__nsvg.is-still .hero__nt--line { stroke-dashoffset: 0; }
+
+/* depth layers: each also leans with the mouse at its own depth */
+.hero__layer {
+  will-change: transform;
+  transition: translate 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero__layer--1 { translate: calc(var(--pnx, 0) * 14px) calc(var(--pny, 0) * 9px); }
+  .hero__layer--2 { translate: calc(var(--pnx, 0) * 6px) calc(var(--pny, 0) * 4px); }
 }
 
+@media (max-width: 860px) {
+  /* the mark first, then the studio's name on one line under it, no leads */
+  .hero__center { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; }
+  .hero__mark { order: -1; flex: 0 0 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+  .hero__side { display: inline-flex; font-size: 1.15rem; }
+  .hero__side--l { margin-right: 0.28em; }
+  .hero__lead { display: none; }
+}
 @media (max-width: 720px) {
-  /* .section.* beats global.css's .section rule, which loads later in the bundle */
-  .section.hero {
-    padding: 96px 0 48px;
-  }
-  /* stats wrap to a 2×2 grid on phones */
-  .hero__stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-    max-width: 400px;
-    margin-bottom: 38px;
-  }
-  .hero__stat {
-    background: rgba(14, 14, 17, 0.92);
-    padding: 13px 8px;
-  }
-  .hero__stat + .hero__stat {
-    border-left: 0;
-  }
-  /* the bottom tab bar covers this spot on mobile — drop the hint */
-  .hero__scrollhint {
-    display: none;
-  }
-  /* pointer tilt is meaningless on touch and can look jittery — flatten it */
-  .hero__inner {
-    transform: none;
-  }
-  .hero__name-float {
-    transform: none;
-  }
-}
-
-@media (max-width: 620px) {
-  .hero__hud--tl,
-  .hero__hud--tr {
-    top: 74px;
-  }
-  .hero__hud {
-    left: 20px;
-    right: 20px;
-  }
+  .hero__stage { padding: 72px 0 96px; }
+  .hero__inner { row-gap: 20px; }
+  .hero__mark { --logo-w: min(66vw, 30vh); }
+  .hero__nsvg { width: 88vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero__reel-track,
-  .hero__logo,
-  .hero__scrollline {
-    animation: none;
-  }
-  .hero__name-float {
-    transform: none;
-    transition: none;
-  }
+  .hero__layer { translate: none; transition: none; }
+  .hero__role { animation: none !important; }
+  .hero__role:first-child { transform: none; opacity: 1; }
 }
-
-/* scroll-linked exit wrapper: hero content drifts, scales and blurs away */
-.hero__scroll {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  will-change: transform, opacity;
-}
-
-/* ── hero motion ───────────────────────────────────────────────────────── */
-
-
-/* name letters flip up out of a bottom-only mask (overflow:hidden would
-   shave italic overhangs and descenders) */
-.hero__word-mask {
-  overflow: visible;
-  perspective: 600px;
-}
-.hero__char-mask {
-  display: inline-block;
-  clip-path: inset(-0.6em -0.3em -0.02em -0.3em);
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
-}
-.hero__char {
-  display: inline-block;
-  transform-origin: 50% 100%;
-  will-change: transform;
-}
-/* hidden while the loader's mark flies in to take its place */
-.hero__logo.is-hidden { visibility: hidden; }
-.hero__logo.logomark {
-  width: clamp(150px, 17vw, 220px);
-  height: auto;
-  margin: 0 auto 22px;
-  animation: none;
-  filter: none;
-}
-/* depth layers: each one also leans with the mouse at its own depth
-   (the 'translate' property composes with the scroll transform) */
-.hero__layer {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  will-change: transform;
-}
-@media (hover: hover) and (pointer: fine) {
-  .hero__layer--1 { translate: calc(var(--pnx, 0) * 16px) calc(var(--pny, 0) * 10px); }
-  .hero__layer--2 { translate: calc(var(--pnx, 0) * 9px) calc(var(--pny, 0) * 6px); }
-  .hero__layer--3 { translate: calc(var(--pnx, 0) * 5px) calc(var(--pny, 0) * 3px); }
-  .hero__layer--4 { translate: calc(var(--pnx, 0) * -6px) calc(var(--pny, 0) * -4px); }
-  .hero__layer--5 { translate: calc(var(--pnx, 0) * -12px) calc(var(--pny, 0) * -6px); }
-}
-.hero__layer { transition: translate 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
-/* tagline words */
-.hero__tagword { display: inline-block; color: var(--gold-soft); }
-.hero__tagword:last-child { color: var(--gold); }
-
-/* word spacing as margin: a trailing space inside an inline-block collapses */
-.hero__tagword { margin-right: 0.28em; }
-.hero__tagword:last-child { margin-right: 0; }
